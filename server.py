@@ -16,6 +16,12 @@ class AppHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=BASE_DIR, **kwargs)
 
+    def end_headers(self):
+        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
+        super().end_headers()
+
     def do_GET(self):
         if self.path == "/api/meta":
             self.send_json(200, {
@@ -32,6 +38,9 @@ class AppHandler(SimpleHTTPRequestHandler):
             return
         if self.path == "/api/search":
             self.handle_search()
+            return
+        if self.path == "/api/suggest":
+            self.handle_suggest()
             return
         self.send_error(404, "Not Found")
 
@@ -55,6 +64,24 @@ class AppHandler(SimpleHTTPRequestHandler):
             return
 
         self.send_json(200, {"url": expanded})
+
+    def handle_suggest(self):
+        payload = self.read_json_body()
+        if payload is None:
+            return
+
+        query = str(payload.get("query", "")).strip()
+        if not query:
+            self.send_json(400, {"error": "スポット名を入力してください。"})
+            return
+
+        try:
+            results = suggest_places(query)
+        except Exception:
+            self.send_json(502, {"error": "候補の取得に失敗しました。"})
+            return
+
+        self.send_json(200, {"results": results})
 
     def handle_search(self):
         payload = self.read_json_body()
@@ -113,6 +140,38 @@ def resolve_google_maps_url(url):
     return final_url
 
 
+def suggest_places(query):
+    params = urllib.parse.urlencode({
+        "q": query,
+        "format": "jsonv2",
+        "limit": 6,
+        "accept-language": "ja,en",
+    })
+    request = urllib.request.Request(
+        f"https://nominatim.openstreetmap.org/search?{params}",
+        headers={"User-Agent": USER_AGENT, "Accept-Language": "ja,en"},
+    )
+    with urllib.request.urlopen(request, timeout=10) as response:
+        data = json.loads(response.read().decode("utf-8"))
+
+    results = []
+    for item in data[:6]:
+        lat = float(item["lat"])
+        lng = float(item["lon"])
+        name = item.get("name") or item.get("display_name", "").split(",")[0].strip()
+        display = item.get("display_name", "")
+        results.append({
+            "name": name,
+            "display": display,
+            "lat": lat,
+            "lng": lng,
+            "url": f"https://www.google.com/maps/search/?api=1&query={lat},{lng}",
+            "osmCategory": item.get("category", ""),
+            "osmType": item.get("type", ""),
+        })
+    return results
+
+
 def search_place(query):
     osm_result = search_place_by_osm(query)
     if osm_result is not None:
@@ -148,7 +207,7 @@ def search_place_by_osm(query):
     lat = float(best["lat"])
     lng = float(best["lon"])
     name = best.get("name") or best.get("display_name", query).split(",")[0].strip()
-    return build_result(name, lat, lng, best.get("display_name", ""))
+    return build_result(name, lat, lng, best.get("display_name", ""), best.get("category", ""), best.get("type", ""))
 
 
 def search_place_by_wikipedia(query):
@@ -192,10 +251,10 @@ def search_place_by_wikipedia(query):
         return None
 
     coord = coordinates[0]
-    return build_result(page.get("title", query), float(coord["lat"]), float(coord["lon"]), page.get("title", query))
+    return build_result(page.get("title", query), float(coord["lat"]), float(coord["lon"]), page.get("title", query), "", "")
 
 
-def build_result(name, lat, lng, display_name):
+def build_result(name, lat, lng, display_name, osm_category="", osm_type=""):
     google_url = f"https://www.google.com/maps/search/?api=1&query={lat},{lng}"
     return {
         "name": name,
@@ -203,6 +262,8 @@ def build_result(name, lat, lng, display_name):
         "lng": lng,
         "url": google_url,
         "display_name": display_name,
+        "osmCategory": osm_category,
+        "osmType": osm_type,
     }
 
 

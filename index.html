@@ -26,36 +26,6 @@
       </div>
     </header>
 
-    <section class="panel schedule-strip">
-      <div class="schedule-strip-head">
-        <div>
-          <p class="panel-kicker">Schedule</p>
-          <h2>日時設定</h2>
-        </div>
-      </div>
-      <div class="schedule-strip-grid">
-        <article class="schedule-chip">
-          <p class="route-label">開始日</p>
-          <label class="date-field compact-field">
-            <input id="meetDateInput" type="date" />
-          </label>
-          <label class="time-field compact-field">
-            <input id="meetTimeInput" type="time" />
-          </label>
-        </article>
-
-        <article class="schedule-chip">
-          <p class="route-label">終了日</p>
-          <label class="date-field compact-field">
-            <input id="dismissDateInput" type="date" />
-          </label>
-          <label class="time-field compact-field">
-            <input id="dismissTimeInput" type="time" />
-          </label>
-        </article>
-      </div>
-    </section>
-
     <section class="panel form-panel form-panel-wide">
       <div class="panel-head">
         <div>
@@ -63,48 +33,56 @@
           <h2>スポットを追加</h2>
         </div>
       </div>
-
       <form id="spotForm" class="spot-form spot-form-wide">
         <label class="unified-input-field">
           スポット名 または Google Maps URL
-          <input id="placeInput" name="place" type="text" placeholder="例: 江戸城 / https://maps.app.goo.gl/..." />
+          <div class="autocomplete-wrap">
+            <input id="placeInput" name="place" type="text" placeholder="例: 江戸城 / https://maps.app.goo.gl/..." />
+            <div id="placeDropdown" class="suggest-dropdown hidden"></div>
+          </div>
         </label>
         <div class="form-actions">
-          <button id="addSpotButton" class="primary-button" type="button">立ち寄りスポットに追加</button>
+          <button id="addSpotButton" class="primary-button" type="button">スポットを追加</button>
           <button id="clearButton" class="ghost-button danger" type="button">一覧を消去</button>
         </div>
       </form>
       <p id="feedback" class="feedback" aria-live="polite"></p>
     </section>
 
-    <section class="panel maps-panel">
-      <div class="panel-head">
-        <div>
-          <p class="panel-kicker">Auto Map Pages</p>
-          <h2>地図プレビュー</h2>
+      <section class="panel maps-panel">
+        <div class="panel-head">
+          <div>
+            <p class="panel-kicker">Auto Map Pages</p>
+            <h2><span class="section-num">②</span>地図プレビュー</h2>
+          </div>
         </div>
-      </div>
-      <div id="mapPanels" class="map-panels">
-        <div class="empty-state">場所を追加すると、全体図と拡大図がここに表示されます。</div>
-      </div>
-    </section>
+        <div id="mapPanels" class="map-panels">
+          <div class="empty-state">場所を追加すると、全体図と拡大図がここに表示されます。</div>
+        </div>
+      </section>
 
-    <section class="panel list-panel">
-      <div class="panel-head list-head">
-        <div>
-          <p class="panel-kicker">Registered Spots</p>
-          <h2>登録済みスポット</h2>
+      <section class="panel list-panel">
+        <div class="panel-head list-head">
+          <div>
+            <p class="panel-kicker">Spots</p>
+            <span id="spotCount" class="count-pill">0件</span>
+          </div>
+          <button id="bulkDeleteButton" class="ghost-button danger icon-btn hidden" type="button" title="選択削除">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          </button>
         </div>
-        <span id="spotCount" class="count-pill">0件</span>
-      </div>
-      <div id="spotList" class="spot-list empty-state">まだスポットが登録されていません。</div>
-    </section>
+        <div id="spotList" class="spot-list empty-state">まだスポットが登録されていません。</div>
+      </section>
   </div>
 
   <template id="spotItemTemplate">
     <article class="spot-item">
+      <label class="spot-check-label">
+        <input class="spot-checkbox" type="checkbox" />
+      </label>
       <div class="spot-main">
         <button class="spot-name-button" type="button">
+          <span class="spot-type-badge"></span>
           <span class="spot-name"></span>
         </button>
         <p class="spot-meta"></p>
@@ -114,9 +92,25 @@
 
   <div id="spotMenuBackdrop" class="spot-menu-backdrop hidden"></div>
   <section id="spotMenu" class="spot-menu hidden" aria-hidden="true">
+    <p class="spot-menu-kicker">スポットメニュー</p>
     <div class="spot-menu-head">
-      <h3 id="spotMenuTitle">スポット設定</h3>
+      <h3 id="spotMenuTitle">—</h3>
       <button id="spotMenuClose" class="ghost-button" type="button">閉じる</button>
+    </div>
+    <div class="spot-type-switcher">
+      <button class="type-btn" data-type="meet" type="button">集合場所</button>
+      <button class="type-btn active" data-type="spot" type="button">立ち寄りスポット</button>
+      <button class="type-btn" data-type="dismiss" type="button">解散場所</button>
+    </div>
+    <div class="spot-category-section">
+      <p class="spot-menu-sublabel">属性（アイコン）</p>
+      <div class="spot-category-switcher">
+        <button class="category-btn" data-category="airport" type="button">✈ 空港</button>
+        <button class="category-btn" data-category="restaurant" type="button">🍽 飲食</button>
+        <button class="category-btn" data-category="tourist" type="button">⛩ 観光</button>
+        <button class="category-btn" data-category="hotel" type="button">🏨 ホテル</button>
+        <button class="category-btn active" data-category="other" type="button">📍 その他</button>
+      </div>
     </div>
     <label class="spot-menu-label">
       表示名
@@ -127,10 +121,31 @@
       <textarea id="spotDescriptionInput" rows="5" placeholder="見どころ、集合メモ、持ち物など"></textarea>
     </label>
     <div class="spot-menu-actions">
-      <button id="spotDescriptionSave" class="primary-button" type="button">説明を保存</button>
-      <button id="spotDeleteButton" class="ghost-button danger" type="button">このスポットを削除</button>
+      <button id="spotDescriptionSave" class="primary-button" type="button">保存</button>
+      <button id="spotDeleteButton" class="ghost-button danger icon-btn" type="button" title="このスポットを削除">
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      </button>
     </div>
   </section>
+
+  <button id="hamburgerBtn" class="hamburger-btn" type="button" aria-label="メニューを開く">
+    <span class="hamburger-line"></span>
+    <span class="hamburger-line"></span>
+    <span class="hamburger-line"></span>
+  </button>
+
+  <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
+  <aside id="sideDrawer" class="side-drawer hidden" aria-hidden="true">
+    <div class="drawer-head">
+      <p class="drawer-kicker">Menu</p>
+    </div>
+    <nav class="drawer-nav">
+      <a href="/settings.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">⚙</span>
+        <span>設定</span>
+      </a>
+    </nav>
+  </aside>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="./app.js"></script>

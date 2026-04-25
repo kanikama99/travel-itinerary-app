@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>設定 — スポットマップ整理アプリ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="page-shell settings-shell">
+    <header class="settings-header">
+      <a href="/" class="back-btn">← メインに戻る</a>
+      <h1>設定</h1>
+    </header>
+
+    <section class="panel settings-section">
+      <div class="panel-head">
+        <div>
+          <p class="panel-kicker">Map Style</p>
+          <h2>マップスタイル</h2>
+        </div>
+      </div>
+      <div id="mapStyleCards" class="style-cards"></div>
+    </section>
+
+    <section class="panel settings-section">
+      <div class="panel-head">
+        <div>
+          <p class="panel-kicker">Background</p>
+          <h2>ページ背景色</h2>
+        </div>
+      </div>
+      <div id="bgThemeSwatches" class="theme-swatches"></div>
+    </section>
+  </div>
+
+  <script src="./settings.js"></script>
+</body>
+</html>
