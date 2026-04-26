@@ -186,6 +186,12 @@ const listNameInput = document.getElementById("listNameInput");
 const listAddBtn = document.getElementById("listAddBtn");
 const listManageBtn = document.getElementById("listManageBtn");
 const listManageDrawerBtn = document.getElementById("listManageDrawerBtn");
+const areaSuggestToggle = document.getElementById("areaSuggestToggle");
+const areaSuggestPanel = document.getElementById("areaSuggestPanel");
+const areaSuggestInput = document.getElementById("areaSuggestInput");
+const areaSuggestSearchBtn = document.getElementById("areaSuggestSearchBtn");
+const areaSuggestStatus = document.getElementById("areaSuggestStatus");
+const areaSuggestResults = document.getElementById("areaSuggestResults");
 
 hamburgerBtn.addEventListener("click", () => {
   sideDrawer.classList.contains("hidden") ? openDrawer() : closeDrawer();
@@ -244,6 +250,10 @@ listNameInput.addEventListener("keydown", (e) => {
 
 setupAutocomplete(placeInput, placeDropdown);
 
+if (areaSuggestToggle) areaSuggestToggle.addEventListener("click", toggleAreaSuggestPanel);
+if (areaSuggestSearchBtn) areaSuggestSearchBtn.addEventListener("click", handleAreaSuggest);
+if (areaSuggestInput) areaSuggestInput.addEventListener("keydown", (e) => { if (e.key === "Enter") handleAreaSuggest(); });
+
 document.addEventListener("click", (e) => {
   if (!e.target.closest(".autocomplete-wrap")) {
     hideDropdown(placeDropdown);
@@ -259,7 +269,7 @@ loadAccessInfo();
 
 function loadAppState() {
   const d = ensureListsData();
-  return { spots: getActiveList(d).spots };
+  return { spots: getActiveList(d)?.spots ?? [] };
 }
 
 function defaultState() {
@@ -851,12 +861,13 @@ function renderOverviewLayer(map, items, bounds) {
       memberMarker.on("click", () => openSpotMenu(point.id));
     });
 
-    L.marker([item.center.lat, item.center.lng], {
+    // 矩形の下端に配置してピン・スポット名との重なりを回避
+    L.marker([item.bounds[0][0], item.center.lng], {
       icon: L.divIcon({
         className: "",
-        html: `<div class="cluster-label">${labelHtml}</div>`,
-        iconSize: [10, 10],
-        iconAnchor: [5, 5],
+        html: `<div class="cluster-label" style="transform:translateX(-50%);margin-top:4px">${labelHtml}</div>`,
+        iconSize: [1, 1],
+        iconAnchor: [0, 0],
       }),
     }).addTo(map);
   });
@@ -1367,6 +1378,184 @@ function addSpotFromSuggestion(suggestion) {
     console.error("render失敗（スポット追加後）:", e);
     setFeedback("地図の更新に失敗しました。ページを再読み込みしてください。", true);
   }
+}
+
+// ── エリアから提案 ────────────────────────────────────────────────────────────
+
+function getAreaSuggestCount() {
+  const s = loadAppSettings();
+  return (typeof s.areaSuggestCount === "number" && s.areaSuggestCount >= 1) ? s.areaSuggestCount : 10;
+}
+
+function toggleAreaSuggestPanel() {
+  const isHidden = areaSuggestPanel.classList.contains("hidden");
+  areaSuggestPanel.classList.toggle("hidden", !isHidden);
+  areaSuggestToggle.classList.toggle("open", isHidden);
+}
+
+async function handleAreaSuggest() {
+  const areaName = areaSuggestInput.value.trim();
+  if (!areaName) {
+    setAreaSuggestStatus("エリア名を入力してください。", true);
+    return;
+  }
+  areaSuggestResults.innerHTML = "";
+  setAreaSuggestStatus("観光スポットを検索中（数秒かかる場合があります）...", false);
+  areaSuggestSearchBtn.disabled = true;
+
+  try {
+    const count = getAreaSuggestCount();
+    const suggestions = await fetchAreaSuggestions(areaName, count);
+    if (!suggestions.length) {
+      setAreaSuggestStatus("候補が見つかりませんでした。別のエリア名を試してください。", true);
+      return;
+    }
+    setAreaSuggestStatus(`「${areaName}」周辺の有名スポット ${suggestions.length} 件`, false);
+    renderAreaSuggestions(suggestions);
+  } catch (_) {
+    setAreaSuggestStatus("取得に失敗しました。しばらく待ってから再試行してください。", true);
+  } finally {
+    areaSuggestSearchBtn.disabled = false;
+  }
+}
+
+async function fetchAreaSuggestions(areaName, count) {
+  // Nominatimでエリアの座標・バウンディングボックスを取得
+  const nominatimParams = new URLSearchParams({ q: areaName, format: "jsonv2", limit: "1" });
+  const nominatimRes = await fetch(`https://nominatim.openstreetmap.org/search?${nominatimParams}`, {
+    headers: { "Accept-Language": "ja,en" },
+  });
+  if (!nominatimRes.ok) throw new Error("エリア検索失敗");
+  const nominatimData = await nominatimRes.json();
+  if (!nominatimData.length) return [];
+
+  const area = nominatimData[0];
+  const bbox = area.boundingbox; // [minlat, maxlat, minlng, maxlng]
+  if (!bbox) return [];
+
+  const minLat = parseFloat(bbox[0]);
+  const maxLat = parseFloat(bbox[1]);
+  const minLng = parseFloat(bbox[2]);
+  const maxLng = parseFloat(bbox[3]);
+  const fetchLimit = Math.min(count * 8, 200);
+
+  // wikidataタグ必須で著名スポットのみに絞る（品質確保のため常に適用）
+  const overpassQuery =
+`[out:json][timeout:25];
+(
+  node["tourism"~"^(attraction|museum|zoo|aquarium|theme_park)$"]["name"]["wikidata"](${minLat},${minLng},${maxLat},${maxLng});
+  way["tourism"~"^(attraction|museum|zoo|aquarium|theme_park)$"]["name"]["wikidata"](${minLat},${minLng},${maxLat},${maxLng});
+  node["historic"~"^(castle|monument|ruins|shrine)$"]["name"]["wikidata"](${minLat},${minLng},${maxLat},${maxLng});
+  way["historic"~"^(castle|monument|ruins|shrine)$"]["name"]["wikidata"](${minLat},${minLng},${maxLat},${maxLng});
+);
+out center ${fetchLimit};`;
+
+  const overpassRes = await fetch("https://overpass-api.de/api/interpreter", {
+    method: "POST",
+    body: overpassQuery,
+  });
+  if (!overpassRes.ok) throw new Error("スポット検索失敗");
+  const overpassData = await overpassRes.json();
+  const elements = overpassData.elements || [];
+
+  // WikidataのIDを収集してバッチクエリ（日本語名・Wikipedia記事有無を取得）
+  const wikidataIds = [...new Set(
+    elements.map(el => el.tags?.wikidata).filter(id => id && /^Q\d+$/.test(id))
+  )];
+  const wikidataMap = {};
+  if (wikidataIds.length > 0) {
+    try {
+      for (let i = 0; i < wikidataIds.length; i += 50) {
+        const batch = wikidataIds.slice(i, i + 50);
+        // URLSearchParamsは"|"を"%7C"にエンコードするため手動で組み立てる
+        const wdUrl = `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${batch.join("|")}&props=labels|sitelinks&languages=ja|en&sitefilter=jawiki|enwiki&format=json&origin=*`;
+        const controller = new AbortController();
+        const timerId = setTimeout(() => controller.abort(), 6000);
+        try {
+          const wdRes = await fetch(wdUrl, { signal: controller.signal });
+          if (wdRes.ok) {
+            const wdData = await wdRes.json();
+            const entities = wdData.entities || {};
+            Object.keys(entities).forEach(id => {
+              const entity = entities[id];
+              wikidataMap[id] = {
+                jaLabel: entity.labels && entity.labels.ja ? entity.labels.ja.value : undefined,
+                hasJawiki: !!(entity.sitelinks && entity.sitelinks.jawiki),
+                hasEnwiki: !!(entity.sitelinks && entity.sitelinks.enwiki),
+              };
+            });
+          }
+        } finally {
+          clearTimeout(timerId);
+        }
+      }
+    } catch (_) {}
+  }
+
+  // 日本語Wikipedia記事があるほど高スコア（観光地としての著名度の指標）
+  elements.sort((a, b) => {
+    const wdA = wikidataMap[a.tags?.wikidata] || {};
+    const wdB = wikidataMap[b.tags?.wikidata] || {};
+    const scoreA = (wdA.hasJawiki ? 4 : 0) + (wdA.hasEnwiki ? 2 : 0) + (a.tags?.wikipedia ? 1 : 0);
+    const scoreB = (wdB.hasJawiki ? 4 : 0) + (wdB.hasEnwiki ? 2 : 0) + (b.tags?.wikipedia ? 1 : 0);
+    return scoreB - scoreA;
+  });
+
+  return elements.slice(0, count).map(el => {
+    const elLat = el.type === "way" ? el.center.lat : el.lat;
+    const elLng = el.type === "way" ? el.center.lon : el.lon;
+    const wd = wikidataMap[el.tags?.wikidata] || {};
+    // 日本語名の優先順位: OSMのname:ja > WikidataのJAラベル > OSMのname
+    const name = el.tags?.["name:ja"] || wd.jaLabel || el.tags?.name || "";
+    return {
+      name,
+      lat: elLat,
+      lng: elLng,
+      url: `https://www.google.com/maps/search/?api=1&query=${elLat},${elLng}`,
+      osmCategory: el.tags?.tourism ? "tourism" : "historic",
+      osmType: el.tags?.tourism || el.tags?.historic || "",
+    };
+  }).filter(s => s.name);
+}
+
+function setAreaSuggestStatus(msg, isError) {
+  areaSuggestStatus.textContent = msg;
+  areaSuggestStatus.classList.remove("hidden");
+  areaSuggestStatus.style.color = isError ? "var(--danger)" : "var(--muted)";
+}
+
+function renderAreaSuggestions(suggestions) {
+  areaSuggestResults.innerHTML = "";
+  suggestions.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "area-suggest-item";
+
+    const alreadyAdded = state.spots.some(s =>
+      Math.abs(s.lat - item.lat) < 0.0001 && Math.abs(s.lng - item.lng) < 0.0001
+    );
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "area-suggest-item-name";
+    nameSpan.textContent = item.name;
+
+    const addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.className = `area-suggest-add-btn${alreadyAdded ? " added" : ""}`;
+    addBtn.textContent = alreadyAdded ? "追加済" : "追加";
+    addBtn.disabled = alreadyAdded;
+
+    if (!alreadyAdded) {
+      addBtn.addEventListener("click", () => {
+        addSpotFromSuggestion(item);
+        addBtn.textContent = "追加済";
+        addBtn.classList.add("added");
+        addBtn.disabled = true;
+      });
+    }
+
+    card.append(nameSpan, addBtn);
+    areaSuggestResults.appendChild(card);
+  });
 }
 
 function renderListNameDisplay() {

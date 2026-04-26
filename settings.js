@@ -87,6 +87,22 @@ function closeDrawer() {
 
 const bgThemeSwatches = document.getElementById("bgThemeSwatches");
 
+// ── Area suggest count ────────────────────────────────────────────────────────
+
+const areaSuggestCountInput = document.getElementById("areaSuggestCountInput");
+areaSuggestCountInput.value = settings.areaSuggestCount ?? 10;
+areaSuggestCountInput.addEventListener("change", () => {
+  const v = parseInt(areaSuggestCountInput.value, 10);
+  if (v >= 1 && v <= 50) {
+    settings.areaSuggestCount = v;
+    saveSettings(settings);
+  } else {
+    areaSuggestCountInput.value = settings.areaSuggestCount ?? 10;
+  }
+});
+
+// ── BG theme swatches ─────────────────────────────────────────────────────────
+
 BG_THEMES.forEach((theme) => {
   const btn = document.createElement("button");
   btn.className = `theme-swatch${settings.bgTheme === theme.key ? " active" : ""}`;

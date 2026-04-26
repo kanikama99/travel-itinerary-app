@@ -25,6 +25,22 @@
       </div>
       <div id="bgThemeSwatches" class="theme-swatches"></div>
     </section>
+
+    <section class="panel settings-section">
+      <div class="panel-head">
+        <div>
+          <p class="panel-kicker">Area Suggest</p>
+          <h2>エリアから提案</h2>
+        </div>
+      </div>
+      <div class="settings-row">
+        <label class="settings-label" for="areaSuggestCountInput">
+          提案候補数
+          <span class="settings-desc">エリア検索で表示するスポット候補の最大数（1〜50）</span>
+        </label>
+        <input id="areaSuggestCountInput" type="number" min="1" max="50" value="10" class="settings-number-input" />
+      </div>
+    </section>
   </div>
 
   <button id="hamburgerBtn" class="hamburger-btn" type="button" aria-label="メニューを開く">

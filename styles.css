@@ -1259,6 +1259,12 @@ textarea:focus {
   margin-top: 8px;
 }
 
+.category-add-row .primary-button {
+  width: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .category-emoji-input {
   width: 64px !important;
   flex-shrink: 0;
@@ -1392,6 +1398,12 @@ textarea:focus {
   margin-top: 4px;
 }
 
+.list-current-label {
+  font-size: 0.78rem;
+  color: var(--text-muted, #8a9099);
+  white-space: nowrap;
+}
+
 .list-name-btn {
   display: inline-flex;
   align-items: center;
@@ -1493,4 +1505,173 @@ textarea:focus {
 
 .list-copy-btn:hover {
   background: rgba(39, 174, 96, 0.22);
+}
+
+/* ── エリアから提案 ───────────────────────────────────────────────────────── */
+
+.area-suggest-wrap {
+  margin-top: 18px;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+
+.area-suggest-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 16px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: none;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 500;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.area-suggest-toggle-btn:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.area-suggest-chevron {
+  transition: transform 0.2s;
+}
+
+.area-suggest-toggle-btn.open .area-suggest-chevron {
+  transform: rotate(180deg);
+}
+
+.area-suggest-panel {
+  margin-top: 14px;
+}
+
+.area-suggest-desc {
+  margin: 0 0 12px;
+  font-size: 0.83rem;
+  color: var(--muted);
+}
+
+.area-suggest-row {
+  display: flex;
+  gap: 8px;
+}
+
+.area-suggest-input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--text);
+  font-size: 0.9rem;
+  transition: border-color 0.15s;
+}
+
+.area-suggest-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.area-suggest-status {
+  margin: 10px 0 0;
+  font-size: 0.83rem;
+}
+
+.area-suggest-results {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.area-suggest-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 14px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-md);
+  transition: background 0.12s;
+}
+
+.area-suggest-item:hover {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.area-suggest-item-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.area-suggest-add-btn {
+  flex-shrink: 0;
+  padding: 4px 14px;
+  border-radius: 999px;
+  border: 1.5px solid var(--accent);
+  background: none;
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s;
+}
+
+.area-suggest-add-btn:hover:not(:disabled) {
+  background: var(--accent);
+  color: #fff;
+}
+
+.area-suggest-add-btn.added {
+  border-color: var(--muted);
+  color: var(--muted);
+  cursor: default;
+}
+
+/* ── 設定画面 ─────────────────────────────────────────────────────────────── */
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.settings-label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-weight: 500;
+  font-size: 0.92rem;
+}
+
+.settings-desc {
+  font-size: 0.81rem;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.settings-number-input {
+  width: 72px;
+  padding: 7px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--text);
+  font-size: 0.92rem;
+  text-align: center;
+  transition: border-color 0.15s;
+}
+
+.settings-number-input:focus {
+  outline: none;
+  border-color: var(--accent);
 }
