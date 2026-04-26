@@ -329,25 +329,79 @@ async function buildSpotFromUrl(url) {
   };
 }
 
+// Nominatim（OpenStreetMap）に直接問い合わせてスポットを1件取得
+async function searchByNominatim(query) {
+  const params = new URLSearchParams({ q: query, format: "jsonv2", limit: "1" });
+  const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
+    headers: { "Accept-Language": "ja,en" },
+  });
+  if (!res.ok) return null;
+  const payload = await res.json();
+  if (!payload.length) return null;
+  const best = payload[0];
+  const lat = parseFloat(best.lat);
+  const lng = parseFloat(best.lon);
+  const name = best.name || best.display_name.split(",")[0].trim();
+  return {
+    name,
+    lat,
+    lng,
+    url: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
+    osmCategory: best.category || "",
+    osmType: best.type || "",
+  };
+}
+
+// Wikipedia APIで検索し座標を取得（Nominatimで見つからない場合のフォールバック）
+async function searchByWikipedia(query) {
+  const searchParams = new URLSearchParams({
+    action: "query", list: "search", srsearch: query,
+    format: "json", utf8: "1", srlimit: "1", origin: "*",
+  });
+  const searchRes = await fetch(`https://ja.wikipedia.org/w/api.php?${searchParams}`);
+  if (!searchRes.ok) return null;
+  const searchData = await searchRes.json();
+  const results = searchData?.query?.search || [];
+  if (!results.length) return null;
+
+  const page = results[0];
+  const coordParams = new URLSearchParams({
+    action: "query", prop: "coordinates", pageids: page.pageid,
+    format: "json", utf8: "1", origin: "*",
+  });
+  const coordRes = await fetch(`https://ja.wikipedia.org/w/api.php?${coordParams}`);
+  if (!coordRes.ok) return null;
+  const coordData = await coordRes.json();
+  const coords = coordData?.query?.pages?.[String(page.pageid)]?.coordinates || [];
+  if (!coords.length) return null;
+
+  const lat = parseFloat(coords[0].lat);
+  const lng = parseFloat(coords[0].lon);
+  return {
+    name: page.title || query,
+    lat,
+    lng,
+    url: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
+    osmCategory: "",
+    osmType: "",
+  };
+}
+
 async function buildSpotFromSearch(query) {
   setFeedback("スポット名から場所を検索しています...", false);
-  const response = await fetch("/api/search", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query }),
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "スポット名から場所を取得できませんでした。");
+  const result = await searchByNominatim(query).catch(() => null)
+    || await searchByWikipedia(query).catch(() => null);
+  if (!result) throw new Error("該当するスポットが見つかりませんでした。別の表記でも試してください。");
   return {
-    name: data.name || query,
-    lat: Number(data.lat),
-    lng: Number(data.lng),
-    url: data.url || "",
-    sourceUrl: data.url || "",
+    name: result.name,
+    lat: result.lat,
+    lng: result.lng,
+    url: result.url,
+    sourceUrl: result.url,
     sourceQuery: query,
     sourceType: "search",
-    osmCategory: data.osmCategory || "",
-    osmType: data.osmType || "",
+    osmCategory: result.osmCategory,
+    osmType: result.osmType,
   };
 }
 
@@ -1035,17 +1089,27 @@ function setupAutocomplete(input, dropdown) {
 
 async function fetchSuggestions(query, dropdown) {
   try {
-    const response = await fetch("/api/suggest", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query }),
+    const params = new URLSearchParams({ q: query, format: "jsonv2", limit: "6" });
+    const response = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
+      headers: { "Accept-Language": "ja,en" },
     });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok || !Array.isArray(data.results) || data.results.length === 0) {
-      hideDropdown(dropdown);
-      return;
-    }
-    renderSuggestions(data.results, dropdown);
+    if (!response.ok) { hideDropdown(dropdown); return; }
+    const items = await response.json();
+    if (!Array.isArray(items) || items.length === 0) { hideDropdown(dropdown); return; }
+    const results = items.map((item) => {
+      const lat = parseFloat(item.lat);
+      const lng = parseFloat(item.lon);
+      return {
+        name: item.name || item.display_name.split(",")[0].trim(),
+        display: item.display_name || "",
+        lat,
+        lng,
+        url: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
+        osmCategory: item.category || "",
+        osmType: item.type || "",
+      };
+    });
+    renderSuggestions(results, dropdown);
   } catch {
     hideDropdown(dropdown);
   }
