@@ -101,6 +101,18 @@ areaSuggestCountInput.addEventListener("change", () => {
   }
 });
 
+const areaSuggestTimeoutInput = document.getElementById("areaSuggestTimeoutInput");
+areaSuggestTimeoutInput.value = settings.areaSuggestTimeout ?? 10;
+areaSuggestTimeoutInput.addEventListener("change", () => {
+  const v = parseInt(areaSuggestTimeoutInput.value, 10);
+  if (v >= 3 && v <= 60) {
+    settings.areaSuggestTimeout = v;
+    saveSettings(settings);
+  } else {
+    areaSuggestTimeoutInput.value = settings.areaSuggestTimeout ?? 10;
+  }
+});
+
 // ── BG theme swatches ─────────────────────────────────────────────────────────
 
 BG_THEMES.forEach((theme) => {

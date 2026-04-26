@@ -73,14 +73,17 @@ function applyBgTheme(themeKey) {
 }
 
 const CATEGORIES_KEY = "spot-map-categories.v1";
+const CUSTOM_DEFAULT_ICONS = ["🔵", "🟢", "🟡", "🟠", "🔴", "🟣", "🟤", "⚫"];
 
 const DEFAULT_CATEGORIES = [
-  { key: "airport",    emoji: "✈",  name: "空港",   label: "✈ 空港",   cssClass: "category-airport",    isDefault: true },
-  { key: "station",    emoji: "🚉", name: "駅",     label: "🚉 駅",     cssClass: "category-station",    isDefault: true },
-  { key: "restaurant", emoji: "🍽", name: "飲食",   label: "🍽 飲食",   cssClass: "category-restaurant", isDefault: true },
-  { key: "tourist",    emoji: "⛩",  name: "観光",   label: "⛩ 観光",   cssClass: "category-tourist",    isDefault: true },
-  { key: "hotel",      emoji: "🏨", name: "ホテル", label: "🏨 ホテル", cssClass: "category-hotel",      isDefault: true },
-  { key: "other",      emoji: "📍", name: "その他", label: "📍 その他", cssClass: "category-other",      isDefault: true },
+  { key: "meet",       emoji: "🤝", name: "集合場所", label: "🤝 集合場所", cssClass: "category-meet",       isDefault: true },
+  { key: "dismiss",    emoji: "👋", name: "解散場所", label: "👋 解散場所", cssClass: "category-dismiss",    isDefault: true },
+  { key: "airport",    emoji: "✈",  name: "空港",     label: "✈ 空港",     cssClass: "category-airport",    isDefault: true },
+  { key: "station",    emoji: "🚉", name: "駅",       label: "🚉 駅",       cssClass: "category-station",    isDefault: true },
+  { key: "restaurant", emoji: "🍽", name: "飲食",     label: "🍽 飲食",     cssClass: "category-restaurant", isDefault: true },
+  { key: "tourist",    emoji: "⛩",  name: "観光",     label: "⛩ 観光",     cssClass: "category-tourist",    isDefault: true },
+  { key: "hotel",      emoji: "🏨", name: "ホテル",   label: "🏨 ホテル",   cssClass: "category-hotel",      isDefault: true },
+  { key: "other",      emoji: "📍", name: "その他",   label: "📍 その他",   cssClass: "category-other",      isDefault: true },
 ];
 
 function loadCustomCategories() {
@@ -108,6 +111,8 @@ function getCategoryDisplay() {
 }
 
 const SPOT_PIN_ICONS = {
+  meet: "🤝",
+  dismiss: "👋",
   airport: "✈",
   station: "🚉",
   restaurant: "🍽",
@@ -150,7 +155,6 @@ const selectAllLabel = document.getElementById("selectAllLabel");
 const selectAllCheckbox = document.getElementById("selectAllCheckbox");
 const spotListControls = document.getElementById("spotListControls");
 const addSpotButton = document.getElementById("addSpotButton");
-const accessInfo = document.getElementById("accessInfo");
 const bulkDeleteButton = document.getElementById("bulkDeleteButton");
 const spotItemTemplate = document.getElementById("spotItemTemplate");
 const placeDropdown = document.getElementById("placeDropdown");
@@ -192,6 +196,10 @@ const areaSuggestInput = document.getElementById("areaSuggestInput");
 const areaSuggestSearchBtn = document.getElementById("areaSuggestSearchBtn");
 const areaSuggestStatus = document.getElementById("areaSuggestStatus");
 const areaSuggestResults = document.getElementById("areaSuggestResults");
+const spotCategorySelect = document.getElementById("spotCategorySelect");
+const spotCategoryAddForm = document.getElementById("spotCategoryAddForm");
+const spotCategoryNewName = document.getElementById("spotCategoryNewName");
+const spotCategoryNewAddBtn = document.getElementById("spotCategoryNewAddBtn");
 
 hamburgerBtn.addEventListener("click", () => {
   sideDrawer.classList.contains("hidden") ? openDrawer() : closeDrawer();
@@ -221,15 +229,7 @@ spotMenuBackdrop.addEventListener("click", closeSpotMenu);
 spotMenuClose.addEventListener("click", closeSpotMenu);
 spotDescriptionSave.addEventListener("click", saveSpotDescription);
 spotDeleteButton.addEventListener("click", deleteEditingSpot);
-document.querySelectorAll(".type-btn").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".type-btn").forEach((b) => b.classList.remove("active"));
-    btn.classList.add("active");
-  });
-});
-
 categoryCustomizeBtn.addEventListener("click", () => {
-  closeDrawer();
   openCategoryModal();
 });
 categoryModalBackdrop.addEventListener("click", closeCategoryModal);
@@ -240,7 +240,7 @@ categoryNameInput.addEventListener("keydown", (e) => {
 });
 
 listManageBtn.addEventListener("click", openListModal);
-listManageDrawerBtn.addEventListener("click", () => { closeDrawer(); openListModal(); });
+listManageDrawerBtn.addEventListener("click", openListModal);
 listModalBackdrop.addEventListener("click", closeListModal);
 listModalClose.addEventListener("click", closeListModal);
 listAddBtn.addEventListener("click", addNewList);
@@ -249,6 +249,20 @@ listNameInput.addEventListener("keydown", (e) => {
 });
 
 setupAutocomplete(placeInput, placeDropdown);
+
+spotCategorySelect.addEventListener("change", () => {
+  if (spotCategorySelect.value === "__add_new__") {
+    spotCategoryAddForm.classList.remove("hidden");
+    spotCategoryNewName.focus();
+  } else {
+    spotCategoryAddForm.classList.add("hidden");
+  }
+});
+
+spotCategoryNewAddBtn.addEventListener("click", addCategoryFromSpotMenu);
+spotCategoryNewName.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") addCategoryFromSpotMenu();
+});
 
 if (areaSuggestToggle) areaSuggestToggle.addEventListener("click", toggleAreaSuggestPanel);
 if (areaSuggestSearchBtn) areaSuggestSearchBtn.addEventListener("click", handleAreaSuggest);
@@ -265,7 +279,6 @@ document.addEventListener("click", (e) => {
 
 applyBgTheme(loadAppSettings().bgTheme);
 requestAnimationFrame(render); // DOMレイアウト確定後にマップを初期化
-loadAccessInfo();
 
 function loadAppState() {
   const d = ensureListsData();
@@ -286,11 +299,16 @@ function normalizeState(value) {
 }
 
 function normalizeSpot(spot) {
+  const oldType = spot?.type || "spot";
+  let spotCategory = spot?.spotCategory || "other";
+  // 旧データの type="meet"/"dismiss" を spotCategory に移行
+  if (oldType === "meet") spotCategory = "meet";
+  else if (oldType === "dismiss") spotCategory = "dismiss";
   return {
     ...spot,
     description: spot?.description || "",
-    type: spot?.type || "spot",
-    spotCategory: spot?.spotCategory || "other",
+    type: "spot",
+    spotCategory,
   };
 }
 
@@ -519,18 +537,10 @@ function renderSpotList() {
     checkbox.dataset.spotId = spot.id;
     checkbox.addEventListener("change", updateBulkDeleteButton);
 
-    if (spot.type === "meet") {
-      typeBadge.textContent = "集合";
-      typeBadge.className = "spot-type-badge meet";
-    } else if (spot.type === "dismiss") {
-      typeBadge.textContent = "解散";
-      typeBadge.className = "spot-type-badge dismiss";
-    } else {
-      const catDisplay = getCategoryDisplay();
-      const cat = catDisplay[spot.spotCategory || "other"] || catDisplay["other"];
-      typeBadge.textContent = cat.label;
-      typeBadge.className = `spot-type-badge ${cat.cssClass}`;
-    }
+    const catDisplay = getCategoryDisplay();
+    const cat = catDisplay[spot.spotCategory || "other"] || catDisplay["other"];
+    typeBadge.textContent = cat.label;
+    typeBadge.className = `spot-type-badge ${cat.cssClass}`;
 
     fragment.querySelector(".spot-name").textContent = `${index + 1}. ${spot.name}`;
     fragment.querySelector(".spot-meta").textContent = buildSpotMeta(spot);
@@ -596,26 +606,52 @@ function openSpotMenu(id) {
   spotMenuTitle.textContent = spot.name;
   spotNameInput.value = spot.name || "";
   spotDescriptionInput.value = spot.description || "";
-  document.querySelectorAll(".type-btn").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.type === (spot.type || "spot"));
+
+  spotCategorySelect.innerHTML = "";
+  const allCats = getAllCategories();
+  allCats.filter(cat => cat.key !== "other").forEach(cat => {
+    const opt = document.createElement("option");
+    opt.value = cat.key;
+    opt.textContent = cat.label;
+    spotCategorySelect.appendChild(opt);
   });
-  const categorySwitcher = document.querySelector(".spot-category-switcher");
-  categorySwitcher.innerHTML = "";
-  getAllCategories().forEach(cat => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = `category-btn${(spot.spotCategory || "other") === cat.key ? " active" : ""}`;
-    btn.dataset.category = cat.key;
-    btn.textContent = cat.label;
-    btn.addEventListener("click", () => {
-      categorySwitcher.querySelectorAll(".category-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-    });
-    categorySwitcher.appendChild(btn);
-  });
+  const otherCat = allCats.find(cat => cat.key === "other");
+  if (otherCat) {
+    const otherOpt = document.createElement("option");
+    otherOpt.value = otherCat.key;
+    otherOpt.textContent = otherCat.label;
+    spotCategorySelect.appendChild(otherOpt);
+  }
+  const addOpt = document.createElement("option");
+  addOpt.value = "__add_new__";
+  addOpt.textContent = "＋ 新しいカテゴリを追加...";
+  spotCategorySelect.appendChild(addOpt);
+  spotCategorySelect.value = spot.spotCategory || "other";
+  spotCategoryAddForm.classList.add("hidden");
+
   spotMenu.classList.remove("hidden");
   spotMenuBackdrop.classList.remove("hidden");
   spotMenu.setAttribute("aria-hidden", "false");
+}
+
+function addCategoryFromSpotMenu() {
+  const name = spotCategoryNewName.value.trim();
+  if (!name) { spotCategoryNewName.focus(); return; }
+
+  const existing = loadCustomCategories();
+  const emoji = CUSTOM_DEFAULT_ICONS[existing.length % CUSTOM_DEFAULT_ICONS.length];
+  const key = `custom_${Date.now()}`;
+  existing.push({ key, emoji, name });
+  saveCustomCategoriesStorage(existing);
+
+  const newOpt = document.createElement("option");
+  newOpt.value = key;
+  newOpt.textContent = `${emoji} ${name}`;
+  const otherOpt = spotCategorySelect.querySelector('option[value="other"]');
+  spotCategorySelect.insertBefore(newOpt, otherOpt);
+  spotCategorySelect.value = key;
+  spotCategoryAddForm.classList.add("hidden");
+  spotCategoryNewName.value = "";
 }
 
 function closeSpotMenu() {
@@ -659,25 +695,15 @@ function closeDrawer() {
 function saveSpotDescription() {
   const targetIndex = state.spots.findIndex((spot) => spot.id === state.editingSpotId);
   if (targetIndex < 0) return;
-  const activeTypeBtn = document.querySelector(".type-btn.active");
-  const newType = activeTypeBtn ? activeTypeBtn.dataset.type : "spot";
-  const oldType = state.spots[targetIndex].type;
 
-  if (newType !== "spot" && newType !== oldType) {
-    state.spots = state.spots.map((s, i) =>
-      i !== targetIndex && s.type === newType ? { ...s, type: "spot" } : s
-    );
-  }
+  const newCategory = (spotCategorySelect.value && spotCategorySelect.value !== "__add_new__")
+    ? spotCategorySelect.value : "other";
 
-  const activeCategoryBtn = document.querySelector(".category-btn.active");
-  const newCategory = activeCategoryBtn ? activeCategoryBtn.dataset.category : "other";
-
-  const idx = state.spots.findIndex((s) => s.id === state.editingSpotId);
-  state.spots[idx] = {
-    ...state.spots[idx],
-    name: spotNameInput.value.trim() || state.spots[idx].name,
+  state.spots[targetIndex] = {
+    ...state.spots[targetIndex],
+    name: spotNameInput.value.trim() || state.spots[targetIndex].name,
     description: spotDescriptionInput.value.trim(),
-    type: newType,
+    type: "spot",
     spotCategory: newCategory,
   };
   persistState();
@@ -848,8 +874,8 @@ function renderOverviewLayer(map, items, bounds) {
     // クラスター内の各スポットに小ピンを配置
     item.points.forEach((point) => {
       const isDefaultCat = DEFAULT_CATEGORIES.some(c => c.key === point.spotCategory);
-      const pinClass = point.type === "meet" ? "map-pin-meet"
-        : point.type === "dismiss" ? "map-pin-dismiss"
+      const pinClass = point.spotCategory === "meet" ? "map-pin-meet"
+        : point.spotCategory === "dismiss" ? "map-pin-dismiss"
         : isDefaultCat ? `map-pin-${point.spotCategory || "other"}` : "map-pin-custom";
       const memberIcon = L.divIcon({
         className: "",
@@ -994,17 +1020,6 @@ function rawDiagonalKm(points) {
   );
 }
 
-async function loadAccessInfo() {
-  try {
-    const response = await fetch("/api/meta");
-    const data = await response.json();
-    accessInfo.innerHTML = data.urls.map((url, index) =>
-      `<a class="access-link" href="${escapeAttribute(url)}" target="_blank" rel="noreferrer">${index === 0 ? "このPCで開く" : "スマホで開く"}: ${escapeHtml(url)}</a>`
-    ).join("");
-  } catch {
-    accessInfo.textContent = "起動すると、このPC用URLとスマホ用URLを表示します。";
-  }
-}
 
 async function normalizeGoogleMapsUrl(input) {
   let url;
@@ -1104,17 +1119,15 @@ function centerFromPoints(points) {
 
 function createMarkerIcon(type, spotCategory) {
   const isDefaultCat = DEFAULT_CATEGORIES.some(c => c.key === spotCategory);
-  const pinClass = type === "meet" ? "map-pin-meet"
-    : type === "dismiss" ? "map-pin-dismiss"
+  const pinClass = spotCategory === "meet" ? "map-pin-meet"
+    : spotCategory === "dismiss" ? "map-pin-dismiss"
     : isDefaultCat ? `map-pin-${spotCategory || "other"}` : "map-pin-custom";
   let icon = "";
-  if (type === "spot") {
-    if (isDefaultCat) {
-      icon = SPOT_PIN_ICONS[spotCategory] || "";
-    } else {
-      const customCat = loadCustomCategories().find(c => c.key === spotCategory);
-      icon = customCat ? customCat.emoji : "";
-    }
+  if (isDefaultCat) {
+    icon = SPOT_PIN_ICONS[spotCategory] || "";
+  } else {
+    const customCat = loadCustomCategories().find(c => c.key === spotCategory);
+    icon = customCat ? customCat.emoji : "";
   }
   return L.divIcon({
     className: "",
@@ -1230,12 +1243,14 @@ function hideDropdown(dropdown) {
 async function saveMapAsImage(card, title) {
   try {
     setFeedback("地図を画像に変換中...", false);
+    card.classList.add("is-capturing");
     const canvas = await html2canvas(card, {
       useCORS: true,
       allowTaint: false,
       logging: false,
       scale: 2,
     });
+    card.classList.remove("is-capturing");
     const safeTitle = (title || "map").replace(/[/\\:*?"<>|]/g, "").replace(/\s+/g, "_");
     const link = document.createElement("a");
     link.download = `map_${safeTitle}.png`;
@@ -1243,6 +1258,7 @@ async function saveMapAsImage(card, title) {
     link.click();
     setFeedback("地図の画像を保存しました。", false);
   } catch {
+    card.classList.remove("is-capturing");
     setFeedback("地図の保存に失敗しました。ブラウザの制限で外部タイルが取得できない場合があります。", true);
   }
 }
@@ -1254,12 +1270,14 @@ async function saveAllMapsAsImage() {
   }
   try {
     setFeedback("地図を画像に変換中...", false);
+    mapPanels.classList.add("is-capturing");
     const canvas = await html2canvas(mapPanels, {
       useCORS: true,
       allowTaint: false,
       logging: false,
       scale: 2,
     });
+    mapPanels.classList.remove("is-capturing");
     const listName = (getActiveList()?.name || "map").replace(/[/\\:*?"<>|]/g, "").replace(/\s+/g, "_");
     const link = document.createElement("a");
     link.download = `maps_${listName}.png`;
@@ -1267,6 +1285,7 @@ async function saveAllMapsAsImage() {
     link.click();
     setFeedback("地図の画像を保存しました。", false);
   } catch {
+    mapPanels.classList.remove("is-capturing");
     setFeedback("地図の保存に失敗しました。ブラウザの制限で外部タイルが取得できない場合があります。", true);
   }
 }
@@ -1384,7 +1403,12 @@ function addSpotFromSuggestion(suggestion) {
 
 function getAreaSuggestCount() {
   const s = loadAppSettings();
-  return (typeof s.areaSuggestCount === "number" && s.areaSuggestCount >= 1) ? s.areaSuggestCount : 10;
+  return (typeof s.areaSuggestCount === "number" && s.areaSuggestCount >= 1) ? s.areaSuggestCount : 6;
+}
+
+function getAreaSuggestTimeout() {
+  const s = loadAppSettings();
+  return (typeof s.areaSuggestTimeout === "number" && s.areaSuggestTimeout >= 3) ? s.areaSuggestTimeout : 10;
 }
 
 function toggleAreaSuggestPanel() {
@@ -1400,31 +1424,49 @@ async function handleAreaSuggest() {
     return;
   }
   areaSuggestResults.innerHTML = "";
-  setAreaSuggestStatus("観光スポットを検索中（数秒かかる場合があります）...", false);
+  const timeoutSec = getAreaSuggestTimeout();
+  setAreaSuggestStatus(`観光スポットを検索中（最大 ${timeoutSec} 秒）...`, false);
   areaSuggestSearchBtn.disabled = true;
+
+  const controller = new AbortController();
+  const timerId = setTimeout(() => controller.abort(), timeoutSec * 1000);
 
   try {
     const count = getAreaSuggestCount();
-    const suggestions = await fetchAreaSuggestions(areaName, count);
+    const suggestions = await fetchAreaSuggestions(areaName, count, controller.signal);
+    const didTimeout = controller.signal.aborted;
+
     if (!suggestions.length) {
-      setAreaSuggestStatus("候補が見つかりませんでした。別のエリア名を試してください。", true);
+      const msg = didTimeout
+        ? `${timeoutSec}秒以内に候補が見つかりませんでした。設定で上限時間を延ばすか、別のエリア名を試してください。`
+        : "候補が見つかりませんでした。別のエリア名を試してください。";
+      setAreaSuggestStatus(msg, true);
       return;
     }
-    setAreaSuggestStatus(`「${areaName}」周辺の有名スポット ${suggestions.length} 件`, false);
+    const suffix = didTimeout ? `（${timeoutSec}秒でタイムアウト・途中結果）` : "";
+    setAreaSuggestStatus(`「${areaName}」周辺の有名スポット ${suggestions.length} 件${suffix}`, false);
     renderAreaSuggestions(suggestions);
   } catch (_) {
     setAreaSuggestStatus("取得に失敗しました。しばらく待ってから再試行してください。", true);
   } finally {
+    clearTimeout(timerId);
     areaSuggestSearchBtn.disabled = false;
   }
 }
 
-async function fetchAreaSuggestions(areaName, count) {
-  // Nominatimでエリアの座標・バウンディングボックスを取得
+async function fetchAreaSuggestions(areaName, count, signal) {
+  // Step1: Nominatimでエリアの座標・バウンディングボックスを取得
   const nominatimParams = new URLSearchParams({ q: areaName, format: "jsonv2", limit: "1" });
-  const nominatimRes = await fetch(`https://nominatim.openstreetmap.org/search?${nominatimParams}`, {
-    headers: { "Accept-Language": "ja,en" },
-  });
+  let nominatimRes;
+  try {
+    nominatimRes = await fetch(`https://nominatim.openstreetmap.org/search?${nominatimParams}`, {
+      headers: { "Accept-Language": "ja,en" },
+      signal,
+    });
+  } catch (e) {
+    if (e.name === "AbortError") return [];
+    throw e;
+  }
   if (!nominatimRes.ok) throw new Error("エリア検索失敗");
   const nominatimData = await nominatimRes.json();
   if (!nominatimData.length) return [];
@@ -1450,43 +1492,59 @@ async function fetchAreaSuggestions(areaName, count) {
 );
 out center ${fetchLimit};`;
 
-  const overpassRes = await fetch("https://overpass-api.de/api/interpreter", {
-    method: "POST",
-    body: overpassQuery,
-  });
-  if (!overpassRes.ok) throw new Error("スポット検索失敗");
-  const overpassData = await overpassRes.json();
-  const elements = overpassData.elements || [];
+  // Step2: Overpass — タイムアウト時は空を返す（まだ何も取れていないため）
+  let elements = [];
+  try {
+    const overpassRes = await fetch("https://overpass-api.de/api/interpreter", {
+      method: "POST",
+      body: overpassQuery,
+      signal,
+    });
+    if (!overpassRes.ok) throw new Error("スポット検索失敗");
+    const overpassData = await overpassRes.json();
+    elements = overpassData.elements || [];
+  } catch (e) {
+    if (e.name === "AbortError") return []; // Overpass未完了のため結果なし
+    throw e;
+  }
 
-  // WikidataのIDを収集してバッチクエリ（日本語名・Wikipedia記事有無を取得）
+  if (!elements.length) return [];
+
+  // Step3: Wikidata enrichment（任意 — タイムアウト済みならスキップして素のOverpass結果を返す）
   const wikidataIds = [...new Set(
     elements.map(el => el.tags?.wikidata).filter(id => id && /^Q\d+$/.test(id))
   )];
   const wikidataMap = {};
-  if (wikidataIds.length > 0) {
+  if (wikidataIds.length > 0 && !signal?.aborted) {
     try {
       for (let i = 0; i < wikidataIds.length; i += 50) {
+        if (signal?.aborted) break;
         const batch = wikidataIds.slice(i, i + 50);
         // URLSearchParamsは"|"を"%7C"にエンコードするため手動で組み立てる
         const wdUrl = `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${batch.join("|")}&props=labels|sitelinks&languages=ja|en&sitefilter=jawiki|enwiki&format=json&origin=*`;
-        const controller = new AbortController();
-        const timerId = setTimeout(() => controller.abort(), 6000);
+        const innerController = new AbortController();
+        const innerTimer = setTimeout(() => innerController.abort(), 5000);
+        const onOuterAbort = () => innerController.abort();
+        signal?.addEventListener("abort", onOuterAbort);
         try {
-          const wdRes = await fetch(wdUrl, { signal: controller.signal });
+          const wdRes = await fetch(wdUrl, { signal: innerController.signal });
           if (wdRes.ok) {
             const wdData = await wdRes.json();
             const entities = wdData.entities || {};
             Object.keys(entities).forEach(id => {
               const entity = entities[id];
               wikidataMap[id] = {
-                jaLabel: entity.labels && entity.labels.ja ? entity.labels.ja.value : undefined,
-                hasJawiki: !!(entity.sitelinks && entity.sitelinks.jawiki),
-                hasEnwiki: !!(entity.sitelinks && entity.sitelinks.enwiki),
+                jaLabel: entity.labels?.ja?.value,
+                hasJawiki: !!(entity.sitelinks?.jawiki),
+                hasEnwiki: !!(entity.sitelinks?.enwiki),
               };
             });
           }
+        } catch (_) {
+          break; // タイムアウトまたは中断 — 取得済みのwikidataMapで続行
         } finally {
-          clearTimeout(timerId);
+          clearTimeout(innerTimer);
+          signal?.removeEventListener("abort", onOuterAbort);
         }
       }
     } catch (_) {}

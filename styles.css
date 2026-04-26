@@ -53,10 +53,6 @@ button {
 }
 
 .hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr);
-  gap: 20px;
-  align-items: stretch;
   margin-bottom: 20px;
 }
 
@@ -392,6 +388,18 @@ textarea:focus {
   border: 1px solid rgba(142, 68, 173, 0.25);
 }
 
+.spot-type-badge.category-meet {
+  background: rgba(39, 174, 96, 0.15);
+  color: var(--meet-color);
+  border: 1px solid rgba(39, 174, 96, 0.3);
+}
+
+.spot-type-badge.category-dismiss {
+  background: rgba(142, 68, 173, 0.12);
+  color: var(--dismiss-color);
+  border: 1px solid rgba(142, 68, 173, 0.25);
+}
+
 .spot-type-badge.category-airport {
   background: rgba(52, 152, 219, 0.14);
   color: #2471a3;
@@ -680,6 +688,40 @@ textarea:focus {
   flex-wrap: wrap;
 }
 
+.spot-category-select {
+  width: 100%;
+  border: 1px solid rgba(166, 97, 54, 0.16);
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  color: var(--text);
+  cursor: pointer;
+  appearance: auto;
+}
+
+.spot-category-select:focus {
+  outline: 2px solid rgba(255, 122, 69, 0.28);
+  border-color: rgba(255, 122, 69, 0.55);
+}
+
+.spot-category-add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.spot-category-add-form input {
+  width: 100%;
+  padding: 10px 12px;
+  box-sizing: border-box;
+}
+
+.spot-category-add-form .primary-button {
+  width: 100%;
+  padding: 10px 14px;
+}
+
 .category-btn {
   flex: 1;
   min-width: 0;
@@ -696,6 +738,20 @@ textarea:focus {
 
 .category-btn:hover:not(.active) {
   background: rgba(35, 48, 56, 0.1);
+}
+
+.category-btn.active[data-category="meet"] {
+  background: rgba(39, 174, 96, 0.15);
+  color: var(--meet-color);
+  border-color: rgba(39, 174, 96, 0.4);
+  font-weight: 700;
+}
+
+.category-btn.active[data-category="dismiss"] {
+  background: rgba(142, 68, 173, 0.12);
+  color: var(--dismiss-color);
+  border-color: rgba(142, 68, 173, 0.3);
+  font-weight: 700;
 }
 
 .category-btn.active[data-category="airport"] {
@@ -1273,6 +1329,10 @@ textarea:focus {
   padding: 10px 6px !important;
 }
 
+.category-emoji-input::placeholder {
+  opacity: 0.35;
+}
+
 /* ドロワーナビボタン（aタグと同スタイルで使えるよう補正） */
 .drawer-nav-item {
   border: none;
@@ -1386,10 +1446,49 @@ textarea:focus {
     min-height: 340px;
   }
 
+  /* ① エリアから提案の入力欄を縦並びにして十分な幅を確保 */
+  .area-suggest-row {
+    flex-direction: column;
+  }
+
+  /* ② 地図プレビューのボタンにテキストラベルを表示 */
+  .btn-mobile-label {
+    display: inline;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+  .map-style-btn-wrap {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-start;
+  }
+  .map-style-btn-wrap .ghost-button {
+    width: auto;
+    gap: 5px;
+  }
+
+  /* ③ 全選択コントロールを横並びのまま維持 */
+  .spot-list-controls .ghost-button {
+    width: auto;
+  }
+
+  /* map-head の保存ボタンが全幅になるのを防ぎ、タイトル改行を回避 */
+  .map-head .ghost-button {
+    width: auto;
+    flex-shrink: 0;
+  }
+
 }
 
 
 /* リスト管理 */
+.list-panel-btns {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
 .list-name-row {
   display: flex;
   align-items: center;
@@ -1584,6 +1683,8 @@ textarea:focus {
   flex-direction: column;
   gap: 6px;
   margin-top: 12px;
+  max-height: 260px;
+  overflow-y: auto;
 }
 
 .area-suggest-item {
@@ -1633,6 +1734,16 @@ textarea:focus {
   border-color: var(--muted);
   color: var(--muted);
   cursor: default;
+}
+
+.btn-mobile-label {
+  display: none;
+}
+
+/* 画像出力時に非表示にするUI */
+.is-capturing .leaflet-control-container,
+.is-capturing .map-head .icon-btn {
+  display: none !important;
 }
 
 /* ── 設定画面 ─────────────────────────────────────────────────────────────── */
