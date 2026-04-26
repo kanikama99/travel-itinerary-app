@@ -148,6 +148,8 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  position: relative;
+  z-index: 1;
 }
 
 /* Spot form */
@@ -363,6 +365,12 @@ textarea:focus {
   border: 1px solid rgba(52, 152, 219, 0.3);
 }
 
+.spot-type-badge.category-station {
+  background: rgba(26, 82, 118, 0.14);
+  color: #1a5276;
+  border: 1px solid rgba(26, 82, 118, 0.3);
+}
+
 .spot-type-badge.category-restaurant {
   background: rgba(231, 76, 60, 0.12);
   color: #c0392b;
@@ -469,6 +477,10 @@ textarea:focus {
   background: linear-gradient(135deg, #5dade2 0%, #2471a3 100%);
 }
 
+.map-pin-station {
+  background: linear-gradient(135deg, #5dade2 0%, #1a5276 100%);
+}
+
 .map-pin-restaurant {
   background: linear-gradient(135deg, #f1948a 0%, #c0392b 100%);
 }
@@ -483,6 +495,15 @@ textarea:focus {
 
 .map-pin-other {
   background: linear-gradient(135deg, var(--accent) 0%, var(--accent-pink) 100%);
+}
+
+/* 全体図でクラスター内スポットを示す小ピン */
+.map-pin-cluster-member {
+  width: 16px;
+  height: 16px;
+  font-size: 0;
+  border: 2.5px dashed rgba(255, 255, 255, 0.92);
+  opacity: 0.82;
 }
 
 /* Tooltip labels */
@@ -648,6 +669,13 @@ textarea:focus {
   background: rgba(52, 152, 219, 0.15);
   color: #2471a3;
   border-color: rgba(52, 152, 219, 0.4);
+  font-weight: 700;
+}
+
+.category-btn.active[data-category="station"] {
+  background: rgba(26, 82, 118, 0.15);
+  color: #1a5276;
+  border-color: rgba(26, 82, 118, 0.4);
   font-weight: 700;
 }
 
@@ -1029,6 +1057,190 @@ textarea:focus {
   font-weight: 700;
   color: var(--text);
   white-space: nowrap;
+}
+
+/* Map style popover */
+.map-style-btn-wrap {
+  flex-shrink: 0;
+}
+
+.map-style-popover {
+  position: fixed;
+  z-index: 1200;
+  min-width: 190px;
+  background: rgba(255, 252, 245, 0.99);
+  border: 1px solid rgba(166, 97, 54, 0.18);
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 28px rgba(149, 90, 48, 0.18);
+  padding: 10px;
+  backdrop-filter: blur(12px);
+}
+
+.popover-kicker {
+  margin: 0 0 8px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-deep);
+}
+
+.popover-style-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.83rem;
+  font-weight: 500;
+  color: var(--text);
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.popover-style-item:hover:not(.active) {
+  background: rgba(255, 122, 69, 0.08);
+}
+
+.popover-style-item.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  font-weight: 700;
+}
+
+.popover-style-swatch {
+  width: 30px;
+  height: 20px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* カスタムカテゴリ用ピン */
+.map-pin-custom {
+  background: linear-gradient(135deg, #a89cc8 0%, #7c6fad 100%);
+}
+
+/* カスタムカテゴリバッジ */
+.spot-type-badge.category-custom {
+  background: rgba(120, 100, 180, 0.12);
+  color: #5a4a9a;
+  border: 1px solid rgba(120, 100, 180, 0.3);
+}
+
+/* カテゴリカスタマイズモーダル */
+.category-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: min(540px, calc(100% - 24px));
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  transform: translate(-50%, -50%);
+  z-index: 31;
+  padding: 20px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #fffdf7 0%, #fff3dd 100%);
+  border: 1px solid rgba(166, 97, 54, 0.18);
+  box-shadow: 0 24px 50px rgba(35, 48, 56, 0.18);
+}
+
+.category-modal-desc {
+  margin: 0 0 14px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.category-list {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.category-list-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background: rgba(35, 48, 56, 0.04);
+  border: 1px solid rgba(166, 97, 54, 0.1);
+}
+
+.category-list-item.is-default {
+  opacity: 0.72;
+}
+
+.category-list-emoji {
+  font-size: 1.1rem;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.category-list-name {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.category-list-tag {
+  font-size: 0.72rem;
+  color: var(--muted);
+  background: rgba(35, 48, 56, 0.07);
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.category-delete-btn {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(181, 58, 72, 0.2);
+  background: rgba(181, 58, 72, 0.08);
+  color: var(--danger);
+  font-size: 0.82rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.category-delete-btn:hover {
+  background: rgba(181, 58, 72, 0.16);
+}
+
+.category-add-form {
+  padding-top: 14px;
+  border-top: 1px solid rgba(166, 97, 54, 0.12);
+}
+
+.category-add-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.category-emoji-input {
+  width: 64px !important;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 1.15rem;
+  padding: 10px 6px !important;
+}
+
+/* ドロワーナビボタン（aタグと同スタイルで使えるよう補正） */
+.drawer-nav-item {
+  border: none;
+  width: 100%;
+  background: none;
+  text-align: left;
+  cursor: pointer;
 }
 
 /* Autocomplete dropdown */

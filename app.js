@@ -13,6 +13,14 @@ const SHORT_HOSTS = new Set(["maps.app.goo.gl", "goo.gl"]);
 
 const SETTINGS_KEY = "spot-map-settings.v1";
 
+const MAP_STYLES_META = [
+  { key: "osm-bright",     label: "OSM Bright",      previewClass: "preview-osm-bright"     },
+  { key: "osm-standard",   label: "OSM スタンダード", previewClass: "preview-osm-standard"   },
+  { key: "carto-light",    label: "CartoDB Light",    previewClass: "preview-carto-light"    },
+  { key: "carto-dark",     label: "CartoDB Dark",     previewClass: "preview-carto-dark"     },
+  { key: "esri-satellite", label: "衛星写真",         previewClass: "preview-esri-satellite" },
+];
+
 const MAP_STYLE_CONFIGS = {
   "osm-bright": {
     url: "https://tile.openstreetmap.jp/styles/osm-bright/{z}/{x}/{y}.png",
@@ -62,16 +70,44 @@ function applyBgTheme(themeKey) {
   document.body.style.background = BG_THEME_CONFIGS[themeKey] || BG_THEME_CONFIGS.warm;
 }
 
-const CATEGORY_DISPLAY = {
-  airport:    { label: "✈ 空港",    cssClass: "category-airport" },
-  restaurant: { label: "🍽 飲食",   cssClass: "category-restaurant" },
-  tourist:    { label: "⛩ 観光",    cssClass: "category-tourist" },
-  hotel:      { label: "🏨 ホテル",  cssClass: "category-hotel" },
-  other:      { label: "📍 その他",  cssClass: "category-other" },
-};
+const CATEGORIES_KEY = "spot-map-categories.v1";
+
+const DEFAULT_CATEGORIES = [
+  { key: "airport",    emoji: "✈",  name: "空港",   label: "✈ 空港",   cssClass: "category-airport",    isDefault: true },
+  { key: "station",    emoji: "🚉", name: "駅",     label: "🚉 駅",     cssClass: "category-station",    isDefault: true },
+  { key: "restaurant", emoji: "🍽", name: "飲食",   label: "🍽 飲食",   cssClass: "category-restaurant", isDefault: true },
+  { key: "tourist",    emoji: "⛩",  name: "観光",   label: "⛩ 観光",   cssClass: "category-tourist",    isDefault: true },
+  { key: "hotel",      emoji: "🏨", name: "ホテル", label: "🏨 ホテル", cssClass: "category-hotel",      isDefault: true },
+  { key: "other",      emoji: "📍", name: "その他", label: "📍 その他", cssClass: "category-other",      isDefault: true },
+];
+
+function loadCustomCategories() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(CATEGORIES_KEY));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch { return []; }
+}
+
+function saveCustomCategoriesStorage(cats) {
+  localStorage.setItem(CATEGORIES_KEY, JSON.stringify(cats));
+}
+
+function getAllCategories() {
+  return [
+    ...DEFAULT_CATEGORIES,
+    ...loadCustomCategories().map(c => ({ ...c, label: `${c.emoji} ${c.name}`, cssClass: "category-custom", isDefault: false })),
+  ];
+}
+
+function getCategoryDisplay() {
+  const display = {};
+  getAllCategories().forEach(cat => { display[cat.key] = { label: cat.label, cssClass: cat.cssClass }; });
+  return display;
+}
 
 const SPOT_PIN_ICONS = {
   airport: "✈",
+  station: "🚉",
   restaurant: "🍽",
   tourist: "⛩",
   hotel: "🏨",
@@ -80,6 +116,7 @@ const SPOT_PIN_ICONS = {
 
 function detectSpotCategory(name, osmCategory, osmType) {
   if (osmCategory === "aeroway") return "airport";
+  if (osmCategory === "railway" || osmCategory === "public_transport") return "station";
   if (osmCategory === "tourism") {
     if (["hotel", "hostel", "motel", "guest_house", "chalet", "apartment"].includes(osmType)) return "hotel";
     if (["museum", "attraction", "viewpoint", "artwork", "zoo", "theme_park", "aquarium", "gallery"].includes(osmType)) return "tourist";
@@ -88,6 +125,7 @@ function detectSpotCategory(name, osmCategory, osmType) {
   if (osmCategory === "historic" || osmCategory === "leisure") return "tourist";
 
   if (/空港|airport|エアポート/i.test(name)) return "airport";
+  if (/駅|station/i.test(name)) return "station";
   if (/ホテル|旅館|宿泊|リゾート|inn\b|hotel/i.test(name)) return "hotel";
   if (/レストラン|食堂|居酒屋|カフェ|喫茶|ラーメン|寿司|焼肉|カレー|定食|飲食|ビストロ|バル/i.test(name)) return "restaurant";
   if (/城|寺院?|神社|仏閣|公園|博物館|美術館|タワー|展望台|記念館|資料館|遺跡|名所|大聖堂/i.test(name)) return "tourist";
@@ -123,11 +161,35 @@ const spotNameInput = document.getElementById("spotNameInput");
 const spotDescriptionInput = document.getElementById("spotDescriptionInput");
 const spotDescriptionSave = document.getElementById("spotDescriptionSave");
 const spotDeleteButton = document.getElementById("spotDeleteButton");
+const mapStyleBtn = document.getElementById("mapStyleBtn");
+const mapStylePopover = document.getElementById("mapStylePopover");
+const mapStylePopoverCards = document.getElementById("mapStylePopoverCards");
+const categoryModalBackdrop = document.getElementById("categoryModalBackdrop");
+const categoryModal = document.getElementById("categoryModal");
+const categoryModalClose = document.getElementById("categoryModalClose");
+const categoryList = document.getElementById("categoryList");
+const categoryEmojiInput = document.getElementById("categoryEmojiInput");
+const categoryNameInput = document.getElementById("categoryNameInput");
+const categoryAddBtn = document.getElementById("categoryAddBtn");
+const categoryCustomizeBtn = document.getElementById("categoryCustomizeBtn");
 
 hamburgerBtn.addEventListener("click", () => {
   sideDrawer.classList.contains("hidden") ? openDrawer() : closeDrawer();
 });
 drawerBackdrop.addEventListener("click", closeDrawer);
+
+mapStyleBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (mapStylePopover.classList.contains("hidden")) {
+    const rect = mapStyleBtn.getBoundingClientRect();
+    mapStylePopover.style.top = `${rect.bottom + 8}px`;
+    mapStylePopover.style.right = `${window.innerWidth - rect.right}px`;
+    mapStylePopover.classList.remove("hidden");
+    renderMapStylePopover();
+  } else {
+    mapStylePopover.classList.add("hidden");
+  }
+});
 
 form.addEventListener("submit", (event) => event.preventDefault());
 clearButton.addEventListener("click", clearAllData);
@@ -143,11 +205,16 @@ document.querySelectorAll(".type-btn").forEach((btn) => {
     btn.classList.add("active");
   });
 });
-document.querySelectorAll(".category-btn").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".category-btn").forEach((b) => b.classList.remove("active"));
-    btn.classList.add("active");
-  });
+
+categoryCustomizeBtn.addEventListener("click", () => {
+  closeDrawer();
+  openCategoryModal();
+});
+categoryModalBackdrop.addEventListener("click", closeCategoryModal);
+categoryModalClose.addEventListener("click", closeCategoryModal);
+categoryAddBtn.addEventListener("click", addCustomCategory);
+categoryNameInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") addCustomCategory();
 });
 
 setupAutocomplete(placeInput, placeDropdown);
@@ -156,10 +223,13 @@ document.addEventListener("click", (e) => {
   if (!e.target.closest(".autocomplete-wrap")) {
     hideDropdown(placeDropdown);
   }
+  if (!e.target.closest("#mapStyleBtn") && !e.target.closest("#mapStylePopover")) {
+    mapStylePopover.classList.add("hidden");
+  }
 });
 
 applyBgTheme(loadAppSettings().bgTheme);
-render();
+requestAnimationFrame(render); // DOMレイアウト確定後にマップを初期化
 loadAccessInfo();
 
 function loadAppState() {
@@ -333,7 +403,8 @@ function renderSpotList() {
       typeBadge.textContent = "解散";
       typeBadge.className = "spot-type-badge dismiss";
     } else {
-      const cat = CATEGORY_DISPLAY[spot.spotCategory || "other"] || CATEGORY_DISPLAY.other;
+      const catDisplay = getCategoryDisplay();
+      const cat = catDisplay[spot.spotCategory || "other"] || catDisplay["other"];
       typeBadge.textContent = cat.label;
       typeBadge.className = `spot-type-badge ${cat.cssClass}`;
     }
@@ -380,8 +451,19 @@ function openSpotMenu(id) {
   document.querySelectorAll(".type-btn").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.type === (spot.type || "spot"));
   });
-  document.querySelectorAll(".category-btn").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.category === (spot.spotCategory || "other"));
+  const categorySwitcher = document.querySelector(".spot-category-switcher");
+  categorySwitcher.innerHTML = "";
+  getAllCategories().forEach(cat => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `category-btn${(spot.spotCategory || "other") === cat.key ? " active" : ""}`;
+    btn.dataset.category = cat.key;
+    btn.textContent = cat.label;
+    btn.addEventListener("click", () => {
+      categorySwitcher.querySelectorAll(".category-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+    });
+    categorySwitcher.appendChild(btn);
   });
   spotMenu.classList.remove("hidden");
   spotMenuBackdrop.classList.remove("hidden");
@@ -393,6 +475,25 @@ function closeSpotMenu() {
   spotMenu.classList.add("hidden");
   spotMenuBackdrop.classList.add("hidden");
   spotMenu.setAttribute("aria-hidden", "true");
+}
+
+function renderMapStylePopover() {
+  const currentStyle = loadAppSettings().mapStyle;
+  mapStylePopoverCards.innerHTML = "";
+  MAP_STYLES_META.forEach((style) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `popover-style-item${currentStyle === style.key ? " active" : ""}`;
+    btn.innerHTML = `<span class="popover-style-swatch ${style.previewClass}"></span><span>${style.label}</span>`;
+    btn.addEventListener("click", () => {
+      const s = loadAppSettings();
+      s.mapStyle = style.key;
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+      mapStylePopover.classList.add("hidden");
+      renderMaps();
+    });
+    mapStylePopoverCards.appendChild(btn);
+  });
 }
 
 function openDrawer() {
@@ -451,7 +552,9 @@ function deleteSpot(id) {
 }
 
 function renderMaps() {
-  state.maps.forEach((map) => map.remove());
+  state.maps.forEach((map) => {
+    try { map.remove(); } catch (_) {} // NaN状態の壊れたマップでも安全にクリーンアップ
+  });
   state.maps = [];
 
   if (state.spots.length === 0) {
@@ -469,6 +572,13 @@ function renderMaps() {
     const head = document.createElement("div");
     head.className = "map-head";
     head.innerHTML = `<div><p class="map-number">Map ${index + 1}</p><h3>${escapeHtml(group.title)}</h3></div>`;
+    const saveBtn = document.createElement("button");
+    saveBtn.type = "button";
+    saveBtn.className = "ghost-button icon-btn";
+    saveBtn.title = "画像で保存";
+    saveBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+    saveBtn.addEventListener("click", () => saveMapAsImage(card, group.title));
+    head.appendChild(saveBtn);
 
     const caption = document.createElement("p");
     caption.className = group.kind === "overview" ? "map-caption" : "detail-caption";
@@ -479,6 +589,7 @@ function renderMaps() {
 
     card.append(head, caption, mapContainer);
     mapPanels.appendChild(card);
+    void mapContainer.offsetHeight; // CSSのmin-heightをレイアウトに確定させてからLeafletに渡す
 
     const map = L.map(mapContainer, {
       zoomControl: true,
@@ -589,6 +700,22 @@ function renderOverviewLayer(map, items, bounds) {
       const sep = i === 0 ? "" : '<span class="cluster-sep">, </span>';
       return `${sep}<span class="cluster-part cluster-spot-link" onclick="event.stopPropagation();openSpotMenu('${point.id}')">${escapeHtml(point.name)}</span>`;
     }).join("");
+
+    // クラスター内の各スポットに小ピンを配置
+    item.points.forEach((point) => {
+      const isDefaultCat = DEFAULT_CATEGORIES.some(c => c.key === point.spotCategory);
+      const pinClass = point.type === "meet" ? "map-pin-meet"
+        : point.type === "dismiss" ? "map-pin-dismiss"
+        : isDefaultCat ? `map-pin-${point.spotCategory || "other"}` : "map-pin-custom";
+      const memberIcon = L.divIcon({
+        className: "",
+        html: `<div class="map-pin map-pin-cluster-member ${pinClass}"></div>`,
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
+      });
+      const memberMarker = L.marker([point.lat, point.lng], { icon: memberIcon }).addTo(map);
+      memberMarker.on("click", () => openSpotMenu(point.id));
+    });
 
     L.marker([item.center.lat, item.center.lng], {
       icon: L.divIcon({
@@ -831,10 +958,19 @@ function centerFromPoints(points) {
 }
 
 function createMarkerIcon(type, spotCategory) {
+  const isDefaultCat = DEFAULT_CATEGORIES.some(c => c.key === spotCategory);
   const pinClass = type === "meet" ? "map-pin-meet"
     : type === "dismiss" ? "map-pin-dismiss"
-    : `map-pin-${spotCategory || "other"}`;
-  const icon = type === "spot" ? (SPOT_PIN_ICONS[spotCategory] || "") : "";
+    : isDefaultCat ? `map-pin-${spotCategory || "other"}` : "map-pin-custom";
+  let icon = "";
+  if (type === "spot") {
+    if (isDefaultCat) {
+      icon = SPOT_PIN_ICONS[spotCategory] || "";
+    } else {
+      const customCat = loadCustomCategories().find(c => c.key === spotCategory);
+      icon = customCat ? customCat.emoji : "";
+    }
+  }
   return L.divIcon({
     className: "",
     html: `<div class="map-pin ${pinClass}">${icon}</div>`,
@@ -936,6 +1072,103 @@ function hideDropdown(dropdown) {
   dropdown.innerHTML = "";
 }
 
+async function saveMapAsImage(card, title) {
+  try {
+    setFeedback("地図を画像に変換中...", false);
+    const canvas = await html2canvas(card, {
+      useCORS: true,
+      allowTaint: false,
+      logging: false,
+      scale: 2,
+    });
+    const safeTitle = (title || "map").replace(/[/\\:*?"<>|]/g, "").replace(/\s+/g, "_");
+    const link = document.createElement("a");
+    link.download = `map_${safeTitle}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+    setFeedback("地図の画像を保存しました。", false);
+  } catch {
+    setFeedback("地図の保存に失敗しました。ブラウザの制限で外部タイルが取得できない場合があります。", true);
+  }
+}
+
+function openCategoryModal() {
+  renderCategoryModal();
+  categoryModal.classList.remove("hidden");
+  categoryModalBackdrop.classList.remove("hidden");
+  categoryModal.setAttribute("aria-hidden", "false");
+}
+
+function closeCategoryModal() {
+  categoryModal.classList.add("hidden");
+  categoryModalBackdrop.classList.add("hidden");
+  categoryModal.setAttribute("aria-hidden", "true");
+}
+
+function renderCategoryModal() {
+  categoryList.innerHTML = "";
+  getAllCategories().forEach(cat => {
+    const item = document.createElement("div");
+    item.className = `category-list-item${cat.isDefault ? " is-default" : ""}`;
+    const emojiSpan = document.createElement("span");
+    emojiSpan.className = "category-list-emoji";
+    emojiSpan.textContent = cat.emoji;
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "category-list-name";
+    nameSpan.textContent = cat.name;
+    item.append(emojiSpan, nameSpan);
+    if (cat.isDefault) {
+      const tag = document.createElement("span");
+      tag.className = "category-list-tag";
+      tag.textContent = "デフォルト";
+      item.appendChild(tag);
+    } else {
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "category-delete-btn";
+      delBtn.textContent = "×";
+      delBtn.title = `「${cat.name}」を削除`;
+      delBtn.addEventListener("click", () => deleteCustomCategory(cat.key));
+      item.appendChild(delBtn);
+    }
+    categoryList.appendChild(item);
+  });
+}
+
+function addCustomCategory() {
+  const emoji = categoryEmojiInput.value.trim() || "🏷";
+  const name = categoryNameInput.value.trim();
+  if (!name) {
+    categoryNameInput.focus();
+    return;
+  }
+  const key = `custom-${Date.now()}`;
+  const custom = loadCustomCategories();
+  custom.push({ key, emoji, name });
+  saveCustomCategoriesStorage(custom);
+  categoryEmojiInput.value = "";
+  categoryNameInput.value = "";
+  renderCategoryModal();
+}
+
+function deleteCustomCategory(key) {
+  const updated = loadCustomCategories().filter(c => c.key !== key);
+  saveCustomCategoriesStorage(updated);
+  let changed = false;
+  state.spots = state.spots.map(spot => {
+    if (spot.spotCategory === key) {
+      changed = true;
+      return { ...spot, spotCategory: "other" };
+    }
+    return spot;
+  });
+  if (changed) {
+    persistState();
+    render();
+  }
+  renderCategoryModal();
+}
+
 function addSpotFromSuggestion(suggestion) {
   const spotCategory = detectSpotCategory(
     suggestion.name,
@@ -960,5 +1193,10 @@ function addSpotFromSuggestion(suggestion) {
   persistState();
   placeInput.value = "";
   setFeedback(`「${location.name}」を追加しました。`, false);
-  render();
+  try {
+    render();
+  } catch (e) {
+    console.error("render失敗（スポット追加後）:", e);
+    setFeedback("地図の更新に失敗しました。ページを再読み込みしてください。", true);
+  }
 }

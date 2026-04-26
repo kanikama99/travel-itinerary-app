@@ -53,7 +53,12 @@
         <div class="panel-head">
           <div>
             <p class="panel-kicker">Auto Map Pages</p>
-            <h2><span class="section-num">②</span>地図プレビュー</h2>
+            <h2>地図プレビュー</h2>
+          </div>
+          <div class="map-style-btn-wrap">
+            <button id="mapStyleBtn" class="ghost-button icon-btn" type="button" title="マップスタイルを変更">
+              <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+            </button>
           </div>
         </div>
         <div id="mapPanels" class="map-panels">
@@ -103,14 +108,8 @@
       <button class="type-btn" data-type="dismiss" type="button">解散場所</button>
     </div>
     <div class="spot-category-section">
-      <p class="spot-menu-sublabel">属性（アイコン）</p>
-      <div class="spot-category-switcher">
-        <button class="category-btn" data-category="airport" type="button">✈ 空港</button>
-        <button class="category-btn" data-category="restaurant" type="button">🍽 飲食</button>
-        <button class="category-btn" data-category="tourist" type="button">⛩ 観光</button>
-        <button class="category-btn" data-category="hotel" type="button">🏨 ホテル</button>
-        <button class="category-btn active" data-category="other" type="button">📍 その他</button>
-      </div>
+      <p class="spot-menu-sublabel">スポットカテゴリ</p>
+      <div class="spot-category-switcher"></div>
     </div>
     <label class="spot-menu-label">
       表示名
@@ -140,6 +139,10 @@
       <p class="drawer-kicker">Menu</p>
     </div>
     <nav class="drawer-nav">
+      <button id="categoryCustomizeBtn" class="drawer-nav-item" type="button">
+        <span class="drawer-nav-icon">🏷</span>
+        <span>カテゴリカスタマイズ</span>
+      </button>
       <a href="/settings.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">⚙</span>
         <span>設定</span>
@@ -147,7 +150,32 @@
     </nav>
   </aside>
 
+  <div id="mapStylePopover" class="map-style-popover hidden">
+    <p class="popover-kicker">マップスタイル</p>
+    <div id="mapStylePopoverCards"></div>
+  </div>
+
+  <div id="categoryModalBackdrop" class="spot-menu-backdrop hidden"></div>
+  <section id="categoryModal" class="category-modal hidden" aria-hidden="true">
+    <p class="spot-menu-kicker">カテゴリカスタマイズ</p>
+    <div class="spot-menu-head">
+      <h3>カテゴリを管理</h3>
+      <button id="categoryModalClose" class="ghost-button" type="button">閉じる</button>
+    </div>
+    <p class="category-modal-desc">スポットのカテゴリを自由に追加できます。デフォルトの6カテゴリは削除できません。</p>
+    <div id="categoryList" class="category-list"></div>
+    <div class="category-add-form">
+      <p class="spot-menu-sublabel">新しいカテゴリを追加</p>
+      <div class="category-add-row">
+        <input id="categoryEmojiInput" type="text" placeholder="🏷" maxlength="2" class="category-emoji-input" />
+        <input id="categoryNameInput" type="text" placeholder="カテゴリ名" />
+        <button id="categoryAddBtn" class="primary-button" type="button">追加</button>
+      </div>
+    </div>
+  </section>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="./app.js"></script>
 </body>
 </html>

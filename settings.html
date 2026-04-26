@@ -19,16 +19,6 @@
     <section class="panel settings-section">
       <div class="panel-head">
         <div>
-          <p class="panel-kicker">Map Style</p>
-          <h2>マップスタイル</h2>
-        </div>
-      </div>
-      <div id="mapStyleCards" class="style-cards"></div>
-    </section>
-
-    <section class="panel settings-section">
-      <div class="panel-head">
-        <div>
           <p class="panel-kicker">Background</p>
           <h2>ページ背景色</h2>
         </div>
@@ -36,6 +26,25 @@
       <div id="bgThemeSwatches" class="theme-swatches"></div>
     </section>
   </div>
+
+  <button id="hamburgerBtn" class="hamburger-btn" type="button" aria-label="メニューを開く">
+    <span class="hamburger-line"></span>
+    <span class="hamburger-line"></span>
+    <span class="hamburger-line"></span>
+  </button>
+
+  <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
+  <aside id="sideDrawer" class="side-drawer hidden" aria-hidden="true">
+    <div class="drawer-head">
+      <p class="drawer-kicker">Menu</p>
+    </div>
+    <nav class="drawer-nav">
+      <a href="/" class="drawer-nav-item">
+        <span class="drawer-nav-icon">🗺</span>
+        <span>メインに戻る</span>
+      </a>
+    </nav>
+  </aside>
 
   <script src="./settings.js"></script>
 </body>
