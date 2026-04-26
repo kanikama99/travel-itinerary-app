@@ -70,6 +70,14 @@ const CATEGORY_DISPLAY = {
   other:      { label: "📍 その他",  cssClass: "category-other" },
 };
 
+const SPOT_PIN_ICONS = {
+  airport: "✈",
+  restaurant: "🍽",
+  tourist: "⛩",
+  hotel: "🏨",
+  other: "",
+};
+
 function detectSpotCategory(name, osmCategory, osmType) {
   if (osmCategory === "aeroway") return "airport";
   if (osmCategory === "tourism") {
@@ -821,14 +829,6 @@ function centerFromPoints(points) {
   const sum = points.reduce((acc, point) => ({ lat: acc.lat + point.lat, lng: acc.lng + point.lng }), { lat: 0, lng: 0 });
   return { lat: sum.lat / points.length, lng: sum.lng / points.length };
 }
-
-const SPOT_PIN_ICONS = {
-  airport: "✈",
-  restaurant: "🍽",
-  tourist: "⛩",
-  hotel: "🏨",
-  other: "",
-};
 
 function createMarkerIcon(type, spotCategory) {
   const pinClass = type === "meet" ? "map-pin-meet"
