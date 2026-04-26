@@ -1,4 +1,5 @@
 const STORAGE_KEY = "spot-map-organizer.v9";
+const LISTS_KEY = "spot-map-lists.v1";
 const RELATIVE_CLUSTER_THRESHOLD = 0.08;
 const MAP_W = 640;
 const MAP_H = 420;
@@ -12,6 +13,7 @@ const OVERVIEW_PADDING_RATIO = 0.15;
 const SHORT_HOSTS = new Set(["maps.app.goo.gl", "goo.gl"]);
 
 const SETTINGS_KEY = "spot-map-settings.v1";
+let _listsData = null;
 
 const MAP_STYLES_META = [
   { key: "osm-bright",     label: "OSM Bright",      previewClass: "preview-osm-bright"     },
@@ -25,7 +27,7 @@ const MAP_STYLE_CONFIGS = {
   "osm-bright": {
     url: "https://tile.openstreetmap.jp/styles/osm-bright/{z}/{x}/{y}.png",
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    options: { maxZoom: 18, crossOrigin: true, detectRetina: true, keepBuffer: 4, tileSize: 256, zoomOffset: 0 },
+    options: { maxZoom: 18 },
   },
   "osm-standard": {
     url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -144,7 +146,9 @@ const feedback = document.getElementById("feedback");
 const spotList = document.getElementById("spotList");
 const spotCount = document.getElementById("spotCount");
 const mapPanels = document.getElementById("mapPanels");
-const clearButton = document.getElementById("clearButton");
+const selectAllLabel = document.getElementById("selectAllLabel");
+const selectAllCheckbox = document.getElementById("selectAllCheckbox");
+const spotListControls = document.getElementById("spotListControls");
 const addSpotButton = document.getElementById("addSpotButton");
 const accessInfo = document.getElementById("accessInfo");
 const bulkDeleteButton = document.getElementById("bulkDeleteButton");
@@ -162,6 +166,7 @@ const spotDescriptionInput = document.getElementById("spotDescriptionInput");
 const spotDescriptionSave = document.getElementById("spotDescriptionSave");
 const spotDeleteButton = document.getElementById("spotDeleteButton");
 const mapStyleBtn = document.getElementById("mapStyleBtn");
+const saveAllMapsBtn = document.getElementById("saveAllMapsBtn");
 const mapStylePopover = document.getElementById("mapStylePopover");
 const mapStylePopoverCards = document.getElementById("mapStylePopoverCards");
 const categoryModalBackdrop = document.getElementById("categoryModalBackdrop");
@@ -172,11 +177,22 @@ const categoryEmojiInput = document.getElementById("categoryEmojiInput");
 const categoryNameInput = document.getElementById("categoryNameInput");
 const categoryAddBtn = document.getElementById("categoryAddBtn");
 const categoryCustomizeBtn = document.getElementById("categoryCustomizeBtn");
+const listModalBackdrop = document.getElementById("listModalBackdrop");
+const listModal = document.getElementById("listModal");
+const listModalClose = document.getElementById("listModalClose");
+const listNameDisplay = document.getElementById("listNameDisplay");
+const listItems = document.getElementById("listItems");
+const listNameInput = document.getElementById("listNameInput");
+const listAddBtn = document.getElementById("listAddBtn");
+const listManageBtn = document.getElementById("listManageBtn");
+const listManageDrawerBtn = document.getElementById("listManageDrawerBtn");
 
 hamburgerBtn.addEventListener("click", () => {
   sideDrawer.classList.contains("hidden") ? openDrawer() : closeDrawer();
 });
 drawerBackdrop.addEventListener("click", closeDrawer);
+
+saveAllMapsBtn.addEventListener("click", saveAllMapsAsImage);
 
 mapStyleBtn.addEventListener("click", (e) => {
   e.stopPropagation();
@@ -192,7 +208,7 @@ mapStyleBtn.addEventListener("click", (e) => {
 });
 
 form.addEventListener("submit", (event) => event.preventDefault());
-clearButton.addEventListener("click", clearAllData);
+selectAllCheckbox.addEventListener("change", toggleSelectAll);
 addSpotButton.addEventListener("click", saveLocation);
 bulkDeleteButton.addEventListener("click", deleteCheckedSpots);
 spotMenuBackdrop.addEventListener("click", closeSpotMenu);
@@ -217,6 +233,15 @@ categoryNameInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") addCustomCategory();
 });
 
+listManageBtn.addEventListener("click", openListModal);
+listManageDrawerBtn.addEventListener("click", () => { closeDrawer(); openListModal(); });
+listModalBackdrop.addEventListener("click", closeListModal);
+listModalClose.addEventListener("click", closeListModal);
+listAddBtn.addEventListener("click", addNewList);
+listNameInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") addNewList();
+});
+
 setupAutocomplete(placeInput, placeDropdown);
 
 document.addEventListener("click", (e) => {
@@ -233,25 +258,8 @@ requestAnimationFrame(render); // DOMレイアウト確定後にマップを初�
 loadAccessInfo();
 
 function loadAppState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return normalizeState(JSON.parse(raw));
-    for (const key of [
-      "spot-map-organizer.v7",
-      "spot-map-organizer.v6",
-      "spot-map-organizer.v5",
-      "spot-map-organizer.v4",
-      "spot-map-organizer.v3",
-      "spot-map-organizer.v2",
-      "spot-map-organizer.v1",
-    ]) {
-      const legacy = localStorage.getItem(key);
-      if (legacy) return normalizeState(JSON.parse(legacy));
-    }
-  } catch {
-    return defaultState();
-  }
-  return defaultState();
+  const d = ensureListsData();
+  return { spots: getActiveList(d).spots };
 }
 
 function defaultState() {
@@ -277,7 +285,57 @@ function normalizeSpot(spot) {
 }
 
 function persistState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ spots: state.spots }));
+  const d = ensureListsData();
+  const active = getActiveList(d);
+  if (!active) return;
+  active.spots = state.spots;
+  saveListsData();
+}
+
+function ensureListsData() {
+  if (_listsData) return _listsData;
+  try {
+    const raw = localStorage.getItem(LISTS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed?.lists)) {
+        parsed.lists = parsed.lists.map(l => ({
+          ...l,
+          spots: Array.isArray(l.spots) ? l.spots.map(normalizeSpot) : [],
+        }));
+        if (parsed.lists.length > 0 && !parsed.lists.find(l => l.id === parsed.activeListId)) {
+          parsed.activeListId = parsed.lists[0].id;
+        }
+        _listsData = parsed;
+        return _listsData;
+      }
+    }
+  } catch {}
+  // 初回起動のみ "マイリスト" を自動生成（以降は空リストも許容）
+  const legacySpots = loadLegacySpots();
+  const first = { id: createStableId(), name: "マイリスト", spots: legacySpots };
+  _listsData = { lists: [first], activeListId: first.id };
+  return _listsData;
+}
+
+function loadLegacySpots() {
+  for (const key of [STORAGE_KEY, "spot-map-organizer.v7", "spot-map-organizer.v6", "spot-map-organizer.v5", "spot-map-organizer.v4", "spot-map-organizer.v3", "spot-map-organizer.v2", "spot-map-organizer.v1"]) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) return normalizeState(JSON.parse(raw)).spots;
+    } catch {}
+  }
+  return [];
+}
+
+function saveListsData() {
+  localStorage.setItem(LISTS_KEY, JSON.stringify(_listsData));
+}
+
+function getActiveList(d) {
+  const data = d || ensureListsData();
+  if (!data.lists.length) return null;
+  return data.lists.find(l => l.id === data.activeListId) || data.lists[0];
 }
 
 async function saveLocation() {
@@ -410,7 +468,7 @@ function clearAllData() {
     setFeedback("消去するデータはありません。", true);
     return;
   }
-  if (!window.confirm("スポットをすべて削除しますか？")) return;
+  if (!window.confirm(`「${getActiveList().name}」のスポットをすべて削除しますか？`)) return;
   Object.assign(state, defaultState(), { maps: [], editingSpotId: null });
   persistState();
   closeSpotMenu();
@@ -424,6 +482,7 @@ function setFeedback(message, isError) {
 }
 
 function render() {
+  renderListNameDisplay();
   renderSpotList();
   renderMaps();
 }
@@ -473,8 +532,33 @@ function renderSpotList() {
 }
 
 function updateBulkDeleteButton() {
+  const checkboxes = spotList.querySelectorAll(".spot-checkbox");
   const checked = spotList.querySelectorAll(".spot-checkbox:checked");
   bulkDeleteButton.classList.toggle("hidden", checked.length === 0);
+
+  if (checkboxes.length === 0) {
+    spotListControls.classList.add("hidden");
+    selectAllCheckbox.checked = false;
+    selectAllCheckbox.indeterminate = false;
+  } else {
+    spotListControls.classList.remove("hidden");
+    if (checked.length === 0) {
+      selectAllCheckbox.checked = false;
+      selectAllCheckbox.indeterminate = false;
+    } else if (checked.length === checkboxes.length) {
+      selectAllCheckbox.checked = true;
+      selectAllCheckbox.indeterminate = false;
+    } else {
+      selectAllCheckbox.checked = false;
+      selectAllCheckbox.indeterminate = true;
+    }
+  }
+}
+
+function toggleSelectAll() {
+  const checkboxes = spotList.querySelectorAll(".spot-checkbox");
+  checkboxes.forEach(cb => { cb.checked = selectAllCheckbox.checked; });
+  updateBulkDeleteButton();
 }
 
 function deleteCheckedSpots() {
@@ -634,14 +718,10 @@ function renderMaps() {
     saveBtn.addEventListener("click", () => saveMapAsImage(card, group.title));
     head.appendChild(saveBtn);
 
-    const caption = document.createElement("p");
-    caption.className = group.kind === "overview" ? "map-caption" : "detail-caption";
-    caption.textContent = group.caption;
-
     const mapContainer = document.createElement("div");
     mapContainer.className = "leaflet-map";
 
-    card.append(head, caption, mapContainer);
+    card.append(head, mapContainer);
     mapPanels.appendChild(card);
     void mapContainer.offsetHeight; // CSSのmin-heightをレイアウトに確定させてからLeafletに渡す
 
@@ -1156,6 +1236,30 @@ async function saveMapAsImage(card, title) {
   }
 }
 
+async function saveAllMapsAsImage() {
+  if (state.spots.length === 0) {
+    setFeedback("地図がありません。", true);
+    return;
+  }
+  try {
+    setFeedback("地図を画像に変換中...", false);
+    const canvas = await html2canvas(mapPanels, {
+      useCORS: true,
+      allowTaint: false,
+      logging: false,
+      scale: 2,
+    });
+    const listName = (getActiveList()?.name || "map").replace(/[/\\:*?"<>|]/g, "").replace(/\s+/g, "_");
+    const link = document.createElement("a");
+    link.download = `maps_${listName}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+    setFeedback("地図の画像を保存しました。", false);
+  } catch {
+    setFeedback("地図の保存に失敗しました。ブラウザの制限で外部タイルが取得できない場合があります。", true);
+  }
+}
+
 function openCategoryModal() {
   renderCategoryModal();
   categoryModal.classList.remove("hidden");
@@ -1263,4 +1367,153 @@ function addSpotFromSuggestion(suggestion) {
     console.error("render失敗（スポット追加後）:", e);
     setFeedback("地図の更新に失敗しました。ページを再読み込みしてください。", true);
   }
+}
+
+function renderListNameDisplay() {
+  if (listNameDisplay) listNameDisplay.textContent = getActiveList()?.name ?? "リストなし";
+}
+
+function openListModal() {
+  renderListModal();
+  listModal.classList.remove("hidden");
+  listModalBackdrop.classList.remove("hidden");
+  listModal.setAttribute("aria-hidden", "false");
+}
+
+function closeListModal() {
+  listModal.classList.add("hidden");
+  listModalBackdrop.classList.add("hidden");
+  listModal.setAttribute("aria-hidden", "true");
+}
+
+function renderListModal() {
+  const d = ensureListsData();
+  const checkedIds = [...spotList.querySelectorAll(".spot-checkbox:checked")].map(cb => cb.dataset.spotId);
+  const checkedSpots = state.spots.filter(s => checkedIds.includes(s.id));
+  const hasChecked = checkedSpots.length > 0;
+
+  listItems.innerHTML = "";
+  d.lists.forEach(list => {
+    const isActive = list.id === d.activeListId;
+    const item = document.createElement("div");
+    item.className = `list-manage-item${isActive ? " is-active" : ""}`;
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "list-manage-name";
+    nameSpan.textContent = list.name;
+
+    const countSpan = document.createElement("span");
+    countSpan.className = "list-manage-count";
+    countSpan.textContent = `${list.spots.length}件`;
+
+    item.append(nameSpan, countSpan);
+
+    if (isActive) {
+      const tag = document.createElement("span");
+      tag.className = "list-manage-tag";
+      tag.textContent = "使用中";
+      item.appendChild(tag);
+    } else {
+      if (hasChecked) {
+        const copyBtn = document.createElement("button");
+        copyBtn.type = "button";
+        copyBtn.className = "list-copy-btn";
+        copyBtn.textContent = `${checkedSpots.length}件を追加`;
+        copyBtn.title = `選択中の${checkedSpots.length}件をこのリストにコピー`;
+        copyBtn.addEventListener("click", () => copyCheckedSpotsToList(list.id));
+        item.appendChild(copyBtn);
+      }
+
+      const switchBtn = document.createElement("button");
+      switchBtn.type = "button";
+      switchBtn.className = "list-switch-btn";
+      switchBtn.textContent = "切替";
+      switchBtn.addEventListener("click", () => switchActiveList(list.id));
+      item.appendChild(switchBtn);
+    }
+
+    const delBtn = document.createElement("button");
+    delBtn.type = "button";
+    delBtn.className = "category-delete-btn";
+    delBtn.textContent = "×";
+    delBtn.title = `「${list.name}」を削除`;
+    delBtn.addEventListener("click", () => deleteListEntry(list.id));
+    item.appendChild(delBtn);
+
+    listItems.appendChild(item);
+  });
+  renderListNameDisplay();
+}
+
+function copyCheckedSpotsToList(targetListId) {
+  const checkedIds = [...spotList.querySelectorAll(".spot-checkbox:checked")].map(cb => cb.dataset.spotId);
+  if (checkedIds.length === 0) return;
+  const checkedSpots = state.spots.filter(s => checkedIds.includes(s.id));
+
+  const d = ensureListsData();
+  const targetList = d.lists.find(l => l.id === targetListId);
+  if (!targetList) return;
+
+  const existingIds = new Set(targetList.spots.map(s => s.id));
+  const newSpots = checkedSpots.filter(s => !existingIds.has(s.id));
+
+  if (newSpots.length === 0) {
+    alert("選択したスポットはすでにそのリストに含まれています。");
+    return;
+  }
+
+  targetList.spots = [...targetList.spots, ...newSpots];
+  saveListsData();
+  setFeedback(`${newSpots.length}件のスポットをコピーしました。`, false);
+  renderListModal();
+}
+
+function addNewList() {
+  const name = listNameInput.value.trim();
+  if (!name) { listNameInput.focus(); return; }
+  const checkedIds = [...spotList.querySelectorAll(".spot-checkbox:checked")].map(cb => cb.dataset.spotId);
+  const checkedSpots = state.spots.filter(s => checkedIds.includes(s.id));
+  const d = ensureListsData();
+  const newList = { id: createStableId(), name, spots: [...checkedSpots] };
+  d.lists.push(newList);
+  // activeListId は変えない（現在のリストに留まる）
+  saveListsData();
+  listNameInput.value = "";
+  renderListModal();
+}
+
+function switchActiveList(id) {
+  persistState();
+  const d = ensureListsData();
+  if (!d.lists.find(l => l.id === id)) return;
+  d.activeListId = id;
+  saveListsData();
+  state.spots = [...getActiveList(d).spots];
+  state.maps = [];
+  state.editingSpotId = null;
+  closeListModal();
+  render();
+}
+
+function deleteListEntry(id) {
+  const d = ensureListsData();
+  const list = d.lists.find(l => l.id === id);
+  if (!list) return;
+  if (!window.confirm(`「${list.name}」を削除しますか？\nこのリストのスポットも全て削除されます。`)) return;
+  d.lists = d.lists.filter(l => l.id !== id);
+  if (d.lists.length === 0) {
+    // リストが0件になった場合は空状態へ
+    d.activeListId = null;
+    state.spots = [];
+    state.maps = [];
+    state.editingSpotId = null;
+  } else if (d.activeListId === id) {
+    d.activeListId = d.lists[0].id;
+    state.spots = [...getActiveList(d).spots];
+    state.maps = [];
+    state.editingSpotId = null;
+  }
+  saveListsData();
+  render();
+  renderListModal();
 }

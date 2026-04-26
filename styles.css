@@ -268,7 +268,40 @@ textarea:focus {
   word-break: break-all;
 }
 
-/* List head */
+/* List controls bar (全選択 + ゴミ箱) */
+.spot-list-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0 12px;
+  gap: 8px;
+}
+
+.select-all-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  color: var(--muted);
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  user-select: none;
+}
+
+.select-all-label:hover {
+  background: rgba(255, 122, 69, 0.22);
+}
+
+.select-all-checkbox {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 .count-pill {
   padding: 8px 14px;
   border-radius: 999px;
@@ -756,9 +789,9 @@ textarea:focus {
   display: none !important;
 }
 
-/* Spot list — full-width grid below map */
+/* Spot list — single-column vertical layout */
 .list-panel .spot-list {
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: 1fr;
   gap: 8px;
 }
 
@@ -1347,7 +1380,117 @@ textarea:focus {
     min-height: 340px;
   }
 
-  .list-panel .spot-list {
-    grid-template-columns: 1fr;
-  }
+}
+
+
+/* リスト管理 */
+.list-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.list-name-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 13px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(166, 97, 54, 0.22);
+  background: rgba(255, 122, 69, 0.08);
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list-name-btn:hover {
+  background: rgba(255, 122, 69, 0.16);
+}
+
+.list-name-btn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list-manage-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background: rgba(35, 48, 56, 0.04);
+  border: 1px solid rgba(166, 97, 54, 0.1);
+}
+
+.list-manage-item.is-active {
+  background: rgba(255, 122, 69, 0.1);
+  border-color: rgba(255, 122, 69, 0.3);
+}
+
+.list-manage-name {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list-manage-count {
+  font-size: 0.8rem;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.list-manage-tag {
+  font-size: 0.72rem;
+  color: var(--accent-deep);
+  background: rgba(255, 122, 69, 0.15);
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.list-switch-btn {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255, 122, 69, 0.4);
+  background: rgba(255, 122, 69, 0.1);
+  color: var(--accent-deep);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.list-switch-btn:hover {
+  background: rgba(255, 122, 69, 0.22);
+}
+
+.list-copy-btn {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(39, 174, 96, 0.4);
+  background: rgba(39, 174, 96, 0.1);
+  color: #1e8449;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.list-copy-btn:hover {
+  background: rgba(39, 174, 96, 0.22);
 }
