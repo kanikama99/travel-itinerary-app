@@ -20,10 +20,6 @@
           スポット名または Google Maps の URL を登録すると、場所一覧と地図を自動生成します。近い場所は全体図ではまとめて表示し、拡大図で個別に確認できます。
         </p>
       </div>
-      <div class="hero-card">
-        <p class="hero-card-label">アクセス先</p>
-        <div id="accessInfo" class="access-info">起動すると、このPC用URLとスマホ用URLを表示します。</div>
-      </div>
     </header>
 
     <section class="panel form-panel form-panel-wide">
@@ -43,17 +39,43 @@
         </label>
         <div class="form-actions">
           <button id="addSpotButton" class="primary-button" type="button">スポットを追加</button>
-          <button id="clearButton" class="ghost-button danger" type="button">一覧を消去</button>
         </div>
       </form>
       <p id="feedback" class="feedback" aria-live="polite"></p>
+
+      <div class="area-suggest-wrap">
+        <button id="areaSuggestToggle" class="area-suggest-toggle-btn" type="button">
+          <span>🗺</span>
+          エリアから提案
+          <svg class="area-suggest-chevron" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div id="areaSuggestPanel" class="area-suggest-panel hidden">
+          <p class="area-suggest-desc">エリア名を入力すると、そのエリアの有名スポットを候補として表示します。</p>
+          <div class="area-suggest-row">
+            <input id="areaSuggestInput" type="text" placeholder="例: 東京、大阪、京都、沖縄..." class="area-suggest-input" />
+            <button id="areaSuggestSearchBtn" class="primary-button" type="button">提案を取得</button>
+          </div>
+          <p id="areaSuggestStatus" class="area-suggest-status hidden"></p>
+          <div id="areaSuggestResults" class="area-suggest-results"></div>
+        </div>
+      </div>
     </section>
 
       <section class="panel maps-panel">
         <div class="panel-head">
           <div>
             <p class="panel-kicker">Auto Map Pages</p>
-            <h2><span class="section-num">②</span>地図プレビュー</h2>
+            <h2>地図プレビュー</h2>
+          </div>
+          <div class="map-style-btn-wrap">
+            <button id="saveAllMapsBtn" class="ghost-button icon-btn" type="button" title="全地図を画像で保存">
+              <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span class="btn-mobile-label">保存</span>
+            </button>
+            <button id="mapStyleBtn" class="ghost-button icon-btn" type="button" title="マップスタイルを変更">
+              <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+              <span class="btn-mobile-label">スタイル</span>
+            </button>
           </div>
         </div>
         <div id="mapPanels" class="map-panels">
@@ -65,8 +87,31 @@
         <div class="panel-head list-head">
           <div>
             <p class="panel-kicker">Spots</p>
-            <span id="spotCount" class="count-pill">0件</span>
+            <div class="list-name-row">
+              <span class="list-current-label">現在選択中のリスト:</span>
+              <button id="listManageBtn" class="list-name-btn" type="button" title="リストを管理">
+                <span id="listNameDisplay">マイリスト</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              </button>
+              <span id="spotCount" class="count-pill">0件</span>
+            </div>
           </div>
+          <div class="list-panel-btns">
+            <button id="listManageDrawerBtn" class="ghost-button icon-btn" type="button" title="リスト管理">
+              <span aria-hidden="true">📋</span>
+              <span class="btn-mobile-label">リスト</span>
+            </button>
+            <button id="categoryCustomizeBtn" class="ghost-button icon-btn" type="button" title="カテゴリカスタマイズ">
+              <span aria-hidden="true">🏷</span>
+              <span class="btn-mobile-label">カテゴリ</span>
+            </button>
+          </div>
+        </div>
+        <div id="spotListControls" class="spot-list-controls hidden">
+          <label id="selectAllLabel" class="select-all-label">
+            <input id="selectAllCheckbox" type="checkbox" class="select-all-checkbox" />
+            <span>全選択</span>
+          </label>
           <button id="bulkDeleteButton" class="ghost-button danger icon-btn hidden" type="button" title="選択削除">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
           </button>
@@ -97,19 +142,12 @@
       <h3 id="spotMenuTitle">—</h3>
       <button id="spotMenuClose" class="ghost-button" type="button">閉じる</button>
     </div>
-    <div class="spot-type-switcher">
-      <button class="type-btn" data-type="meet" type="button">集合場所</button>
-      <button class="type-btn active" data-type="spot" type="button">立ち寄りスポット</button>
-      <button class="type-btn" data-type="dismiss" type="button">解散場所</button>
-    </div>
     <div class="spot-category-section">
-      <p class="spot-menu-sublabel">属性（アイコン）</p>
-      <div class="spot-category-switcher">
-        <button class="category-btn" data-category="airport" type="button">✈ 空港</button>
-        <button class="category-btn" data-category="restaurant" type="button">🍽 飲食</button>
-        <button class="category-btn" data-category="tourist" type="button">⛩ 観光</button>
-        <button class="category-btn" data-category="hotel" type="button">🏨 ホテル</button>
-        <button class="category-btn active" data-category="other" type="button">📍 その他</button>
+      <p class="spot-menu-sublabel">スポットカテゴリ</p>
+      <select id="spotCategorySelect" class="spot-category-select"></select>
+      <div id="spotCategoryAddForm" class="spot-category-add-form hidden">
+        <input id="spotCategoryNewName" type="text" placeholder="カテゴリ名を入力" />
+        <button id="spotCategoryNewAddBtn" class="primary-button" type="button">追加</button>
       </div>
     </div>
     <label class="spot-menu-label">
@@ -147,7 +185,50 @@
     </nav>
   </aside>
 
+  <div id="mapStylePopover" class="map-style-popover hidden">
+    <p class="popover-kicker">マップスタイル</p>
+    <div id="mapStylePopoverCards"></div>
+  </div>
+
+  <div id="listModalBackdrop" class="spot-menu-backdrop hidden"></div>
+  <section id="listModal" class="category-modal hidden" aria-hidden="true">
+    <p class="spot-menu-kicker">リスト管理</p>
+    <div class="spot-menu-head">
+      <h3>スポットリストを管理</h3>
+      <button id="listModalClose" class="ghost-button" type="button">閉じる</button>
+    </div>
+    <p class="category-modal-desc">複数のスポットリストを作成して切り替えられます。</p>
+    <div id="listItems" class="category-list"></div>
+    <div class="category-add-form">
+      <p class="spot-menu-sublabel">新しいリストを作成</p>
+      <div class="category-add-row">
+        <input id="listNameInput" type="text" placeholder="リスト名（例: 大阪旅行）" />
+        <button id="listAddBtn" class="primary-button" type="button">作成</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="categoryModalBackdrop" class="spot-menu-backdrop hidden"></div>
+  <section id="categoryModal" class="category-modal hidden" aria-hidden="true">
+    <p class="spot-menu-kicker">カテゴリカスタマイズ</p>
+    <div class="spot-menu-head">
+      <h3>カテゴリを管理</h3>
+      <button id="categoryModalClose" class="ghost-button" type="button">閉じる</button>
+    </div>
+    <p class="category-modal-desc">スポットのカテゴリを自由に追加できます。デフォルトのカテゴリは削除できません。</p>
+    <div id="categoryList" class="category-list"></div>
+    <div class="category-add-form">
+      <p class="spot-menu-sublabel">新しいカテゴリを追加</p>
+      <div class="category-add-row">
+        <input id="categoryEmojiInput" type="text" placeholder="🏷" maxlength="2" class="category-emoji-input" />
+        <input id="categoryNameInput" type="text" placeholder="カテゴリ名" />
+        <button id="categoryAddBtn" class="primary-button" type="button">追加</button>
+      </div>
+    </div>
+  </section>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="./app.js"></script>
 </body>
 </html>

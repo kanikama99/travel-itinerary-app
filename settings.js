@@ -1,38 +1,5 @@
 const SETTINGS_KEY = "spot-map-settings.v1";
 
-const MAP_STYLES = [
-  {
-    key: "osm-bright",
-    label: "OSM Bright",
-    description: "日本向け明るいスタイル（標準）",
-    previewClass: "preview-osm-bright",
-  },
-  {
-    key: "osm-standard",
-    label: "OSM スタンダード",
-    description: "OpenStreetMap 標準スタイル",
-    previewClass: "preview-osm-standard",
-  },
-  {
-    key: "carto-light",
-    label: "CartoDB Light",
-    description: "白ベースのシンプルなスタイル",
-    previewClass: "preview-carto-light",
-  },
-  {
-    key: "carto-dark",
-    label: "CartoDB Dark",
-    description: "ダークテーマのスタイル",
-    previewClass: "preview-carto-dark",
-  },
-  {
-    key: "esri-satellite",
-    label: "衛星写真",
-    description: "Esri の衛星画像タイル",
-    previewClass: "preview-esri-satellite",
-  },
-];
-
 const BG_THEMES = [
   {
     key: "warm",
@@ -93,35 +60,60 @@ function applyBgFull(key) {
   document.body.style.background = theme.full;
 }
 
-// ── Map style cards ───────────────────────────────────────────────────────────
+// ── Hamburger drawer ─────────────────────────────────────────────────────────
 
-const mapStyleCards = document.getElementById("mapStyleCards");
+const hamburgerBtn = document.getElementById("hamburgerBtn");
+const drawerBackdrop = document.getElementById("drawerBackdrop");
+const sideDrawer = document.getElementById("sideDrawer");
 
-MAP_STYLES.forEach((style) => {
-  const btn = document.createElement("button");
-  btn.className = `style-card${settings.mapStyle === style.key ? " active" : ""}`;
-  btn.type = "button";
-  btn.innerHTML = `
-    <div class="style-card-preview ${style.previewClass}">
-      <span class="style-card-check">✓</span>
-    </div>
-    <div class="style-card-info">
-      <span class="style-card-name">${style.label}</span>
-      <span class="style-card-desc">${style.description}</span>
-    </div>
-  `;
-  btn.addEventListener("click", () => {
-    settings.mapStyle = style.key;
-    saveSettings(settings);
-    document.querySelectorAll(".style-card").forEach((c) => c.classList.remove("active"));
-    btn.classList.add("active");
-  });
-  mapStyleCards.appendChild(btn);
+hamburgerBtn.addEventListener("click", () => {
+  sideDrawer.classList.contains("hidden") ? openDrawer() : closeDrawer();
 });
+drawerBackdrop.addEventListener("click", closeDrawer);
+
+function openDrawer() {
+  sideDrawer.classList.remove("hidden");
+  drawerBackdrop.classList.remove("hidden");
+  sideDrawer.setAttribute("aria-hidden", "false");
+}
+
+function closeDrawer() {
+  sideDrawer.classList.add("hidden");
+  drawerBackdrop.classList.add("hidden");
+  sideDrawer.setAttribute("aria-hidden", "true");
+}
 
 // ── BG theme swatches ─────────────────────────────────────────────────────────
 
 const bgThemeSwatches = document.getElementById("bgThemeSwatches");
+
+// ── Area suggest count ────────────────────────────────────────────────────────
+
+const areaSuggestCountInput = document.getElementById("areaSuggestCountInput");
+areaSuggestCountInput.value = settings.areaSuggestCount ?? 10;
+areaSuggestCountInput.addEventListener("change", () => {
+  const v = parseInt(areaSuggestCountInput.value, 10);
+  if (v >= 1 && v <= 50) {
+    settings.areaSuggestCount = v;
+    saveSettings(settings);
+  } else {
+    areaSuggestCountInput.value = settings.areaSuggestCount ?? 10;
+  }
+});
+
+const areaSuggestTimeoutInput = document.getElementById("areaSuggestTimeoutInput");
+areaSuggestTimeoutInput.value = settings.areaSuggestTimeout ?? 10;
+areaSuggestTimeoutInput.addEventListener("change", () => {
+  const v = parseInt(areaSuggestTimeoutInput.value, 10);
+  if (v >= 3 && v <= 60) {
+    settings.areaSuggestTimeout = v;
+    saveSettings(settings);
+  } else {
+    areaSuggestTimeoutInput.value = settings.areaSuggestTimeout ?? 10;
+  }
+});
+
+// ── BG theme swatches ─────────────────────────────────────────────────────────
 
 BG_THEMES.forEach((theme) => {
   const btn = document.createElement("button");

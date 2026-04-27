@@ -19,23 +19,55 @@
     <section class="panel settings-section">
       <div class="panel-head">
         <div>
-          <p class="panel-kicker">Map Style</p>
-          <h2>マップスタイル</h2>
-        </div>
-      </div>
-      <div id="mapStyleCards" class="style-cards"></div>
-    </section>
-
-    <section class="panel settings-section">
-      <div class="panel-head">
-        <div>
           <p class="panel-kicker">Background</p>
           <h2>ページ背景色</h2>
         </div>
       </div>
       <div id="bgThemeSwatches" class="theme-swatches"></div>
     </section>
+
+    <section class="panel settings-section">
+      <div class="panel-head">
+        <div>
+          <p class="panel-kicker">Area Suggest</p>
+          <h2>エリアから提案</h2>
+        </div>
+      </div>
+      <div class="settings-row">
+        <label class="settings-label" for="areaSuggestCountInput">
+          提案候補数
+          <span class="settings-desc">エリア検索で表示するスポット候補の最大数（1〜50）</span>
+        </label>
+        <input id="areaSuggestCountInput" type="number" min="1" max="50" value="10" class="settings-number-input" />
+      </div>
+      <div class="settings-row">
+        <label class="settings-label" for="areaSuggestTimeoutInput">
+          検索上限時間（秒）
+          <span class="settings-desc">エリア検索のタイムアウト。時間内に見つかったスポットを表示します（3〜60）</span>
+        </label>
+        <input id="areaSuggestTimeoutInput" type="number" min="3" max="60" value="10" class="settings-number-input" />
+      </div>
+    </section>
   </div>
+
+  <button id="hamburgerBtn" class="hamburger-btn" type="button" aria-label="メニューを開く">
+    <span class="hamburger-line"></span>
+    <span class="hamburger-line"></span>
+    <span class="hamburger-line"></span>
+  </button>
+
+  <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
+  <aside id="sideDrawer" class="side-drawer hidden" aria-hidden="true">
+    <div class="drawer-head">
+      <p class="drawer-kicker">Menu</p>
+    </div>
+    <nav class="drawer-nav">
+      <a href="/" class="drawer-nav-item">
+        <span class="drawer-nav-icon">🗺</span>
+        <span>メインに戻る</span>
+      </a>
+    </nav>
+  </aside>
 
   <script src="./settings.js"></script>
 </body>

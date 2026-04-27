@@ -1,4 +1,5 @@
 const STORAGE_KEY = "spot-map-organizer.v9";
+const LISTS_KEY = "spot-map-lists.v1";
 const RELATIVE_CLUSTER_THRESHOLD = 0.08;
 const MAP_W = 640;
 const MAP_H = 420;
@@ -12,12 +13,21 @@ const OVERVIEW_PADDING_RATIO = 0.15;
 const SHORT_HOSTS = new Set(["maps.app.goo.gl", "goo.gl"]);
 
 const SETTINGS_KEY = "spot-map-settings.v1";
+let _listsData = null;
+
+const MAP_STYLES_META = [
+  { key: "osm-bright",     label: "OSM Bright",      previewClass: "preview-osm-bright"     },
+  { key: "osm-standard",   label: "OSM スタンダード", previewClass: "preview-osm-standard"   },
+  { key: "carto-light",    label: "CartoDB Light",    previewClass: "preview-carto-light"    },
+  { key: "carto-dark",     label: "CartoDB Dark",     previewClass: "preview-carto-dark"     },
+  { key: "esri-satellite", label: "衛星写真",         previewClass: "preview-esri-satellite" },
+];
 
 const MAP_STYLE_CONFIGS = {
   "osm-bright": {
     url: "https://tile.openstreetmap.jp/styles/osm-bright/{z}/{x}/{y}.png",
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    options: { maxZoom: 18, crossOrigin: true, detectRetina: true, keepBuffer: 4, tileSize: 256, zoomOffset: 0 },
+    options: { maxZoom: 18 },
   },
   "osm-standard": {
     url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -62,16 +72,58 @@ function applyBgTheme(themeKey) {
   document.body.style.background = BG_THEME_CONFIGS[themeKey] || BG_THEME_CONFIGS.warm;
 }
 
-const CATEGORY_DISPLAY = {
-  airport:    { label: "✈ 空港",    cssClass: "category-airport" },
-  restaurant: { label: "🍽 飲食",   cssClass: "category-restaurant" },
-  tourist:    { label: "⛩ 観光",    cssClass: "category-tourist" },
-  hotel:      { label: "🏨 ホテル",  cssClass: "category-hotel" },
-  other:      { label: "📍 その他",  cssClass: "category-other" },
+const CATEGORIES_KEY = "spot-map-categories.v1";
+const CUSTOM_DEFAULT_ICONS = ["🔵", "🟢", "🟡", "🟠", "🔴", "🟣", "🟤", "⚫"];
+
+const DEFAULT_CATEGORIES = [
+  { key: "meet",       emoji: "🤝", name: "集合場所", label: "🤝 集合場所", cssClass: "category-meet",       isDefault: true },
+  { key: "dismiss",    emoji: "👋", name: "解散場所", label: "👋 解散場所", cssClass: "category-dismiss",    isDefault: true },
+  { key: "airport",    emoji: "✈",  name: "空港",     label: "✈ 空港",     cssClass: "category-airport",    isDefault: true },
+  { key: "station",    emoji: "🚉", name: "駅",       label: "🚉 駅",       cssClass: "category-station",    isDefault: true },
+  { key: "restaurant", emoji: "🍽", name: "飲食",     label: "🍽 飲食",     cssClass: "category-restaurant", isDefault: true },
+  { key: "tourist",    emoji: "⛩",  name: "観光",     label: "⛩ 観光",     cssClass: "category-tourist",    isDefault: true },
+  { key: "hotel",      emoji: "🏨", name: "ホテル",   label: "🏨 ホテル",   cssClass: "category-hotel",      isDefault: true },
+  { key: "other",      emoji: "📍", name: "その他",   label: "📍 その他",   cssClass: "category-other",      isDefault: true },
+];
+
+function loadCustomCategories() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(CATEGORIES_KEY));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch { return []; }
+}
+
+function saveCustomCategoriesStorage(cats) {
+  localStorage.setItem(CATEGORIES_KEY, JSON.stringify(cats));
+}
+
+function getAllCategories() {
+  return [
+    ...DEFAULT_CATEGORIES,
+    ...loadCustomCategories().map(c => ({ ...c, label: `${c.emoji} ${c.name}`, cssClass: "category-custom", isDefault: false })),
+  ];
+}
+
+function getCategoryDisplay() {
+  const display = {};
+  getAllCategories().forEach(cat => { display[cat.key] = { label: cat.label, cssClass: cat.cssClass }; });
+  return display;
+}
+
+const SPOT_PIN_ICONS = {
+  meet: "🤝",
+  dismiss: "👋",
+  airport: "✈",
+  station: "🚉",
+  restaurant: "🍽",
+  tourist: "⛩",
+  hotel: "🏨",
+  other: "",
 };
 
 function detectSpotCategory(name, osmCategory, osmType) {
   if (osmCategory === "aeroway") return "airport";
+  if (osmCategory === "railway" || osmCategory === "public_transport") return "station";
   if (osmCategory === "tourism") {
     if (["hotel", "hostel", "motel", "guest_house", "chalet", "apartment"].includes(osmType)) return "hotel";
     if (["museum", "attraction", "viewpoint", "artwork", "zoo", "theme_park", "aquarium", "gallery"].includes(osmType)) return "tourist";
@@ -80,6 +132,7 @@ function detectSpotCategory(name, osmCategory, osmType) {
   if (osmCategory === "historic" || osmCategory === "leisure") return "tourist";
 
   if (/空港|airport|エアポート/i.test(name)) return "airport";
+  if (/駅|station/i.test(name)) return "station";
   if (/ホテル|旅館|宿泊|リゾート|inn\b|hotel/i.test(name)) return "hotel";
   if (/レストラン|食堂|居酒屋|カフェ|喫茶|ラーメン|寿司|焼肉|カレー|定食|飲食|ビストロ|バル/i.test(name)) return "restaurant";
   if (/城|寺院?|神社|仏閣|公園|博物館|美術館|タワー|展望台|記念館|資料館|遺跡|名所|大聖堂/i.test(name)) return "tourist";
@@ -98,9 +151,10 @@ const feedback = document.getElementById("feedback");
 const spotList = document.getElementById("spotList");
 const spotCount = document.getElementById("spotCount");
 const mapPanels = document.getElementById("mapPanels");
-const clearButton = document.getElementById("clearButton");
+const selectAllLabel = document.getElementById("selectAllLabel");
+const selectAllCheckbox = document.getElementById("selectAllCheckbox");
+const spotListControls = document.getElementById("spotListControls");
 const addSpotButton = document.getElementById("addSpotButton");
-const accessInfo = document.getElementById("accessInfo");
 const bulkDeleteButton = document.getElementById("bulkDeleteButton");
 const spotItemTemplate = document.getElementById("spotItemTemplate");
 const placeDropdown = document.getElementById("placeDropdown");
@@ -115,65 +169,120 @@ const spotNameInput = document.getElementById("spotNameInput");
 const spotDescriptionInput = document.getElementById("spotDescriptionInput");
 const spotDescriptionSave = document.getElementById("spotDescriptionSave");
 const spotDeleteButton = document.getElementById("spotDeleteButton");
+const mapStyleBtn = document.getElementById("mapStyleBtn");
+const saveAllMapsBtn = document.getElementById("saveAllMapsBtn");
+const mapStylePopover = document.getElementById("mapStylePopover");
+const mapStylePopoverCards = document.getElementById("mapStylePopoverCards");
+const categoryModalBackdrop = document.getElementById("categoryModalBackdrop");
+const categoryModal = document.getElementById("categoryModal");
+const categoryModalClose = document.getElementById("categoryModalClose");
+const categoryList = document.getElementById("categoryList");
+const categoryEmojiInput = document.getElementById("categoryEmojiInput");
+const categoryNameInput = document.getElementById("categoryNameInput");
+const categoryAddBtn = document.getElementById("categoryAddBtn");
+const categoryCustomizeBtn = document.getElementById("categoryCustomizeBtn");
+const listModalBackdrop = document.getElementById("listModalBackdrop");
+const listModal = document.getElementById("listModal");
+const listModalClose = document.getElementById("listModalClose");
+const listNameDisplay = document.getElementById("listNameDisplay");
+const listItems = document.getElementById("listItems");
+const listNameInput = document.getElementById("listNameInput");
+const listAddBtn = document.getElementById("listAddBtn");
+const listManageBtn = document.getElementById("listManageBtn");
+const listManageDrawerBtn = document.getElementById("listManageDrawerBtn");
+const areaSuggestToggle = document.getElementById("areaSuggestToggle");
+const areaSuggestPanel = document.getElementById("areaSuggestPanel");
+const areaSuggestInput = document.getElementById("areaSuggestInput");
+const areaSuggestSearchBtn = document.getElementById("areaSuggestSearchBtn");
+const areaSuggestStatus = document.getElementById("areaSuggestStatus");
+const areaSuggestResults = document.getElementById("areaSuggestResults");
+const spotCategorySelect = document.getElementById("spotCategorySelect");
+const spotCategoryAddForm = document.getElementById("spotCategoryAddForm");
+const spotCategoryNewName = document.getElementById("spotCategoryNewName");
+const spotCategoryNewAddBtn = document.getElementById("spotCategoryNewAddBtn");
 
 hamburgerBtn.addEventListener("click", () => {
   sideDrawer.classList.contains("hidden") ? openDrawer() : closeDrawer();
 });
 drawerBackdrop.addEventListener("click", closeDrawer);
 
+saveAllMapsBtn.addEventListener("click", saveAllMapsAsImage);
+
+mapStyleBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (mapStylePopover.classList.contains("hidden")) {
+    const rect = mapStyleBtn.getBoundingClientRect();
+    mapStylePopover.style.top = `${rect.bottom + 8}px`;
+    mapStylePopover.style.right = `${window.innerWidth - rect.right}px`;
+    mapStylePopover.classList.remove("hidden");
+    renderMapStylePopover();
+  } else {
+    mapStylePopover.classList.add("hidden");
+  }
+});
+
 form.addEventListener("submit", (event) => event.preventDefault());
-clearButton.addEventListener("click", clearAllData);
+selectAllCheckbox.addEventListener("change", toggleSelectAll);
 addSpotButton.addEventListener("click", saveLocation);
 bulkDeleteButton.addEventListener("click", deleteCheckedSpots);
 spotMenuBackdrop.addEventListener("click", closeSpotMenu);
 spotMenuClose.addEventListener("click", closeSpotMenu);
 spotDescriptionSave.addEventListener("click", saveSpotDescription);
 spotDeleteButton.addEventListener("click", deleteEditingSpot);
-document.querySelectorAll(".type-btn").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".type-btn").forEach((b) => b.classList.remove("active"));
-    btn.classList.add("active");
-  });
+categoryCustomizeBtn.addEventListener("click", () => {
+  openCategoryModal();
 });
-document.querySelectorAll(".category-btn").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".category-btn").forEach((b) => b.classList.remove("active"));
-    btn.classList.add("active");
-  });
+categoryModalBackdrop.addEventListener("click", closeCategoryModal);
+categoryModalClose.addEventListener("click", closeCategoryModal);
+categoryAddBtn.addEventListener("click", addCustomCategory);
+categoryNameInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") addCustomCategory();
+});
+
+listManageBtn.addEventListener("click", openListModal);
+listManageDrawerBtn.addEventListener("click", openListModal);
+listModalBackdrop.addEventListener("click", closeListModal);
+listModalClose.addEventListener("click", closeListModal);
+listAddBtn.addEventListener("click", addNewList);
+listNameInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") addNewList();
 });
 
 setupAutocomplete(placeInput, placeDropdown);
+
+spotCategorySelect.addEventListener("change", () => {
+  if (spotCategorySelect.value === "__add_new__") {
+    spotCategoryAddForm.classList.remove("hidden");
+    spotCategoryNewName.focus();
+  } else {
+    spotCategoryAddForm.classList.add("hidden");
+  }
+});
+
+spotCategoryNewAddBtn.addEventListener("click", addCategoryFromSpotMenu);
+spotCategoryNewName.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") addCategoryFromSpotMenu();
+});
+
+if (areaSuggestToggle) areaSuggestToggle.addEventListener("click", toggleAreaSuggestPanel);
+if (areaSuggestSearchBtn) areaSuggestSearchBtn.addEventListener("click", handleAreaSuggest);
+if (areaSuggestInput) areaSuggestInput.addEventListener("keydown", (e) => { if (e.key === "Enter") handleAreaSuggest(); });
 
 document.addEventListener("click", (e) => {
   if (!e.target.closest(".autocomplete-wrap")) {
     hideDropdown(placeDropdown);
   }
+  if (!e.target.closest("#mapStyleBtn") && !e.target.closest("#mapStylePopover")) {
+    mapStylePopover.classList.add("hidden");
+  }
 });
 
 applyBgTheme(loadAppSettings().bgTheme);
-render();
-loadAccessInfo();
+requestAnimationFrame(render); // DOMレイアウト確定後にマップを初期化
 
 function loadAppState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return normalizeState(JSON.parse(raw));
-    for (const key of [
-      "spot-map-organizer.v7",
-      "spot-map-organizer.v6",
-      "spot-map-organizer.v5",
-      "spot-map-organizer.v4",
-      "spot-map-organizer.v3",
-      "spot-map-organizer.v2",
-      "spot-map-organizer.v1",
-    ]) {
-      const legacy = localStorage.getItem(key);
-      if (legacy) return normalizeState(JSON.parse(legacy));
-    }
-  } catch {
-    return defaultState();
-  }
-  return defaultState();
+  const d = ensureListsData();
+  return { spots: getActiveList(d)?.spots ?? [] };
 }
 
 function defaultState() {
@@ -190,16 +299,71 @@ function normalizeState(value) {
 }
 
 function normalizeSpot(spot) {
+  const oldType = spot?.type || "spot";
+  let spotCategory = spot?.spotCategory || "other";
+  // 旧データの type="meet"/"dismiss" を spotCategory に移行
+  if (oldType === "meet") spotCategory = "meet";
+  else if (oldType === "dismiss") spotCategory = "dismiss";
   return {
     ...spot,
     description: spot?.description || "",
-    type: spot?.type || "spot",
-    spotCategory: spot?.spotCategory || "other",
+    type: "spot",
+    spotCategory,
   };
 }
 
 function persistState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ spots: state.spots }));
+  const d = ensureListsData();
+  const active = getActiveList(d);
+  if (!active) return;
+  active.spots = state.spots;
+  saveListsData();
+}
+
+function ensureListsData() {
+  if (_listsData) return _listsData;
+  try {
+    const raw = localStorage.getItem(LISTS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed?.lists)) {
+        parsed.lists = parsed.lists.map(l => ({
+          ...l,
+          spots: Array.isArray(l.spots) ? l.spots.map(normalizeSpot) : [],
+        }));
+        if (parsed.lists.length > 0 && !parsed.lists.find(l => l.id === parsed.activeListId)) {
+          parsed.activeListId = parsed.lists[0].id;
+        }
+        _listsData = parsed;
+        return _listsData;
+      }
+    }
+  } catch {}
+  // 初回起動のみ "マイリスト" を自動生成（以降は空リストも許容）
+  const legacySpots = loadLegacySpots();
+  const first = { id: createStableId(), name: "マイリスト", spots: legacySpots };
+  _listsData = { lists: [first], activeListId: first.id };
+  return _listsData;
+}
+
+function loadLegacySpots() {
+  for (const key of [STORAGE_KEY, "spot-map-organizer.v7", "spot-map-organizer.v6", "spot-map-organizer.v5", "spot-map-organizer.v4", "spot-map-organizer.v3", "spot-map-organizer.v2", "spot-map-organizer.v1"]) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) return normalizeState(JSON.parse(raw)).spots;
+    } catch {}
+  }
+  return [];
+}
+
+function saveListsData() {
+  localStorage.setItem(LISTS_KEY, JSON.stringify(_listsData));
+}
+
+function getActiveList(d) {
+  const data = d || ensureListsData();
+  if (!data.lists.length) return null;
+  return data.lists.find(l => l.id === data.activeListId) || data.lists[0];
 }
 
 async function saveLocation() {
@@ -251,25 +415,79 @@ async function buildSpotFromUrl(url) {
   };
 }
 
+// Nominatim（OpenStreetMap）に直接問い合わせてスポットを1件取得
+async function searchByNominatim(query) {
+  const params = new URLSearchParams({ q: query, format: "jsonv2", limit: "1" });
+  const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
+    headers: { "Accept-Language": "ja,en" },
+  });
+  if (!res.ok) return null;
+  const payload = await res.json();
+  if (!payload.length) return null;
+  const best = payload[0];
+  const lat = parseFloat(best.lat);
+  const lng = parseFloat(best.lon);
+  const name = best.name || best.display_name.split(",")[0].trim();
+  return {
+    name,
+    lat,
+    lng,
+    url: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
+    osmCategory: best.category || "",
+    osmType: best.type || "",
+  };
+}
+
+// Wikipedia APIで検索し座標を取得（Nominatimで見つからない場合のフォールバック）
+async function searchByWikipedia(query) {
+  const searchParams = new URLSearchParams({
+    action: "query", list: "search", srsearch: query,
+    format: "json", utf8: "1", srlimit: "1", origin: "*",
+  });
+  const searchRes = await fetch(`https://ja.wikipedia.org/w/api.php?${searchParams}`);
+  if (!searchRes.ok) return null;
+  const searchData = await searchRes.json();
+  const results = searchData?.query?.search || [];
+  if (!results.length) return null;
+
+  const page = results[0];
+  const coordParams = new URLSearchParams({
+    action: "query", prop: "coordinates", pageids: page.pageid,
+    format: "json", utf8: "1", origin: "*",
+  });
+  const coordRes = await fetch(`https://ja.wikipedia.org/w/api.php?${coordParams}`);
+  if (!coordRes.ok) return null;
+  const coordData = await coordRes.json();
+  const coords = coordData?.query?.pages?.[String(page.pageid)]?.coordinates || [];
+  if (!coords.length) return null;
+
+  const lat = parseFloat(coords[0].lat);
+  const lng = parseFloat(coords[0].lon);
+  return {
+    name: page.title || query,
+    lat,
+    lng,
+    url: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
+    osmCategory: "",
+    osmType: "",
+  };
+}
+
 async function buildSpotFromSearch(query) {
   setFeedback("スポット名から場所を検索しています...", false);
-  const response = await fetch("/api/search", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query }),
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "スポット名から場所を取得できませんでした。");
+  const result = await searchByNominatim(query).catch(() => null)
+    || await searchByWikipedia(query).catch(() => null);
+  if (!result) throw new Error("該当するスポットが見つかりませんでした。別の表記でも試してください。");
   return {
-    name: data.name || query,
-    lat: Number(data.lat),
-    lng: Number(data.lng),
-    url: data.url || "",
-    sourceUrl: data.url || "",
+    name: result.name,
+    lat: result.lat,
+    lng: result.lng,
+    url: result.url,
+    sourceUrl: result.url,
     sourceQuery: query,
     sourceType: "search",
-    osmCategory: data.osmCategory || "",
-    osmType: data.osmType || "",
+    osmCategory: result.osmCategory,
+    osmType: result.osmType,
   };
 }
 
@@ -278,7 +496,7 @@ function clearAllData() {
     setFeedback("消去するデータはありません。", true);
     return;
   }
-  if (!window.confirm("スポットをすべて削除しますか？")) return;
+  if (!window.confirm(`「${getActiveList().name}」のスポットをすべて削除しますか？`)) return;
   Object.assign(state, defaultState(), { maps: [], editingSpotId: null });
   persistState();
   closeSpotMenu();
@@ -292,6 +510,7 @@ function setFeedback(message, isError) {
 }
 
 function render() {
+  renderListNameDisplay();
   renderSpotList();
   renderMaps();
 }
@@ -318,17 +537,10 @@ function renderSpotList() {
     checkbox.dataset.spotId = spot.id;
     checkbox.addEventListener("change", updateBulkDeleteButton);
 
-    if (spot.type === "meet") {
-      typeBadge.textContent = "集合";
-      typeBadge.className = "spot-type-badge meet";
-    } else if (spot.type === "dismiss") {
-      typeBadge.textContent = "解散";
-      typeBadge.className = "spot-type-badge dismiss";
-    } else {
-      const cat = CATEGORY_DISPLAY[spot.spotCategory || "other"] || CATEGORY_DISPLAY.other;
-      typeBadge.textContent = cat.label;
-      typeBadge.className = `spot-type-badge ${cat.cssClass}`;
-    }
+    const catDisplay = getCategoryDisplay();
+    const cat = catDisplay[spot.spotCategory || "other"] || catDisplay["other"];
+    typeBadge.textContent = cat.label;
+    typeBadge.className = `spot-type-badge ${cat.cssClass}`;
 
     fragment.querySelector(".spot-name").textContent = `${index + 1}. ${spot.name}`;
     fragment.querySelector(".spot-meta").textContent = buildSpotMeta(spot);
@@ -340,8 +552,33 @@ function renderSpotList() {
 }
 
 function updateBulkDeleteButton() {
+  const checkboxes = spotList.querySelectorAll(".spot-checkbox");
   const checked = spotList.querySelectorAll(".spot-checkbox:checked");
   bulkDeleteButton.classList.toggle("hidden", checked.length === 0);
+
+  if (checkboxes.length === 0) {
+    spotListControls.classList.add("hidden");
+    selectAllCheckbox.checked = false;
+    selectAllCheckbox.indeterminate = false;
+  } else {
+    spotListControls.classList.remove("hidden");
+    if (checked.length === 0) {
+      selectAllCheckbox.checked = false;
+      selectAllCheckbox.indeterminate = false;
+    } else if (checked.length === checkboxes.length) {
+      selectAllCheckbox.checked = true;
+      selectAllCheckbox.indeterminate = false;
+    } else {
+      selectAllCheckbox.checked = false;
+      selectAllCheckbox.indeterminate = true;
+    }
+  }
+}
+
+function toggleSelectAll() {
+  const checkboxes = spotList.querySelectorAll(".spot-checkbox");
+  checkboxes.forEach(cb => { cb.checked = selectAllCheckbox.checked; });
+  updateBulkDeleteButton();
 }
 
 function deleteCheckedSpots() {
@@ -369,15 +606,52 @@ function openSpotMenu(id) {
   spotMenuTitle.textContent = spot.name;
   spotNameInput.value = spot.name || "";
   spotDescriptionInput.value = spot.description || "";
-  document.querySelectorAll(".type-btn").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.type === (spot.type || "spot"));
+
+  spotCategorySelect.innerHTML = "";
+  const allCats = getAllCategories();
+  allCats.filter(cat => cat.key !== "other").forEach(cat => {
+    const opt = document.createElement("option");
+    opt.value = cat.key;
+    opt.textContent = cat.label;
+    spotCategorySelect.appendChild(opt);
   });
-  document.querySelectorAll(".category-btn").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.category === (spot.spotCategory || "other"));
-  });
+  const otherCat = allCats.find(cat => cat.key === "other");
+  if (otherCat) {
+    const otherOpt = document.createElement("option");
+    otherOpt.value = otherCat.key;
+    otherOpt.textContent = otherCat.label;
+    spotCategorySelect.appendChild(otherOpt);
+  }
+  const addOpt = document.createElement("option");
+  addOpt.value = "__add_new__";
+  addOpt.textContent = "＋ 新しいカテゴリを追加...";
+  spotCategorySelect.appendChild(addOpt);
+  spotCategorySelect.value = spot.spotCategory || "other";
+  spotCategoryAddForm.classList.add("hidden");
+
   spotMenu.classList.remove("hidden");
   spotMenuBackdrop.classList.remove("hidden");
   spotMenu.setAttribute("aria-hidden", "false");
+}
+
+function addCategoryFromSpotMenu() {
+  const name = spotCategoryNewName.value.trim();
+  if (!name) { spotCategoryNewName.focus(); return; }
+
+  const existing = loadCustomCategories();
+  const emoji = CUSTOM_DEFAULT_ICONS[existing.length % CUSTOM_DEFAULT_ICONS.length];
+  const key = `custom_${Date.now()}`;
+  existing.push({ key, emoji, name });
+  saveCustomCategoriesStorage(existing);
+
+  const newOpt = document.createElement("option");
+  newOpt.value = key;
+  newOpt.textContent = `${emoji} ${name}`;
+  const otherOpt = spotCategorySelect.querySelector('option[value="other"]');
+  spotCategorySelect.insertBefore(newOpt, otherOpt);
+  spotCategorySelect.value = key;
+  spotCategoryAddForm.classList.add("hidden");
+  spotCategoryNewName.value = "";
 }
 
 function closeSpotMenu() {
@@ -385,6 +659,25 @@ function closeSpotMenu() {
   spotMenu.classList.add("hidden");
   spotMenuBackdrop.classList.add("hidden");
   spotMenu.setAttribute("aria-hidden", "true");
+}
+
+function renderMapStylePopover() {
+  const currentStyle = loadAppSettings().mapStyle;
+  mapStylePopoverCards.innerHTML = "";
+  MAP_STYLES_META.forEach((style) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `popover-style-item${currentStyle === style.key ? " active" : ""}`;
+    btn.innerHTML = `<span class="popover-style-swatch ${style.previewClass}"></span><span>${style.label}</span>`;
+    btn.addEventListener("click", () => {
+      const s = loadAppSettings();
+      s.mapStyle = style.key;
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+      mapStylePopover.classList.add("hidden");
+      renderMaps();
+    });
+    mapStylePopoverCards.appendChild(btn);
+  });
 }
 
 function openDrawer() {
@@ -402,25 +695,15 @@ function closeDrawer() {
 function saveSpotDescription() {
   const targetIndex = state.spots.findIndex((spot) => spot.id === state.editingSpotId);
   if (targetIndex < 0) return;
-  const activeTypeBtn = document.querySelector(".type-btn.active");
-  const newType = activeTypeBtn ? activeTypeBtn.dataset.type : "spot";
-  const oldType = state.spots[targetIndex].type;
 
-  if (newType !== "spot" && newType !== oldType) {
-    state.spots = state.spots.map((s, i) =>
-      i !== targetIndex && s.type === newType ? { ...s, type: "spot" } : s
-    );
-  }
+  const newCategory = (spotCategorySelect.value && spotCategorySelect.value !== "__add_new__")
+    ? spotCategorySelect.value : "other";
 
-  const activeCategoryBtn = document.querySelector(".category-btn.active");
-  const newCategory = activeCategoryBtn ? activeCategoryBtn.dataset.category : "other";
-
-  const idx = state.spots.findIndex((s) => s.id === state.editingSpotId);
-  state.spots[idx] = {
-    ...state.spots[idx],
-    name: spotNameInput.value.trim() || state.spots[idx].name,
+  state.spots[targetIndex] = {
+    ...state.spots[targetIndex],
+    name: spotNameInput.value.trim() || state.spots[targetIndex].name,
     description: spotDescriptionInput.value.trim(),
-    type: newType,
+    type: "spot",
     spotCategory: newCategory,
   };
   persistState();
@@ -443,7 +726,9 @@ function deleteSpot(id) {
 }
 
 function renderMaps() {
-  state.maps.forEach((map) => map.remove());
+  state.maps.forEach((map) => {
+    try { map.remove(); } catch (_) {} // NaN状態の壊れたマップでも安全にクリーンアップ
+  });
   state.maps = [];
 
   if (state.spots.length === 0) {
@@ -461,16 +746,20 @@ function renderMaps() {
     const head = document.createElement("div");
     head.className = "map-head";
     head.innerHTML = `<div><p class="map-number">Map ${index + 1}</p><h3>${escapeHtml(group.title)}</h3></div>`;
-
-    const caption = document.createElement("p");
-    caption.className = group.kind === "overview" ? "map-caption" : "detail-caption";
-    caption.textContent = group.caption;
+    const saveBtn = document.createElement("button");
+    saveBtn.type = "button";
+    saveBtn.className = "ghost-button icon-btn";
+    saveBtn.title = "画像で保存";
+    saveBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+    saveBtn.addEventListener("click", () => saveMapAsImage(card, group.title));
+    head.appendChild(saveBtn);
 
     const mapContainer = document.createElement("div");
     mapContainer.className = "leaflet-map";
 
-    card.append(head, caption, mapContainer);
+    card.append(head, mapContainer);
     mapPanels.appendChild(card);
+    void mapContainer.offsetHeight; // CSSのmin-heightをレイアウトに確定させてからLeafletに渡す
 
     const map = L.map(mapContainer, {
       zoomControl: true,
@@ -582,12 +871,29 @@ function renderOverviewLayer(map, items, bounds) {
       return `${sep}<span class="cluster-part cluster-spot-link" onclick="event.stopPropagation();openSpotMenu('${point.id}')">${escapeHtml(point.name)}</span>`;
     }).join("");
 
-    L.marker([item.center.lat, item.center.lng], {
+    // クラスター内の各スポットに小ピンを配置
+    item.points.forEach((point) => {
+      const isDefaultCat = DEFAULT_CATEGORIES.some(c => c.key === point.spotCategory);
+      const pinClass = point.spotCategory === "meet" ? "map-pin-meet"
+        : point.spotCategory === "dismiss" ? "map-pin-dismiss"
+        : isDefaultCat ? `map-pin-${point.spotCategory || "other"}` : "map-pin-custom";
+      const memberIcon = L.divIcon({
+        className: "",
+        html: `<div class="map-pin map-pin-cluster-member ${pinClass}"></div>`,
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
+      });
+      const memberMarker = L.marker([point.lat, point.lng], { icon: memberIcon }).addTo(map);
+      memberMarker.on("click", () => openSpotMenu(point.id));
+    });
+
+    // 矩形の下端に配置してピン・スポット名との重なりを回避
+    L.marker([item.bounds[0][0], item.center.lng], {
       icon: L.divIcon({
         className: "",
-        html: `<div class="cluster-label">${labelHtml}</div>`,
-        iconSize: [10, 10],
-        iconAnchor: [5, 5],
+        html: `<div class="cluster-label" style="transform:translateX(-50%);margin-top:4px">${labelHtml}</div>`,
+        iconSize: [1, 1],
+        iconAnchor: [0, 0],
       }),
     }).addTo(map);
   });
@@ -714,17 +1020,6 @@ function rawDiagonalKm(points) {
   );
 }
 
-async function loadAccessInfo() {
-  try {
-    const response = await fetch("/api/meta");
-    const data = await response.json();
-    accessInfo.innerHTML = data.urls.map((url, index) =>
-      `<a class="access-link" href="${escapeAttribute(url)}" target="_blank" rel="noreferrer">${index === 0 ? "このPCで開く" : "スマホで開く"}: ${escapeHtml(url)}</a>`
-    ).join("");
-  } catch {
-    accessInfo.textContent = "起動すると、このPC用URLとスマホ用URLを表示します。";
-  }
-}
 
 async function normalizeGoogleMapsUrl(input) {
   let url;
@@ -822,19 +1117,18 @@ function centerFromPoints(points) {
   return { lat: sum.lat / points.length, lng: sum.lng / points.length };
 }
 
-const SPOT_PIN_ICONS = {
-  airport: "✈",
-  restaurant: "🍽",
-  tourist: "⛩",
-  hotel: "🏨",
-  other: "",
-};
-
 function createMarkerIcon(type, spotCategory) {
-  const pinClass = type === "meet" ? "map-pin-meet"
-    : type === "dismiss" ? "map-pin-dismiss"
-    : `map-pin-${spotCategory || "other"}`;
-  const icon = type === "spot" ? (SPOT_PIN_ICONS[spotCategory] || "") : "";
+  const isDefaultCat = DEFAULT_CATEGORIES.some(c => c.key === spotCategory);
+  const pinClass = spotCategory === "meet" ? "map-pin-meet"
+    : spotCategory === "dismiss" ? "map-pin-dismiss"
+    : isDefaultCat ? `map-pin-${spotCategory || "other"}` : "map-pin-custom";
+  let icon = "";
+  if (isDefaultCat) {
+    icon = SPOT_PIN_ICONS[spotCategory] || "";
+  } else {
+    const customCat = loadCustomCategories().find(c => c.key === spotCategory);
+    icon = customCat ? customCat.emoji : "";
+  }
   return L.divIcon({
     className: "",
     html: `<div class="map-pin ${pinClass}">${icon}</div>`,
@@ -899,17 +1193,27 @@ function setupAutocomplete(input, dropdown) {
 
 async function fetchSuggestions(query, dropdown) {
   try {
-    const response = await fetch("/api/suggest", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query }),
+    const params = new URLSearchParams({ q: query, format: "jsonv2", limit: "6" });
+    const response = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
+      headers: { "Accept-Language": "ja,en" },
     });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok || !Array.isArray(data.results) || data.results.length === 0) {
-      hideDropdown(dropdown);
-      return;
-    }
-    renderSuggestions(data.results, dropdown);
+    if (!response.ok) { hideDropdown(dropdown); return; }
+    const items = await response.json();
+    if (!Array.isArray(items) || items.length === 0) { hideDropdown(dropdown); return; }
+    const results = items.map((item) => {
+      const lat = parseFloat(item.lat);
+      const lng = parseFloat(item.lon);
+      return {
+        name: item.name || item.display_name.split(",")[0].trim(),
+        display: item.display_name || "",
+        lat,
+        lng,
+        url: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
+        osmCategory: item.category || "",
+        osmType: item.type || "",
+      };
+    });
+    renderSuggestions(results, dropdown);
   } catch {
     hideDropdown(dropdown);
   }
@@ -936,6 +1240,133 @@ function hideDropdown(dropdown) {
   dropdown.innerHTML = "";
 }
 
+async function saveMapAsImage(card, title) {
+  try {
+    setFeedback("地図を画像に変換中...", false);
+    card.classList.add("is-capturing");
+    const canvas = await html2canvas(card, {
+      useCORS: true,
+      allowTaint: false,
+      logging: false,
+      scale: 2,
+    });
+    card.classList.remove("is-capturing");
+    const safeTitle = (title || "map").replace(/[/\\:*?"<>|]/g, "").replace(/\s+/g, "_");
+    const link = document.createElement("a");
+    link.download = `map_${safeTitle}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+    setFeedback("地図の画像を保存しました。", false);
+  } catch {
+    card.classList.remove("is-capturing");
+    setFeedback("地図の保存に失敗しました。ブラウザの制限で外部タイルが取得できない場合があります。", true);
+  }
+}
+
+async function saveAllMapsAsImage() {
+  if (state.spots.length === 0) {
+    setFeedback("地図がありません。", true);
+    return;
+  }
+  try {
+    setFeedback("地図を画像に変換中...", false);
+    mapPanels.classList.add("is-capturing");
+    const canvas = await html2canvas(mapPanels, {
+      useCORS: true,
+      allowTaint: false,
+      logging: false,
+      scale: 2,
+    });
+    mapPanels.classList.remove("is-capturing");
+    const listName = (getActiveList()?.name || "map").replace(/[/\\:*?"<>|]/g, "").replace(/\s+/g, "_");
+    const link = document.createElement("a");
+    link.download = `maps_${listName}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+    setFeedback("地図の画像を保存しました。", false);
+  } catch {
+    mapPanels.classList.remove("is-capturing");
+    setFeedback("地図の保存に失敗しました。ブラウザの制限で外部タイルが取得できない場合があります。", true);
+  }
+}
+
+function openCategoryModal() {
+  renderCategoryModal();
+  categoryModal.classList.remove("hidden");
+  categoryModalBackdrop.classList.remove("hidden");
+  categoryModal.setAttribute("aria-hidden", "false");
+}
+
+function closeCategoryModal() {
+  categoryModal.classList.add("hidden");
+  categoryModalBackdrop.classList.add("hidden");
+  categoryModal.setAttribute("aria-hidden", "true");
+}
+
+function renderCategoryModal() {
+  categoryList.innerHTML = "";
+  getAllCategories().forEach(cat => {
+    const item = document.createElement("div");
+    item.className = `category-list-item${cat.isDefault ? " is-default" : ""}`;
+    const emojiSpan = document.createElement("span");
+    emojiSpan.className = "category-list-emoji";
+    emojiSpan.textContent = cat.emoji;
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "category-list-name";
+    nameSpan.textContent = cat.name;
+    item.append(emojiSpan, nameSpan);
+    if (cat.isDefault) {
+      const tag = document.createElement("span");
+      tag.className = "category-list-tag";
+      tag.textContent = "デフォルト";
+      item.appendChild(tag);
+    } else {
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "category-delete-btn";
+      delBtn.textContent = "×";
+      delBtn.title = `「${cat.name}」を削除`;
+      delBtn.addEventListener("click", () => deleteCustomCategory(cat.key));
+      item.appendChild(delBtn);
+    }
+    categoryList.appendChild(item);
+  });
+}
+
+function addCustomCategory() {
+  const emoji = categoryEmojiInput.value.trim() || "🏷";
+  const name = categoryNameInput.value.trim();
+  if (!name) {
+    categoryNameInput.focus();
+    return;
+  }
+  const key = `custom-${Date.now()}`;
+  const custom = loadCustomCategories();
+  custom.push({ key, emoji, name });
+  saveCustomCategoriesStorage(custom);
+  categoryEmojiInput.value = "";
+  categoryNameInput.value = "";
+  renderCategoryModal();
+}
+
+function deleteCustomCategory(key) {
+  const updated = loadCustomCategories().filter(c => c.key !== key);
+  saveCustomCategoriesStorage(updated);
+  let changed = false;
+  state.spots = state.spots.map(spot => {
+    if (spot.spotCategory === key) {
+      changed = true;
+      return { ...spot, spotCategory: "other" };
+    }
+    return spot;
+  });
+  if (changed) {
+    persistState();
+    render();
+  }
+  renderCategoryModal();
+}
+
 function addSpotFromSuggestion(suggestion) {
   const spotCategory = detectSpotCategory(
     suggestion.name,
@@ -960,5 +1391,376 @@ function addSpotFromSuggestion(suggestion) {
   persistState();
   placeInput.value = "";
   setFeedback(`「${location.name}」を追加しました。`, false);
+  try {
+    render();
+  } catch (e) {
+    console.error("render失敗（スポット追加後）:", e);
+    setFeedback("地図の更新に失敗しました。ページを再読み込みしてください。", true);
+  }
+}
+
+// ── エリアから提案 ────────────────────────────────────────────────────────────
+
+function getAreaSuggestCount() {
+  const s = loadAppSettings();
+  return (typeof s.areaSuggestCount === "number" && s.areaSuggestCount >= 1) ? s.areaSuggestCount : 6;
+}
+
+function getAreaSuggestTimeout() {
+  const s = loadAppSettings();
+  return (typeof s.areaSuggestTimeout === "number" && s.areaSuggestTimeout >= 3) ? s.areaSuggestTimeout : 10;
+}
+
+function toggleAreaSuggestPanel() {
+  const isHidden = areaSuggestPanel.classList.contains("hidden");
+  areaSuggestPanel.classList.toggle("hidden", !isHidden);
+  areaSuggestToggle.classList.toggle("open", isHidden);
+}
+
+async function handleAreaSuggest() {
+  const areaName = areaSuggestInput.value.trim();
+  if (!areaName) {
+    setAreaSuggestStatus("エリア名を入力してください。", true);
+    return;
+  }
+  areaSuggestResults.innerHTML = "";
+  const timeoutSec = getAreaSuggestTimeout();
+  setAreaSuggestStatus(`観光スポットを検索中（最大 ${timeoutSec} 秒）...`, false);
+  areaSuggestSearchBtn.disabled = true;
+
+  const controller = new AbortController();
+  const timerId = setTimeout(() => controller.abort(), timeoutSec * 1000);
+
+  try {
+    const count = getAreaSuggestCount();
+    const suggestions = await fetchAreaSuggestions(areaName, count, controller.signal);
+    const didTimeout = controller.signal.aborted;
+
+    if (!suggestions.length) {
+      const msg = didTimeout
+        ? `${timeoutSec}秒以内に候補が見つかりませんでした。設定で上限時間を延ばすか、別のエリア名を試してください。`
+        : "候補が見つかりませんでした。別のエリア名を試してください。";
+      setAreaSuggestStatus(msg, true);
+      return;
+    }
+    const suffix = didTimeout ? `（${timeoutSec}秒でタイムアウト・途中結果）` : "";
+    setAreaSuggestStatus(`「${areaName}」周辺の有名スポット ${suggestions.length} 件${suffix}`, false);
+    renderAreaSuggestions(suggestions);
+  } catch (_) {
+    setAreaSuggestStatus("取得に失敗しました。しばらく待ってから再試行してください。", true);
+  } finally {
+    clearTimeout(timerId);
+    areaSuggestSearchBtn.disabled = false;
+  }
+}
+
+async function fetchAreaSuggestions(areaName, count, signal) {
+  // Step1: Nominatimでエリアの座標・バウンディングボックスを取得
+  const nominatimParams = new URLSearchParams({ q: areaName, format: "jsonv2", limit: "1" });
+  let nominatimRes;
+  try {
+    nominatimRes = await fetch(`https://nominatim.openstreetmap.org/search?${nominatimParams}`, {
+      headers: { "Accept-Language": "ja,en" },
+      signal,
+    });
+  } catch (e) {
+    if (e.name === "AbortError") return [];
+    throw e;
+  }
+  if (!nominatimRes.ok) throw new Error("エリア検索失敗");
+  const nominatimData = await nominatimRes.json();
+  if (!nominatimData.length) return [];
+
+  const area = nominatimData[0];
+  const bbox = area.boundingbox; // [minlat, maxlat, minlng, maxlng]
+  if (!bbox) return [];
+
+  const minLat = parseFloat(bbox[0]);
+  const maxLat = parseFloat(bbox[1]);
+  const minLng = parseFloat(bbox[2]);
+  const maxLng = parseFloat(bbox[3]);
+  const fetchLimit = Math.min(count * 8, 200);
+
+  // wikidataタグ必須で著名スポットのみに絞る（品質確保のため常に適用）
+  const overpassQuery =
+`[out:json][timeout:25];
+(
+  node["tourism"~"^(attraction|museum|zoo|aquarium|theme_park)$"]["name"]["wikidata"](${minLat},${minLng},${maxLat},${maxLng});
+  way["tourism"~"^(attraction|museum|zoo|aquarium|theme_park)$"]["name"]["wikidata"](${minLat},${minLng},${maxLat},${maxLng});
+  node["historic"~"^(castle|monument|ruins|shrine)$"]["name"]["wikidata"](${minLat},${minLng},${maxLat},${maxLng});
+  way["historic"~"^(castle|monument|ruins|shrine)$"]["name"]["wikidata"](${minLat},${minLng},${maxLat},${maxLng});
+);
+out center ${fetchLimit};`;
+
+  // Step2: Overpass — タイムアウト時は空を返す（まだ何も取れていないため）
+  let elements = [];
+  try {
+    const overpassRes = await fetch("https://overpass-api.de/api/interpreter", {
+      method: "POST",
+      body: overpassQuery,
+      signal,
+    });
+    if (!overpassRes.ok) throw new Error("スポット検索失敗");
+    const overpassData = await overpassRes.json();
+    elements = overpassData.elements || [];
+  } catch (e) {
+    if (e.name === "AbortError") return []; // Overpass未完了のため結果なし
+    throw e;
+  }
+
+  if (!elements.length) return [];
+
+  // Step3: Wikidata enrichment（任意 — タイムアウト済みならスキップして素のOverpass結果を返す）
+  const wikidataIds = [...new Set(
+    elements.map(el => el.tags?.wikidata).filter(id => id && /^Q\d+$/.test(id))
+  )];
+  const wikidataMap = {};
+  if (wikidataIds.length > 0 && !signal?.aborted) {
+    try {
+      for (let i = 0; i < wikidataIds.length; i += 50) {
+        if (signal?.aborted) break;
+        const batch = wikidataIds.slice(i, i + 50);
+        // URLSearchParamsは"|"を"%7C"にエンコードするため手動で組み立てる
+        const wdUrl = `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${batch.join("|")}&props=labels|sitelinks&languages=ja|en&sitefilter=jawiki|enwiki&format=json&origin=*`;
+        const innerController = new AbortController();
+        const innerTimer = setTimeout(() => innerController.abort(), 5000);
+        const onOuterAbort = () => innerController.abort();
+        signal?.addEventListener("abort", onOuterAbort);
+        try {
+          const wdRes = await fetch(wdUrl, { signal: innerController.signal });
+          if (wdRes.ok) {
+            const wdData = await wdRes.json();
+            const entities = wdData.entities || {};
+            Object.keys(entities).forEach(id => {
+              const entity = entities[id];
+              wikidataMap[id] = {
+                jaLabel: entity.labels?.ja?.value,
+                hasJawiki: !!(entity.sitelinks?.jawiki),
+                hasEnwiki: !!(entity.sitelinks?.enwiki),
+              };
+            });
+          }
+        } catch (_) {
+          break; // タイムアウトまたは中断 — 取得済みのwikidataMapで続行
+        } finally {
+          clearTimeout(innerTimer);
+          signal?.removeEventListener("abort", onOuterAbort);
+        }
+      }
+    } catch (_) {}
+  }
+
+  // 日本語Wikipedia記事があるほど高スコア（観光地としての著名度の指標）
+  elements.sort((a, b) => {
+    const wdA = wikidataMap[a.tags?.wikidata] || {};
+    const wdB = wikidataMap[b.tags?.wikidata] || {};
+    const scoreA = (wdA.hasJawiki ? 4 : 0) + (wdA.hasEnwiki ? 2 : 0) + (a.tags?.wikipedia ? 1 : 0);
+    const scoreB = (wdB.hasJawiki ? 4 : 0) + (wdB.hasEnwiki ? 2 : 0) + (b.tags?.wikipedia ? 1 : 0);
+    return scoreB - scoreA;
+  });
+
+  return elements.slice(0, count).map(el => {
+    const elLat = el.type === "way" ? el.center.lat : el.lat;
+    const elLng = el.type === "way" ? el.center.lon : el.lon;
+    const wd = wikidataMap[el.tags?.wikidata] || {};
+    // 日本語名の優先順位: OSMのname:ja > WikidataのJAラベル > OSMのname
+    const name = el.tags?.["name:ja"] || wd.jaLabel || el.tags?.name || "";
+    return {
+      name,
+      lat: elLat,
+      lng: elLng,
+      url: `https://www.google.com/maps/search/?api=1&query=${elLat},${elLng}`,
+      osmCategory: el.tags?.tourism ? "tourism" : "historic",
+      osmType: el.tags?.tourism || el.tags?.historic || "",
+    };
+  }).filter(s => s.name);
+}
+
+function setAreaSuggestStatus(msg, isError) {
+  areaSuggestStatus.textContent = msg;
+  areaSuggestStatus.classList.remove("hidden");
+  areaSuggestStatus.style.color = isError ? "var(--danger)" : "var(--muted)";
+}
+
+function renderAreaSuggestions(suggestions) {
+  areaSuggestResults.innerHTML = "";
+  suggestions.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "area-suggest-item";
+
+    const alreadyAdded = state.spots.some(s =>
+      Math.abs(s.lat - item.lat) < 0.0001 && Math.abs(s.lng - item.lng) < 0.0001
+    );
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "area-suggest-item-name";
+    nameSpan.textContent = item.name;
+
+    const addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.className = `area-suggest-add-btn${alreadyAdded ? " added" : ""}`;
+    addBtn.textContent = alreadyAdded ? "追加済" : "追加";
+    addBtn.disabled = alreadyAdded;
+
+    if (!alreadyAdded) {
+      addBtn.addEventListener("click", () => {
+        addSpotFromSuggestion(item);
+        addBtn.textContent = "追加済";
+        addBtn.classList.add("added");
+        addBtn.disabled = true;
+      });
+    }
+
+    card.append(nameSpan, addBtn);
+    areaSuggestResults.appendChild(card);
+  });
+}
+
+function renderListNameDisplay() {
+  if (listNameDisplay) listNameDisplay.textContent = getActiveList()?.name ?? "リストなし";
+}
+
+function openListModal() {
+  renderListModal();
+  listModal.classList.remove("hidden");
+  listModalBackdrop.classList.remove("hidden");
+  listModal.setAttribute("aria-hidden", "false");
+}
+
+function closeListModal() {
+  listModal.classList.add("hidden");
+  listModalBackdrop.classList.add("hidden");
+  listModal.setAttribute("aria-hidden", "true");
+}
+
+function renderListModal() {
+  const d = ensureListsData();
+  const checkedIds = [...spotList.querySelectorAll(".spot-checkbox:checked")].map(cb => cb.dataset.spotId);
+  const checkedSpots = state.spots.filter(s => checkedIds.includes(s.id));
+  const hasChecked = checkedSpots.length > 0;
+
+  listItems.innerHTML = "";
+  d.lists.forEach(list => {
+    const isActive = list.id === d.activeListId;
+    const item = document.createElement("div");
+    item.className = `list-manage-item${isActive ? " is-active" : ""}`;
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "list-manage-name";
+    nameSpan.textContent = list.name;
+
+    const countSpan = document.createElement("span");
+    countSpan.className = "list-manage-count";
+    countSpan.textContent = `${list.spots.length}件`;
+
+    item.append(nameSpan, countSpan);
+
+    if (isActive) {
+      const tag = document.createElement("span");
+      tag.className = "list-manage-tag";
+      tag.textContent = "使用中";
+      item.appendChild(tag);
+    } else {
+      if (hasChecked) {
+        const copyBtn = document.createElement("button");
+        copyBtn.type = "button";
+        copyBtn.className = "list-copy-btn";
+        copyBtn.textContent = `${checkedSpots.length}件を追加`;
+        copyBtn.title = `選択中の${checkedSpots.length}件をこのリストにコピー`;
+        copyBtn.addEventListener("click", () => copyCheckedSpotsToList(list.id));
+        item.appendChild(copyBtn);
+      }
+
+      const switchBtn = document.createElement("button");
+      switchBtn.type = "button";
+      switchBtn.className = "list-switch-btn";
+      switchBtn.textContent = "切替";
+      switchBtn.addEventListener("click", () => switchActiveList(list.id));
+      item.appendChild(switchBtn);
+    }
+
+    const delBtn = document.createElement("button");
+    delBtn.type = "button";
+    delBtn.className = "category-delete-btn";
+    delBtn.textContent = "×";
+    delBtn.title = `「${list.name}」を削除`;
+    delBtn.addEventListener("click", () => deleteListEntry(list.id));
+    item.appendChild(delBtn);
+
+    listItems.appendChild(item);
+  });
+  renderListNameDisplay();
+}
+
+function copyCheckedSpotsToList(targetListId) {
+  const checkedIds = [...spotList.querySelectorAll(".spot-checkbox:checked")].map(cb => cb.dataset.spotId);
+  if (checkedIds.length === 0) return;
+  const checkedSpots = state.spots.filter(s => checkedIds.includes(s.id));
+
+  const d = ensureListsData();
+  const targetList = d.lists.find(l => l.id === targetListId);
+  if (!targetList) return;
+
+  const existingIds = new Set(targetList.spots.map(s => s.id));
+  const newSpots = checkedSpots.filter(s => !existingIds.has(s.id));
+
+  if (newSpots.length === 0) {
+    alert("選択したスポットはすでにそのリストに含まれています。");
+    return;
+  }
+
+  targetList.spots = [...targetList.spots, ...newSpots];
+  saveListsData();
+  setFeedback(`${newSpots.length}件のスポットをコピーしました。`, false);
+  renderListModal();
+}
+
+function addNewList() {
+  const name = listNameInput.value.trim();
+  if (!name) { listNameInput.focus(); return; }
+  const checkedIds = [...spotList.querySelectorAll(".spot-checkbox:checked")].map(cb => cb.dataset.spotId);
+  const checkedSpots = state.spots.filter(s => checkedIds.includes(s.id));
+  const d = ensureListsData();
+  const newList = { id: createStableId(), name, spots: [...checkedSpots] };
+  d.lists.push(newList);
+  // activeListId は変えない（現在のリストに留まる）
+  saveListsData();
+  listNameInput.value = "";
+  renderListModal();
+}
+
+function switchActiveList(id) {
+  persistState();
+  const d = ensureListsData();
+  if (!d.lists.find(l => l.id === id)) return;
+  d.activeListId = id;
+  saveListsData();
+  state.spots = [...getActiveList(d).spots];
+  state.maps = [];
+  state.editingSpotId = null;
+  closeListModal();
   render();
+}
+
+function deleteListEntry(id) {
+  const d = ensureListsData();
+  const list = d.lists.find(l => l.id === id);
+  if (!list) return;
+  if (!window.confirm(`「${list.name}」を削除しますか？\nこのリストのスポットも全て削除されます。`)) return;
+  d.lists = d.lists.filter(l => l.id !== id);
+  if (d.lists.length === 0) {
+    // リストが0件になった場合は空状態へ
+    d.activeListId = null;
+    state.spots = [];
+    state.maps = [];
+    state.editingSpotId = null;
+  } else if (d.activeListId === id) {
+    d.activeListId = d.lists[0].id;
+    state.spots = [...getActiveList(d).spots];
+    state.maps = [];
+    state.editingSpotId = null;
+  }
+  saveListsData();
+  render();
+  renderListModal();
 }
