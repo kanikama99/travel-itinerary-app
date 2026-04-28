@@ -1,0 +1,1160 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>スケジュール — Trip Pop Map</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+  <style>
+    .schedule-shell {
+      width: min(1100px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 40px 0 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+    .schedule-header { display: flex; align-items: flex-end; gap: 20px; flex-wrap: wrap; }
+    .schedule-header-left { flex: 1; min-width: 0; }
+    .schedule-eyebrow {
+      font-size: 0.75rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .schedule-title { font-size: clamp(1.5rem, 4vw, 2rem); font-weight: 700; line-height: 1.2; }
+    .schedule-list-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      border: 1px solid rgba(255, 122, 69, 0.22);
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--accent-deep);
+      margin-top: 8px;
+    }
+
+    /* 旅程全体の集合・解散設定カード */
+    .trip-settings-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      box-shadow: 0 4px 16px rgba(149, 90, 48, 0.08);
+    }
+    .trip-settings-kicker {
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .trip-settings-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .trip-setting-group { display: flex; flex-direction: column; gap: 8px; }
+    .trip-setting-label { font-size: 0.78rem; font-weight: 700; color: var(--accent-deep); }
+    .trip-setting-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .trip-date-input, .trip-time-input {
+      font: inherit; font-size: 0.9rem; color: var(--text);
+      border: 1.5px solid var(--line); border-radius: 10px;
+      padding: 8px 12px; background: rgba(255,255,255,0.9);
+      outline: none; cursor: pointer;
+      transition: border-color 0.18s, box-shadow 0.18s;
+    }
+    .trip-date-input:focus, .trip-time-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(255,122,69,0.12);
+    }
+    .trip-time-input { width: 116px; flex-shrink: 0; }
+    .trip-summary {
+      margin-top: 12px; padding: 8px 14px;
+      background: var(--accent-soft); border-radius: 8px;
+      font-size: 0.84rem; font-weight: 700; color: var(--accent-deep);
+    }
+    .trip-summary.hidden { display: none; }
+    .trip-place-input {
+      width: 100%;
+      font: inherit; font-size: 0.84rem; color: var(--text);
+      border: 1.5px solid var(--line); border-radius: 8px;
+      padding: 6px 10px; background: rgba(255,255,255,0.85);
+      outline: none; margin-top: 4px;
+    }
+    .trip-place-input:focus { border-color: var(--accent); }
+    .trip-place-input::placeholder { color: #c0c8cc; }
+
+    .schedule-layout {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 20px;
+      align-items: start;
+    }
+    .days-area { display: flex; flex-direction: column; gap: 16px; }
+
+    /* 日程カード */
+    .day-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 6px 24px rgba(149, 90, 48, 0.10);
+      animation: dayIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    @keyframes dayIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .day-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 22px 26px;
+      background: linear-gradient(135deg, var(--accent-soft) 0%, transparent 70%);
+      border-bottom: 1px solid var(--line);
+    }
+    .day-number {
+      width: 48px; height: 48px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+      color: #fff;
+      font-size: 1rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      box-shadow: 0 6px 16px var(--accent-soft);
+      letter-spacing: 0.02em;
+    }
+    .day-header-info { flex: 1; min-width: 0; }
+    .day-label-input {
+      font: inherit; font-size: 1.08rem; font-weight: 700;
+      color: var(--text); background: transparent;
+      border: none; outline: none; width: 100%; padding: 0;
+    }
+    .day-label-input:focus {
+      background: rgba(255,255,255,0.6);
+      border-radius: 6px; padding: 2px 6px; margin: -2px -6px;
+    }
+    .day-date-display {
+      font-size: 0.88rem; color: var(--accent-deep);
+      font-weight: 600; margin-top: 5px; display: block;
+      letter-spacing: 0.03em;
+    }
+    .day-delete-btn {
+      background: none; border: none; padding: 6px;
+      border-radius: 8px; color: var(--muted);
+      cursor: pointer; transition: color 0.15s, background 0.15s; flex-shrink: 0;
+    }
+    .day-delete-btn:hover { color: var(--danger); background: rgba(181,58,72,0.08); }
+
+    /* 移動時間 */
+    .travel-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 20px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.15);
+    }
+    .travel-label { font-size: 0.74rem; color: var(--muted); flex: 1; }
+    .travel-min-input {
+      font: inherit; font-size: 0.82rem; color: var(--text);
+      border: 1.5px solid var(--line); border-radius: 8px;
+      padding: 4px 8px; background: rgba(255,255,255,0.85);
+      outline: none; width: 60px; text-align: center;
+    }
+    .travel-min-input:focus { border-color: var(--accent); }
+    .travel-min-suffix { font-size: 0.74rem; color: var(--muted); }
+
+    /* スポットエントリー */
+    .day-entries { padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; }
+    .entry-item {
+      display: flex; align-items: center; gap: 7px;
+      padding: 9px 12px;
+      background: rgba(255,255,255,0.55);
+      border: 1px solid rgba(166,97,54,0.12);
+      border-radius: 12px;
+      animation: dayIn 0.3s cubic-bezier(0.22,1,0.36,1) both;
+    }
+    .entry-priority {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--accent-soft); color: var(--accent-deep);
+      font-size: 0.68rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .entry-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+    .entry-name {
+      flex: 1; font-size: 0.88rem; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .entry-stay {
+      font: inherit; font-size: 0.78rem; color: var(--text);
+      border: 1px solid var(--line); border-radius: 6px;
+      padding: 3px 5px; background: rgba(255,255,255,0.7);
+      outline: none; width: 50px; text-align: center; flex-shrink: 0;
+    }
+    .entry-stay:focus { border-color: var(--accent); }
+    .entry-stay-suffix { font-size: 0.7rem; color: var(--muted); flex-shrink: 0; }
+    .entry-note {
+      font: inherit; font-size: 0.78rem; color: var(--muted);
+      background: transparent; border: none; outline: none;
+      width: 80px; min-width: 0; flex-shrink: 1;
+    }
+    .entry-note:focus { background: rgba(255,255,255,0.8); border-radius: 6px; padding: 2px 6px; }
+    .entry-note::placeholder { color: #c0c8cc; }
+    .entry-move-btn {
+      background: none; border: none; padding: 2px 5px; border-radius: 5px;
+      color: var(--muted); cursor: pointer;
+      transition: color 0.12s, background 0.12s;
+      flex-shrink: 0; font-size: 0.7rem; line-height: 1;
+    }
+    .entry-move-btn:hover:not(:disabled) { color: var(--accent-deep); background: var(--accent-soft); }
+    .entry-move-btn:disabled { opacity: 0.2; cursor: default; }
+    .entry-remove-btn {
+      background: none; border: none; padding: 4px; border-radius: 6px;
+      color: var(--muted); cursor: pointer;
+      transition: color 0.15s, background 0.15s; flex-shrink: 0;
+    }
+    .entry-remove-btn:hover { color: var(--danger); background: rgba(181,58,72,0.08); }
+    .day-empty-hint {
+      font-size: 0.82rem; color: var(--muted);
+      text-align: center; padding: 14px 0 6px; opacity: 0.7;
+    }
+
+    /* プラン生成バー */
+    .day-plan-bar {
+      padding: 10px 16px;
+      display: flex; justify-content: flex-end;
+      border-top: 1px solid var(--line);
+      background: rgba(255,255,255,0.18);
+    }
+    .plan-gen-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 18px; border: none; border-radius: 999px;
+      font: inherit; font-size: 0.84rem; font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light, #ff9a52) 100%);
+      box-shadow: 0 4px 12px rgba(255,122,69,0.32);
+      cursor: pointer;
+      transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.18s;
+    }
+    .plan-gen-btn:hover { transform: translateY(-2px); box-shadow: 0 7px 18px rgba(255,122,69,0.42); }
+
+    /* 生成されたプラン */
+    .plan-result {
+      padding: 16px 20px;
+      border-top: 2px solid var(--accent-soft);
+      background: rgba(255,249,240,0.65);
+    }
+    .plan-result-title {
+      font-size: 0.7rem; letter-spacing: 0.13em; text-transform: uppercase;
+      color: var(--accent-deep); font-weight: 700; margin-bottom: 14px;
+    }
+    .plan-timeline { display: flex; flex-direction: column; }
+    .plan-step { display: flex; }
+    .plan-step-left {
+      display: flex; flex-direction: column; align-items: center;
+      width: 58px; flex-shrink: 0;
+    }
+    .plan-step-time {
+      font-size: 0.78rem; font-weight: 700; color: var(--accent-deep);
+      white-space: nowrap; height: 22px; line-height: 22px;
+    }
+    .plan-step-line {
+      width: 2px; flex: 1; min-height: 10px;
+      background: rgba(255,122,69,0.22);
+    }
+    .plan-step-right { flex: 1; min-width: 0; padding-left: 10px; padding-bottom: 12px; }
+    .plan-step-head { display: flex; align-items: center; gap: 7px; min-height: 22px; }
+    .plan-step-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .plan-step-name { font-size: 0.88rem; font-weight: 700; color: var(--text); }
+    .plan-step--meet .plan-step-name,
+    .plan-step--dismiss .plan-step-name { font-weight: 600; color: var(--accent-deep); }
+    .plan-step-duration { font-size: 0.74rem; color: var(--muted); margin-top: 3px; padding-left: 17px; }
+    .plan-step--travel .plan-step-right { padding-bottom: 0; }
+    .plan-travel-label { font-size: 0.74rem; color: var(--muted); font-style: italic; padding: 3px 0; }
+    .plan-over-warn {
+      margin-top: 10px; padding: 8px 12px;
+      font-size: 0.78rem; color: #c44;
+      background: rgba(204,68,68,0.08);
+      border: 1px solid rgba(204,68,68,0.18); border-radius: 8px;
+    }
+
+    /* 日を追加ボタン */
+    .add-day-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 15px;
+      border: 2px dashed var(--line); border-radius: var(--radius-lg);
+      background: transparent; color: var(--accent-deep);
+      font: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer;
+      transition: border-color 0.18s, background 0.18s;
+    }
+    .add-day-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+    /* サイドバー */
+    .spots-sidebar { display: flex; flex-direction: column; gap: 12px; }
+    .sidebar-card {
+      background: var(--panel); border: 1px solid var(--line);
+      border-radius: var(--radius-lg); padding: 18px 16px;
+      box-shadow: 0 4px 16px rgba(149,90,48,0.08);
+    }
+    .sidebar-kicker {
+      font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--accent-deep); font-weight: 700; margin-bottom: 12px;
+    }
+    .unscheduled-list { display: flex; flex-direction: column; gap: 6px; max-height: 480px; overflow-y: auto; }
+    .unscheduled-list::-webkit-scrollbar { width: 4px; }
+    .unscheduled-list::-webkit-scrollbar-track { background: transparent; }
+    .unscheduled-list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+    .spot-chip {
+      display: flex; align-items: center; gap: 8px;
+      padding: 9px 12px;
+      background: rgba(255,255,255,0.5); border: 1px solid rgba(166,97,54,0.12);
+      border-radius: 10px; font: inherit; font-size: 0.82rem; font-weight: 600;
+      color: var(--text); text-align: left; cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.15s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .spot-chip:hover { background: var(--accent-soft); border-color: var(--accent); transform: translateX(3px); }
+    .spot-chip-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .spot-chip-empty { font-size: 0.82rem; color: var(--muted); padding: 10px 0; text-align: center; }
+
+    .spot-chip-wrap {
+      display: flex; align-items: center; gap: 4px;
+    }
+    .spot-chip-wrap .spot-chip { flex: 1; min-width: 0; }
+    .spot-order-btn {
+      background: none; border: none; padding: 4px 5px; border-radius: 6px;
+      color: var(--muted); cursor: pointer; font-size: 0.68rem; line-height: 1; flex-shrink: 0;
+      transition: color 0.12s, background 0.12s;
+    }
+    .spot-order-btn:hover:not(:disabled) { color: var(--accent-deep); background: var(--accent-soft); }
+    .spot-order-btn:disabled { opacity: 0.2; cursor: default; }
+
+    .auto-place-btn {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      width: 100%; margin-top: 12px;
+      padding: 10px 16px; border: none; border-radius: 999px;
+      font: inherit; font-size: 0.84rem; font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+      box-shadow: 0 4px 14px var(--accent-soft);
+      cursor: pointer;
+      transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.18s;
+    }
+    .auto-place-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px var(--accent-soft); }
+
+    /* 日付ピッカー */
+    .day-picker-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(35,48,56,0.22);
+    }
+    .day-picker-overlay.hidden { display: none; }
+    .day-picker-card {
+      background: #fffaf0; border: 1px solid var(--line);
+      border-radius: var(--radius-lg); box-shadow: var(--shadow);
+      padding: 24px 22px; width: min(320px, calc(100% - 40px));
+      animation: dayIn 0.3s cubic-bezier(0.22,1,0.36,1) both;
+    }
+    .day-picker-title { font-size: 0.88rem; font-weight: 700; margin-bottom: 14px; color: var(--accent-deep); }
+    .day-picker-list { display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow-y: auto; margin-bottom: 14px; }
+    .day-picker-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 14px; border-radius: 12px;
+      background: rgba(255,255,255,0.5); border: 1px solid rgba(166,97,54,0.12);
+      font: inherit; font-size: 0.88rem; font-weight: 600;
+      cursor: pointer; transition: background 0.15s, border-color 0.15s; text-align: left;
+    }
+    .day-picker-item:hover { background: var(--accent-soft); border-color: var(--accent); }
+    .day-picker-cancel {
+      width: 100%; padding: 10px; border-radius: 10px;
+      border: 1.5px solid var(--line); background: transparent;
+      font: inherit; font-size: 0.88rem; color: var(--muted); cursor: pointer;
+    }
+    .day-picker-cancel:hover { border-color: var(--accent); color: var(--accent-deep); }
+
+    .schedule-empty { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 0.9rem; line-height: 1.8; }
+    .schedule-empty-icon { font-size: 3rem; margin-bottom: 12px; }
+
+    @media (max-width: 760px) {
+      .schedule-shell { padding: 28px 0 80px; }
+      .schedule-layout { grid-template-columns: 1fr; }
+      .spots-sidebar { order: -1; }
+      .unscheduled-list { max-height: 200px; }
+      .entry-note { display: none; }
+      .trip-settings-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="schedule-shell">
+    <header class="schedule-header">
+      <div class="schedule-header-left">
+        <p class="schedule-eyebrow">Schedule</p>
+        <h1 class="schedule-title">スケジュール</h1>
+        <div class="schedule-list-badge">
+          <span>📒</span>
+          <span id="listNameBadge">—</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- 旅程全体の集合・解散設定 -->
+    <div class="trip-settings-card">
+      <p class="trip-settings-kicker">Trip Period — 旅程全体の設定</p>
+      <div class="trip-settings-grid">
+        <div class="trip-setting-group">
+          <span class="trip-setting-label">🏁 集合</span>
+          <div class="trip-setting-row">
+            <input id="tripMeetDate" class="trip-date-input" type="date" title="集合日" />
+            <input id="tripMeetTime" class="trip-time-input" type="time" value="09:00" title="集合時刻" />
+          </div>
+          <input id="tripMeetPlace" class="trip-place-input" type="text" placeholder="集合場所（例：東京駅）" />
+        </div>
+        <div class="trip-setting-group">
+          <span class="trip-setting-label">🏁 解散</span>
+          <div class="trip-setting-row">
+            <input id="tripDismissDate" class="trip-date-input" type="date" title="解散日" />
+            <input id="tripDismissTime" class="trip-time-input" type="time" value="18:00" title="解散時刻" />
+          </div>
+          <input id="tripDismissPlace" class="trip-place-input" type="text" placeholder="解散場所（例：新宿駅）" />
+        </div>
+      </div>
+      <p id="tripSummary" class="trip-summary hidden"></p>
+    </div>
+
+    <div class="page-nav">
+      <a href="./index.html" class="page-nav-btn page-nav-btn--prev">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        行きたい場所に戻る
+      </a>
+      <a href="./hotel.html" class="page-nav-btn page-nav-btn--next">
+        ホテルを見つけるへ
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+    </div>
+
+    <div class="schedule-layout">
+      <div>
+        <div id="daysArea" class="days-area"></div>
+      </div>
+
+      <aside class="spots-sidebar">
+        <div class="sidebar-card">
+          <p class="sidebar-kicker">Spots — クリックで日程に追加</p>
+          <div id="unscheduledList" class="unscheduled-list"></div>
+          <button id="autoPlaceBtn" class="auto-place-btn" type="button">✨ 自動配置</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div id="dayPickerOverlay" class="day-picker-overlay hidden" role="dialog" aria-modal="true">
+    <div class="day-picker-card">
+      <p class="day-picker-title" id="dayPickerTitle">どの日に追加しますか？</p>
+      <div id="dayPickerList" class="day-picker-list"></div>
+      <button id="dayPickerCancel" class="day-picker-cancel" type="button">キャンセル</button>
+    </div>
+  </div>
+
+  <button id="hamburgerBtn" class="hamburger-btn" type="button" aria-label="メニューを開く">
+    <span class="hamburger-line"></span>
+    <span class="hamburger-line"></span>
+    <span class="hamburger-line"></span>
+  </button>
+
+  <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
+  <aside id="sideDrawer" class="side-drawer hidden" aria-hidden="true">
+    <div class="drawer-head">
+      <p class="drawer-kicker">Menu</p>
+    </div>
+    <nav class="drawer-nav">
+      <a href="./bookmarks.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">📒</span>
+        <span>しおりを選ぶ</span>
+      </a>
+      <a href="./index.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">📍</span>
+        <span>行きたい場所！</span>
+      </a>
+      <a href="./schedule.html" class="drawer-nav-item drawer-nav-item--active">
+        <span class="drawer-nav-icon">📅</span>
+        <span>スケジュール</span>
+      </a>
+      <a href="./hotel.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">🏨</span>
+        <span>ホテルを見つける</span>
+      </a>
+      <a href="./settings.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">⚙</span>
+        <span>設定</span>
+      </a>
+    </nav>
+  </aside>
+
+  <script>
+    // テーマ適用
+    (function() {
+      try {
+        const sk = JSON.parse(localStorage.getItem("spot-map-settings.v1") || "{}");
+        const k = sk.bgTheme || "warm";
+        const BGS = {
+          warm:     "radial-gradient(circle at 8% 10%, rgba(255,210,87,.55), transparent 22%), radial-gradient(circle at 92% 14%, rgba(112,214,197,.34), transparent 20%), radial-gradient(circle at 80% 80%, rgba(255,143,177,.28), transparent 18%), linear-gradient(180deg,#fff8ea 0%,#ffeccd 100%)",
+          sky:      "radial-gradient(circle at 8% 10%, rgba(135,206,250,.45), transparent 22%), radial-gradient(circle at 92% 14%, rgba(100,180,255,.28), transparent 20%), radial-gradient(circle at 80% 80%, rgba(173,216,230,.25), transparent 18%), linear-gradient(180deg,#eaf5ff 0%,#d0e8ff 100%)",
+          mint:     "radial-gradient(circle at 8% 10%, rgba(144,238,144,.4), transparent 22%), radial-gradient(circle at 92% 14%, rgba(100,200,150,.28), transparent 20%), radial-gradient(circle at 80% 80%, rgba(152,251,152,.22), transparent 18%), linear-gradient(180deg,#eafff4 0%,#d0f5e0 100%)",
+          lavender: "radial-gradient(circle at 8% 10%, rgba(216,191,255,.45), transparent 22%), radial-gradient(circle at 92% 14%, rgba(180,150,240,.28), transparent 20%), radial-gradient(circle at 80% 80%, rgba(200,170,255,.22), transparent 18%), linear-gradient(180deg,#f4eeff 0%,#e5d8ff 100%)",
+          gray:     "radial-gradient(circle at 8% 10%, rgba(200,210,220,.45), transparent 22%), radial-gradient(circle at 92% 14%, rgba(180,190,200,.28), transparent 20%), radial-gradient(circle at 80% 80%, rgba(190,200,210,.22), transparent 18%), linear-gradient(180deg,#f2f4f6 0%,#e4e8ec 100%)",
+        };
+        const CS = {
+          warm:     ["#ff7a45","#ce5428","#ff9a52","rgba(255,122,69,0.12)","rgba(166,97,54,0.2)","rgba(255,252,245,0.88)","0 24px 50px rgba(149,90,48,0.16)"],
+          sky:      ["#3b8fd4","#1a6aad","#60aee8","rgba(59,143,212,0.12)","rgba(59,120,200,0.22)","rgba(240,248,255,0.88)","0 24px 50px rgba(30,90,160,0.14)"],
+          mint:     ["#2da868","#1a7a48","#52c485","rgba(45,168,104,0.12)","rgba(45,150,90,0.22)","rgba(240,255,248,0.88)","0 24px 50px rgba(30,110,60,0.14)"],
+          lavender: ["#8b64cc","#6a45a8","#a884e0","rgba(139,100,204,0.12)","rgba(120,80,200,0.22)","rgba(248,244,255,0.88)","0 24px 50px rgba(90,60,150,0.14)"],
+          gray:     ["#7a8a98","#5a6a78","#96a6b4","rgba(122,138,152,0.12)","rgba(100,120,140,0.22)","rgba(245,247,250,0.88)","0 24px 50px rgba(60,80,100,0.14)"],
+        };
+        document.body.style.background = BGS[k] || BGS.warm;
+        const c = CS[k] || CS.warm;
+        const r = document.documentElement;
+        r.style.setProperty("--accent",       c[0]);
+        r.style.setProperty("--accent-deep",  c[1]);
+        r.style.setProperty("--accent-light", c[2]);
+        r.style.setProperty("--accent-soft",  c[3]);
+        r.style.setProperty("--line",         c[4]);
+        r.style.setProperty("--panel",        c[5]);
+        r.style.setProperty("--shadow",       c[6]);
+      } catch {}
+    })();
+
+    const LISTS_KEY    = "spot-map-lists.v1";
+    const SCHEDULE_KEY = "spot-map-schedule.v1";
+
+    function makeId() {
+      if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+      return `id-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    }
+
+    function escHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function timeToMinutes(t) {
+      if (!t) return 0;
+      const p = t.split(":");
+      return parseInt(p[0] || 0) * 60 + (parseInt(p[1]) || 0);
+    }
+
+    function minutesToTime(mins) {
+      const h = Math.floor(Math.max(0, mins) / 60) % 24;
+      const m = Math.max(0, mins) % 60;
+      return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    }
+
+    // ── カテゴリ補助 ───────────────────────────────────────────────
+
+    const CAT_EMOJI = {
+      meet: "🤝", dismiss: "👋", airport: "✈️", station: "🚉",
+      restaurant: "🍽️", tourist: "⛩️", hotel: "🏨", shopping: "🛍️", other: "📍"
+    };
+    const CAT_COLOR = {
+      meet: "#27ae60", dismiss: "#8e44ad", airport: "#2471a3", station: "#1a5276",
+      restaurant: "#c0392b", tourist: "#ca6f1e", hotel: "#148f77", shopping: "#d35400"
+    };
+    const CAT_STAY = {
+      meet: 0, dismiss: 0, airport: 45, station: 20,
+      restaurant: 60, tourist: 90, hotel: 30, shopping: 60, other: 60
+    };
+
+    function getSpotCatEmoji(key) { return CAT_EMOJI[key] || "📍"; }
+    function getSpotCatColor(key) { return CAT_COLOR[key] || "var(--accent)"; }
+    function getDefaultStayTime(key) {
+      return (CAT_STAY[key] !== undefined) ? CAT_STAY[key] : 60;
+    }
+
+    // ── データ読み書き ─────────────────────────────────────────────
+
+    function loadActiveList() {
+      try {
+        const raw = localStorage.getItem(LISTS_KEY);
+        if (!raw) return null;
+        const data = JSON.parse(raw);
+        if (!Array.isArray(data?.lists)) return null;
+        return data.lists.find(l => l.id === data.activeListId) || data.lists[0] || null;
+      } catch { return null; }
+    }
+
+    function loadSchedule(listId) {
+      try {
+        const raw = localStorage.getItem(SCHEDULE_KEY);
+        const all = raw ? JSON.parse(raw) : {};
+        const sched = all[listId] || { listId, days: [] };
+        ensureScheduleDefaults(sched);
+        return sched;
+      } catch { return { listId, days: [] }; }
+    }
+
+    function saveSchedule(sched) {
+      try {
+        const raw = localStorage.getItem(SCHEDULE_KEY);
+        const all = raw ? JSON.parse(raw) : {};
+        all[sched.listId] = sched;
+        localStorage.setItem(SCHEDULE_KEY, JSON.stringify(all));
+      } catch {}
+    }
+
+    // ── 状態 ───────────────────────────────────────────────────────
+    let activeList  = null;
+    let schedule    = null;
+    let pendingSpot = null;
+
+    function getSpotById(spotId) {
+      return activeList?.spots?.find(s => s.id === spotId) || null;
+    }
+
+    function getOrderedSpots() {
+      const spots = activeList?.spots || [];
+      const order = schedule?.spotsOrder || [];
+      const inOrder = order
+        .map(id => spots.find(s => s.id === id))
+        .filter(Boolean);
+      const remaining = spots.filter(s => !order.includes(s.id));
+      return [...inOrder, ...remaining];
+    }
+
+    function moveSpotInOrder(spotId, dir) {
+      const allIds = getOrderedSpots().map(s => s.id);
+      const idx = allIds.indexOf(spotId);
+      if (dir === "up" && idx > 0) {
+        [allIds[idx - 1], allIds[idx]] = [allIds[idx], allIds[idx - 1]];
+      } else if (dir === "down" && idx < allIds.length - 1) {
+        [allIds[idx], allIds[idx + 1]] = [allIds[idx + 1], allIds[idx]];
+      }
+      schedule.spotsOrder = allIds;
+      saveSchedule(schedule);
+      renderUnscheduled();
+    }
+
+    function ensureScheduleDefaults(sched) {
+      if (sched.tripMeetTime     === undefined) sched.tripMeetTime     = "09:00";
+      if (sched.tripDismissTime  === undefined) sched.tripDismissTime  = "18:00";
+      if (sched.tripMeetDate     === undefined) sched.tripMeetDate     = "";
+      if (sched.tripDismissDate  === undefined) sched.tripDismissDate  = "";
+      if (sched.tripMeetPlace    === undefined) sched.tripMeetPlace    = "";
+      if (sched.tripDismissPlace === undefined) sched.tripDismissPlace = "";
+      if (!Array.isArray(sched.days))      sched.days      = [];
+      if (!Array.isArray(sched.spotsOrder)) sched.spotsOrder = [];
+    }
+
+    function ensureDayDefaults(day) {
+      if (!day.travelMinutes) day.travelMinutes = 20;
+      if (!day.stayTimes)     day.stayTimes     = {};
+      if (!day.entries)       day.entries       = [];
+    }
+
+    // ── プラン生成 ─────────────────────────────────────────────────
+    // dayIdx: 0始まり、totalDays: 日程カード総数
+    // 初日は旅程集合時刻・最終日は解散時刻を使用、中日は09:00〜21:00
+
+    function generatePlan(day, dayIdx, totalDays) {
+      ensureDayDefaults(day);
+      const travel  = day.travelMinutes;
+      const stays   = day.stayTimes;
+      const steps   = [];
+      const skipped = [];
+
+      const isFirst = dayIdx === 0;
+      const isLast  = dayIdx === totalDays - 1;
+
+      let startTime, endTime, meetName, dismissName;
+      if (isFirst) {
+        startTime  = schedule.tripMeetTime    || "09:00";
+        meetName   = schedule.tripMeetPlace   || "集合場所";
+      } else {
+        startTime  = "09:00";
+        meetName   = "宿泊先";
+      }
+      if (isLast) {
+        endTime     = schedule.tripDismissTime  || "18:00";
+        dismissName = schedule.tripDismissPlace || "解散場所";
+      } else {
+        endTime     = "21:00";
+        dismissName = "宿泊先";
+      }
+
+      let t      = timeToMinutes(startTime);
+      const endT = timeToMinutes(endTime);
+
+      steps.push({ type: "meet", name: meetName, time: t });
+
+      for (let i = 0; i < day.entries.length; i++) {
+        const entry  = day.entries[i];
+        const spot   = getSpotById(entry.spotId);
+        if (!spot) continue;
+
+        const stay    = stays[entry.spotId] || 60;
+        const arriveT = t + travel;
+
+        if (arriveT >= endT) {
+          for (let j = i; j < day.entries.length; j++) {
+            const s = getSpotById(day.entries[j].spotId);
+            if (s) skipped.push(s.name);
+          }
+          break;
+        }
+
+        steps.push({ type: "travel", duration: travel });
+        steps.push({ type: "spot", name: spot.name, time: arriveT, duration: stay, color: spot.spotCategory?.color || null });
+        t = arriveT + stay;
+
+        if (t >= endT) {
+          for (let j = i + 1; j < day.entries.length; j++) {
+            const s = getSpotById(day.entries[j].spotId);
+            if (s) skipped.push(s.name);
+          }
+          break;
+        }
+      }
+
+      steps.push({ type: "travel", duration: travel });
+      steps.push({ type: "dismiss", name: dismissName, time: t + travel });
+
+      return { steps, skipped };
+    }
+
+    function buildPlanResultEl(planData) {
+      const { steps, skipped } = planData;
+      const el = document.createElement("div");
+      el.className = "plan-result";
+
+      let html = `<p class="plan-result-title">Generated Plan — 自動生成プラン</p><div class="plan-timeline">`;
+
+      steps.forEach((step, i) => {
+        const isLast = (i === steps.length - 1);
+
+        if (step.type === "travel") {
+          html += `
+            <div class="plan-step plan-step--travel">
+              <div class="plan-step-left"><div class="plan-step-line"></div></div>
+              <div class="plan-step-right"><p class="plan-travel-label">→ 移動 約${step.duration}分</p></div>
+            </div>`;
+        } else {
+          const dotColor = step.type === "spot"
+            ? escHtml(step.color || "var(--accent)")
+            : "var(--accent-yellow)";
+          html += `
+            <div class="plan-step plan-step--${step.type}">
+              <div class="plan-step-left">
+                <span class="plan-step-time">${minutesToTime(step.time)}</span>
+                ${!isLast ? '<div class="plan-step-line"></div>' : ""}
+              </div>
+              <div class="plan-step-right">
+                <div class="plan-step-head">
+                  <span class="plan-step-dot" style="background:${dotColor}"></span>
+                  <span class="plan-step-name">${escHtml(step.name)}</span>
+                </div>
+                ${step.duration ? `<p class="plan-step-duration">滞在 ${step.duration}分</p>` : ""}
+              </div>
+            </div>`;
+        }
+      });
+
+      html += "</div>";
+
+      if (skipped.length > 0) {
+        html += `<p class="plan-over-warn">⚠ 時間内に収まらなかったスポット: ${skipped.map(n => escHtml(n)).join("、")}</p>`;
+      }
+
+      el.innerHTML = html;
+      return el;
+    }
+
+    // ── 日付フォーマット ───────────────────────────────────────────
+
+    function formatDate(dateStr) {
+      if (!dateStr) return "";
+      const d = new Date(dateStr + "T00:00:00");
+      if (isNaN(d)) return dateStr;
+      const dows = ["日", "月", "火", "水", "木", "金", "土"];
+      return `${d.getMonth() + 1}月${d.getDate()}日（${dows[d.getDay()]}）`;
+    }
+
+    // ── 日程の自動同期 ─────────────────────────────────────────────
+
+    function syncDaysToDateRange() {
+      const meetDate    = schedule.tripMeetDate;
+      const dismissDate = schedule.tripDismissDate;
+      if (!meetDate || !dismissDate) return;
+
+      const start = new Date(meetDate    + "T00:00:00");
+      const end   = new Date(dismissDate + "T00:00:00");
+      if (isNaN(start) || isNaN(end) || start > end) return;
+
+      const numDays = Math.round((end - start) / 86400000) + 1;
+      if (numDays > 30) { alert("旅程が30日を超えています。日付を確認してください。"); return; }
+
+      const existing = [...schedule.days];
+      const newDays  = [];
+
+      for (let i = 0; i < numDays; i++) {
+        const d = new Date(start);
+        d.setDate(d.getDate() + i);
+        const dateStr = d.toISOString().split("T")[0];
+
+        const byDate  = existing.find(ex => ex.date === dateStr);
+        const byIndex = existing[i] && !existing[i].date ? existing[i] : null;
+        const found   = byDate || byIndex;
+        if (found) {
+          found.date  = dateStr;
+          if (!found.label) found.label = `${i + 1}日目`;
+          newDays.push(found);
+        } else {
+          newDays.push({ id: makeId(), label: `${i + 1}日目`, date: dateStr, travelMinutes: 20, stayTimes: {}, entries: [] });
+        }
+      }
+
+      const changed = newDays.length !== existing.length ||
+        newDays.some((d, i) => d.id !== existing[i]?.id || d.date !== existing[i]?.date);
+      if (changed) {
+        schedule.days = newDays;
+        saveSchedule(schedule);
+      }
+      updateTripSummary();
+      renderAll();
+    }
+
+    // 旅程サマリー（◯泊◯日）を更新する
+    function updateTripSummary() {
+      const el = document.getElementById("tripSummary");
+      const meetDate    = schedule.tripMeetDate;
+      const dismissDate = schedule.tripDismissDate;
+      if (!meetDate || !dismissDate) { el.classList.add("hidden"); return; }
+
+      const start = new Date(meetDate    + "T00:00:00");
+      const end   = new Date(dismissDate + "T00:00:00");
+      if (isNaN(start) || isNaN(end) || start > end) { el.classList.add("hidden"); return; }
+
+      const nights = Math.round((end - start) / 86400000);
+      const days   = nights + 1;
+      el.textContent = `${formatDate(meetDate)} 〜 ${formatDate(dismissDate)}（${nights}泊${days}日）`;
+      el.classList.remove("hidden");
+    }
+
+    // ── 描画 ───────────────────────────────────────────────────────
+
+    function renderTripSettings() {
+      document.getElementById("tripMeetDate").value     = schedule.tripMeetDate     || "";
+      document.getElementById("tripMeetTime").value     = schedule.tripMeetTime     || "09:00";
+      document.getElementById("tripMeetPlace").value    = schedule.tripMeetPlace    || "";
+      document.getElementById("tripDismissDate").value  = schedule.tripDismissDate  || "";
+      document.getElementById("tripDismissTime").value  = schedule.tripDismissTime  || "18:00";
+      document.getElementById("tripDismissPlace").value = schedule.tripDismissPlace || "";
+    }
+
+    function renderUnscheduled() {
+      const el    = document.getElementById("unscheduledList");
+      const spots = activeList?.spots || [];
+      const scheduledIds = new Set(
+        schedule.days.flatMap(d => (d.entries || []).map(e => e.spotId))
+      );
+      const unscheduled = getOrderedSpots().filter(s => !scheduledIds.has(s.id));
+
+      if (unscheduled.length === 0) {
+        el.innerHTML = spots.length === 0
+          ? '<p class="spot-chip-empty">「行きたい場所！」でスポットを追加してください</p>'
+          : '<p class="spot-chip-empty">すべてのスポットがスケジュール済みです ✓</p>';
+        return;
+      }
+
+      el.innerHTML = "";
+      unscheduled.forEach((spot, idx) => {
+        const wrap = document.createElement("div");
+        wrap.className = "spot-chip-wrap";
+
+        const upBtn = document.createElement("button");
+        upBtn.className = "spot-order-btn";
+        upBtn.type = "button";
+        upBtn.title = "優先度を上げる";
+        upBtn.textContent = "▲";
+        upBtn.disabled = (idx === 0);
+        upBtn.addEventListener("click", () => moveSpotInOrder(spot.id, "up"));
+
+        const btn = document.createElement("button");
+        btn.className = "spot-chip";
+        btn.type = "button";
+        btn.innerHTML = `
+          <span>${escHtml(getSpotCatEmoji(spot.spotCategory))}</span>
+          <span class="spot-chip-name">${escHtml(spot.name)}</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        `;
+        btn.addEventListener("click", () => openDayPicker(spot));
+
+        const downBtn = document.createElement("button");
+        downBtn.className = "spot-order-btn";
+        downBtn.type = "button";
+        downBtn.title = "優先度を下げる";
+        downBtn.textContent = "▼";
+        downBtn.disabled = (idx === unscheduled.length - 1);
+        downBtn.addEventListener("click", () => moveSpotInOrder(spot.id, "down"));
+
+        wrap.appendChild(upBtn);
+        wrap.appendChild(btn);
+        wrap.appendChild(downBtn);
+        el.appendChild(wrap);
+      });
+    }
+
+    function renderDays() {
+      const area = document.getElementById("daysArea");
+      area.innerHTML = "";
+
+      if (schedule.days.length === 0) {
+        area.innerHTML = `
+          <div class="schedule-empty">
+            <div class="schedule-empty-icon">📅</div>
+            集合日と解散日を設定すると<br>日程が自動作成されます。<br>
+            <span style="font-size:0.82rem;color:var(--muted)">スポットを追加するとプランも自動生成されます</span>
+          </div>`;
+        return;
+      }
+
+      schedule.days.forEach((day, idx) => renderDayCard(area, day, idx));
+    }
+
+    function renderDayCard(container, day, idx) {
+      ensureDayDefaults(day);
+
+      const card = document.createElement("div");
+      card.className = "day-card";
+      card.dataset.dayId = day.id;
+
+      // ── ヘッダー ──
+      const header = document.createElement("div");
+      header.className = "day-header";
+      header.innerHTML = `
+        <div class="day-number">${idx + 1}</div>
+        <div class="day-header-info">
+          <input class="day-label-input" type="text" value="${escHtml(day.label)}" placeholder="ラベル（例：1日目）" />
+          ${day.date ? `<span class="day-date-display">${formatDate(day.date)}</span>` : ""}
+        </div>
+      `;
+      header.querySelector(".day-label-input").addEventListener("change", e => {
+        day.label = e.target.value.trim() || `${idx + 1}日目`;
+        saveSchedule(schedule);
+      });
+      card.appendChild(header);
+
+      // ── 移動時間設定 ──
+      const travelRow = document.createElement("div");
+      travelRow.className = "travel-row";
+      travelRow.innerHTML = `
+        <span class="travel-label">スポット間の移動時間（目安）</span>
+        <input class="travel-min-input" type="number" min="0" max="180" step="5" value="${day.travelMinutes}" />
+        <span class="travel-min-suffix">分</span>
+      `;
+      travelRow.querySelector(".travel-min-input").addEventListener("change", e => {
+        day.travelMinutes = Math.max(0, parseInt(e.target.value) || 20);
+        saveSchedule(schedule);
+      });
+      card.appendChild(travelRow);
+
+      // ── スポットエントリー ──
+      const entriesEl = document.createElement("div");
+      entriesEl.className = "day-entries";
+
+      if (day.entries.length === 0) {
+        entriesEl.innerHTML = '<p class="day-empty-hint">右のスポットをクリックして追加できます</p>';
+      } else {
+        day.entries.forEach((entry, eIdx) => {
+          const spot = getSpotById(entry.spotId);
+          if (!spot) return;
+          const stayMin = (day.stayTimes && day.stayTimes[entry.spotId]) || 60;
+
+          const item = document.createElement("div");
+          item.className = "entry-item";
+          item.innerHTML = `
+            <span class="entry-priority">${eIdx + 1}</span>
+            <span class="entry-dot" style="background:${escHtml(spot.spotCategory?.color || "var(--accent)")}"></span>
+            <span class="entry-name">${escHtml(spot.name)}</span>
+            <input class="entry-stay" type="number" min="5" max="480" step="5" value="${stayMin}" title="滞在時間（分）" />
+            <span class="entry-stay-suffix">分</span>
+            <input class="entry-note" type="text" value="${escHtml(entry.note || "")}" placeholder="メモ..." />
+            <button class="entry-move-btn" data-dir="up" type="button" title="優先度を上げる"${eIdx === 0 ? " disabled" : ""}>▲</button>
+            <button class="entry-move-btn" data-dir="down" type="button" title="優先度を下げる"${eIdx === day.entries.length - 1 ? " disabled" : ""}>▼</button>
+            <button class="entry-remove-btn" type="button" title="外す">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          `;
+
+          item.querySelector(".entry-stay").addEventListener("change", e => {
+            if (!day.stayTimes) day.stayTimes = {};
+            day.stayTimes[entry.spotId] = Math.max(5, parseInt(e.target.value) || 60);
+            saveSchedule(schedule);
+          });
+          item.querySelector(".entry-note").addEventListener("change", e => {
+            entry.note = e.target.value;
+            saveSchedule(schedule);
+          });
+          item.querySelectorAll(".entry-move-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+              const dir = btn.dataset.dir;
+              const i   = day.entries.indexOf(entry);
+              if (dir === "up" && i > 0) {
+                [day.entries[i - 1], day.entries[i]] = [day.entries[i], day.entries[i - 1]];
+              } else if (dir === "down" && i < day.entries.length - 1) {
+                [day.entries[i], day.entries[i + 1]] = [day.entries[i + 1], day.entries[i]];
+              }
+              saveSchedule(schedule);
+              renderAll();
+            });
+          });
+          item.querySelector(".entry-remove-btn").addEventListener("click", () => {
+            day.entries = day.entries.filter(en => en.id !== entry.id);
+            saveSchedule(schedule);
+            renderAll();
+          });
+
+          entriesEl.appendChild(item);
+        });
+      }
+
+      card.appendChild(entriesEl);
+
+      // スポットがあれば自動でプランを生成
+      if (day.entries.length > 0) {
+        const planData = generatePlan(day, idx, schedule.days.length);
+        card.appendChild(buildPlanResultEl(planData));
+      }
+
+      container.appendChild(card);
+    }
+
+    function renderAll() {
+      renderDays();
+      renderUnscheduled();
+    }
+
+    // ── 日付ピッカー ──────────────────────────────────────────────
+
+    function openDayPicker(spot) {
+      if (schedule.days.length === 0) {
+        alert("集合日と解散日を設定すると日程が自動作成されます。");
+        return;
+      }
+      pendingSpot = spot;
+      const overlay = document.getElementById("dayPickerOverlay");
+      const list    = document.getElementById("dayPickerList");
+      document.getElementById("dayPickerTitle").textContent = `「${spot.name}」をどの日に追加しますか？`;
+      list.innerHTML = "";
+
+      schedule.days.forEach((day, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "day-picker-item";
+        btn.type = "button";
+        btn.innerHTML = `<span style="font-weight:700;color:var(--accent-deep)">${idx + 1}</span>&nbsp; ${escHtml(day.label)}${day.date ? `<span style="margin-left:8px;font-size:.78rem;color:var(--muted)">${escHtml(day.date)}</span>` : ""}`;
+        btn.addEventListener("click", () => {
+          day.entries.push({ id: makeId(), spotId: spot.id, time: "", note: "" });
+          saveSchedule(schedule);
+          renderAll();
+          closeDayPicker();
+        });
+        list.appendChild(btn);
+      });
+
+      overlay.classList.remove("hidden");
+    }
+
+    function closeDayPicker() {
+      document.getElementById("dayPickerOverlay").classList.add("hidden");
+      pendingSpot = null;
+    }
+
+    // ── 旅程設定イベント ──────────────────────────────────────────
+
+    function bindTripSettingsEvents() {
+      // 日付変更 → 日程自動生成
+      ["tripMeetDate", "tripDismissDate"].forEach(key => {
+        document.getElementById(key).addEventListener("change", e => {
+          schedule[key] = e.target.value;
+          saveSchedule(schedule);
+          syncDaysToDateRange();
+        });
+      });
+      // 時刻・場所変更 → プラン再描画
+      ["tripMeetTime", "tripMeetPlace", "tripDismissTime", "tripDismissPlace"].forEach(key => {
+        document.getElementById(key).addEventListener("change", e => {
+          schedule[key] = e.target.value;
+          saveSchedule(schedule);
+          renderAll();
+        });
+      });
+    }
+
+    // ── ハンバーガーメニュー ──────────────────────────────────────
+
+    const hamburgerBtn   = document.getElementById("hamburgerBtn");
+    const drawerBackdrop = document.getElementById("drawerBackdrop");
+    const sideDrawer     = document.getElementById("sideDrawer");
+
+    function openDrawer() {
+      sideDrawer.classList.remove("hidden");
+      drawerBackdrop.classList.remove("hidden");
+      sideDrawer.setAttribute("aria-hidden", "false");
+    }
+    function closeDrawer() {
+      sideDrawer.classList.add("hidden");
+      drawerBackdrop.classList.add("hidden");
+      sideDrawer.setAttribute("aria-hidden", "true");
+    }
+
+    hamburgerBtn.addEventListener("click", openDrawer);
+    drawerBackdrop.addEventListener("click", closeDrawer);
+
+    // ── 初期化 ────────────────────────────────────────────────────
+
+    document.getElementById("dayPickerCancel").addEventListener("click", closeDayPicker);
+    document.getElementById("dayPickerOverlay").addEventListener("click", e => {
+      if (e.target === e.currentTarget) closeDayPicker();
+    });
+
+    bindTripSettingsEvents();
+
+    activeList = loadActiveList();
+    if (activeList) {
+      document.getElementById("listNameBadge").textContent = activeList.name;
+      schedule = loadSchedule(activeList.id);
+    } else {
+      document.getElementById("listNameBadge").textContent = "リスト未選択";
+      schedule = { listId: "", days: [] };
+      ensureScheduleDefaults(schedule);
+    }
+
+    // 集合場所・解散場所カテゴリのスポットからテキスト欄を自動入力する
+    function autoFillFromCategories() {
+      if (!activeList?.spots) return;
+      let changed = false;
+      if (!schedule.tripMeetPlace) {
+        const meetSpot = activeList.spots.find(s => s.spotCategory === "meet");
+        if (meetSpot) { schedule.tripMeetPlace = meetSpot.name; changed = true; }
+      }
+      if (!schedule.tripDismissPlace) {
+        const dismissSpot = activeList.spots.find(s => s.spotCategory === "dismiss");
+        if (dismissSpot) { schedule.tripDismissPlace = dismissSpot.name; changed = true; }
+      }
+      if (changed) saveSchedule(schedule);
+    }
+
+    autoFillFromCategories();
+    renderTripSettings();
+    updateTripSummary();
+    syncDaysToDateRange();
+    renderAll();
+  </script>
+</body>
+</html>

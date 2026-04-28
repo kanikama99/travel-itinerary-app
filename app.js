@@ -4,7 +4,7 @@ const RELATIVE_CLUSTER_THRESHOLD = 0.08;
 const MAP_W = 640;
 const MAP_H = 420;
 const MAP_PAD = 30;
-const LABEL_W = 130;
+const LABEL_W = 180;
 const LABEL_H = 22;
 const LABEL_GAP = 16;
 const LABEL_DIRS = ["right", "left", "top", "bottom"];
@@ -59,6 +59,14 @@ const BG_THEME_CONFIGS = {
   gray:     "radial-gradient(circle at 8% 10%, rgba(200,210,220,.45), transparent 22%), radial-gradient(circle at 92% 14%, rgba(180,190,200,.28), transparent 20%), radial-gradient(circle at 80% 80%, rgba(190,200,210,.22), transparent 18%), linear-gradient(180deg,#f2f4f6 0%,#e4e8ec 100%)",
 };
 
+const THEME_COLOR_MAP = {
+  warm:     { accent: "#ff7a45", accentDeep: "#ce5428", accentLight: "#ff9a52", accentSoft: "rgba(255,122,69,0.12)",   line: "rgba(166,97,54,0.2)",    panel: "rgba(255,252,245,0.88)", shadow: "0 24px 50px rgba(149,90,48,0.16)"   },
+  sky:      { accent: "#3b8fd4", accentDeep: "#1a6aad", accentLight: "#60aee8", accentSoft: "rgba(59,143,212,0.12)",   line: "rgba(59,120,200,0.22)",  panel: "rgba(240,248,255,0.88)", shadow: "0 24px 50px rgba(30,90,160,0.14)"   },
+  mint:     { accent: "#2da868", accentDeep: "#1a7a48", accentLight: "#52c485", accentSoft: "rgba(45,168,104,0.12)",   line: "rgba(45,150,90,0.22)",   panel: "rgba(240,255,248,0.88)", shadow: "0 24px 50px rgba(30,110,60,0.14)"   },
+  lavender: { accent: "#8b64cc", accentDeep: "#6a45a8", accentLight: "#a884e0", accentSoft: "rgba(139,100,204,0.12)",  line: "rgba(120,80,200,0.22)",  panel: "rgba(248,244,255,0.88)", shadow: "0 24px 50px rgba(90,60,150,0.14)"   },
+  gray:     { accent: "#7a8a98", accentDeep: "#5a6a78", accentLight: "#96a6b4", accentSoft: "rgba(122,138,152,0.12)",  line: "rgba(100,120,140,0.22)", panel: "rgba(245,247,250,0.88)", shadow: "0 24px 50px rgba(60,80,100,0.14)"   },
+};
+
 function loadAppSettings() {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
@@ -70,6 +78,15 @@ function loadAppSettings() {
 
 function applyBgTheme(themeKey) {
   document.body.style.background = BG_THEME_CONFIGS[themeKey] || BG_THEME_CONFIGS.warm;
+  const colors = THEME_COLOR_MAP[themeKey] || THEME_COLOR_MAP.warm;
+  const root = document.documentElement;
+  root.style.setProperty("--accent",       colors.accent);
+  root.style.setProperty("--accent-deep",  colors.accentDeep);
+  root.style.setProperty("--accent-light", colors.accentLight);
+  root.style.setProperty("--accent-soft",  colors.accentSoft);
+  root.style.setProperty("--line",         colors.line);
+  root.style.setProperty("--panel",        colors.panel);
+  root.style.setProperty("--shadow",       colors.shadow);
 }
 
 const CATEGORIES_KEY = "spot-map-categories.v1";
@@ -190,12 +207,23 @@ const listNameInput = document.getElementById("listNameInput");
 const listAddBtn = document.getElementById("listAddBtn");
 const listManageBtn = document.getElementById("listManageBtn");
 const listManageDrawerBtn = document.getElementById("listManageDrawerBtn");
-const areaSuggestToggle = document.getElementById("areaSuggestToggle");
-const areaSuggestPanel = document.getElementById("areaSuggestPanel");
-const areaSuggestInput = document.getElementById("areaSuggestInput");
+const areaSuggestToggle    = document.getElementById("areaSuggestToggle");
+const areaSuggestPanel     = document.getElementById("areaSuggestPanel");
+const areaSuggestInput     = document.getElementById("areaSuggestInput");
 const areaSuggestSearchBtn = document.getElementById("areaSuggestSearchBtn");
-const areaSuggestStatus = document.getElementById("areaSuggestStatus");
-const areaSuggestResults = document.getElementById("areaSuggestResults");
+const areaSuggestStatus    = document.getElementById("areaSuggestStatus");
+const areaSuggestResults   = document.getElementById("areaSuggestResults");
+const areaSuggestDrawToggle  = document.getElementById("areaSuggestDrawToggle");
+const areaSuggestFilterClear = document.getElementById("areaSuggestFilterClear");
+const areaSuggestMapWrap     = document.getElementById("areaSuggestMapWrap");
+const areaSuggestMapEl       = document.getElementById("areaSuggestMapEl");
+
+// 地図絞り込みの状態
+let geoFilterBounds    = null;
+let areaSuggestMap     = null;
+let geoFilterCorner1   = null;
+let geoFilterRectLayer = null;
+let geoFilterMarkers   = [];
 const spotCategorySelect = document.getElementById("spotCategorySelect");
 const spotCategoryAddForm = document.getElementById("spotCategoryAddForm");
 const spotCategoryNewName = document.getElementById("spotCategoryNewName");
@@ -267,6 +295,8 @@ spotCategoryNewName.addEventListener("keydown", (e) => {
 if (areaSuggestToggle) areaSuggestToggle.addEventListener("click", toggleAreaSuggestPanel);
 if (areaSuggestSearchBtn) areaSuggestSearchBtn.addEventListener("click", handleAreaSuggest);
 if (areaSuggestInput) areaSuggestInput.addEventListener("keydown", (e) => { if (e.key === "Enter") handleAreaSuggest(); });
+if (areaSuggestDrawToggle) areaSuggestDrawToggle.addEventListener("click", toggleAreaSuggestDrawMap);
+if (areaSuggestFilterClear) areaSuggestFilterClear.addEventListener("click", clearGeoFilter);
 
 document.addEventListener("click", (e) => {
   if (!e.target.closest(".autocomplete-wrap")) {
@@ -816,18 +846,19 @@ function chooseLabelDirs(points, zoom) {
   points.forEach((point) => {
     const px = spotToPx(point, zoom);
     let chosen = null;
+    let minOverlapArea = Infinity;
+    let bestDir = LABEL_DIRS[0];
+
     for (const dir of LABEL_DIRS) {
       const r = labelRect(px, dir);
-      if (!placed.some((b) => rectsOverlap(r, b))) {
-        chosen = dir;
-        placed.push(r);
-        break;
-      }
+      const overlapArea = placed.reduce((sum, b) => {
+        if (!rectsOverlap(r, b)) return sum;
+        return sum + (Math.min(r.x2, b.x2) - Math.max(r.x1, b.x1)) * (Math.min(r.y2, b.y2) - Math.max(r.y1, b.y1));
+      }, 0);
+      if (overlapArea === 0) { chosen = dir; placed.push(r); break; }
+      if (overlapArea < minOverlapArea) { minOverlapArea = overlapArea; bestDir = dir; }
     }
-    if (!chosen) {
-      chosen = "right";
-      placed.push(labelRect(px, "right"));
-    }
+    if (!chosen) { chosen = bestDir; placed.push(labelRect(px, bestDir)); }
     result.set(point.id, chosen);
   });
   return result;
@@ -1401,6 +1432,71 @@ function addSpotFromSuggestion(suggestion) {
 
 // ── エリアから提案 ────────────────────────────────────────────────────────────
 
+// 地図で範囲を絞る
+function initAreaSuggestMap() {
+  if (areaSuggestMap) { setTimeout(() => areaSuggestMap.invalidateSize(), 50); return; }
+  const spotsWithCoord = state.spots.filter(s => s.lat && s.lng);
+  const center = spotsWithCoord.length > 0
+    ? [spotsWithCoord[0].lat, spotsWithCoord[0].lng]
+    : [35.68, 139.76];
+  areaSuggestMap = L.map(areaSuggestMapEl, { center, zoom: 11, zoomControl: true, attributionControl: false });
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(areaSuggestMap);
+
+  spotsWithCoord.forEach(spot => {
+    L.circleMarker([spot.lat, spot.lng], {
+      radius: 6, color: "#ff7a45", fillColor: "#ff7a45", fillOpacity: 0.7, weight: 2,
+    }).bindTooltip(spot.name, { permanent: false }).addTo(areaSuggestMap);
+  });
+
+  if (spotsWithCoord.length > 1) {
+    areaSuggestMap.fitBounds(L.latLngBounds(spotsWithCoord.map(s => [s.lat, s.lng])).pad(0.3));
+  }
+
+  areaSuggestMap.on("click", handleDrawMapClick);
+  setTimeout(() => areaSuggestMap.invalidateSize(), 100);
+}
+
+function handleDrawMapClick(e) {
+  const hint = areaSuggestMapWrap.querySelector(".area-suggest-map-hint");
+  if (!geoFilterCorner1) {
+    geoFilterCorner1 = e.latlng;
+    const m = L.circleMarker(e.latlng, {
+      radius: 7, color: "#0088cc", fillColor: "#0088cc", fillOpacity: 0.9, weight: 2,
+    }).addTo(areaSuggestMap);
+    geoFilterMarkers.push(m);
+    if (hint) hint.textContent = "2点目をクリックして範囲を確定してください";
+  } else {
+    geoFilterBounds  = L.latLngBounds(geoFilterCorner1, e.latlng);
+    geoFilterCorner1 = null;
+    geoFilterMarkers.forEach(m => m.remove());
+    geoFilterMarkers = [];
+    if (geoFilterRectLayer) geoFilterRectLayer.remove();
+    geoFilterRectLayer = L.rectangle(geoFilterBounds, { color: "#ff7a45", weight: 2, fillOpacity: 0.12 }).addTo(areaSuggestMap);
+    areaSuggestMap.fitBounds(geoFilterBounds.pad(0.1));
+    if (hint) hint.textContent = "範囲を設定しました（もう一度クリックで再設定）";
+    areaSuggestFilterClear.classList.remove("hidden");
+    areaSuggestDrawToggle.classList.add("active");
+  }
+}
+
+function clearGeoFilter() {
+  geoFilterBounds  = null;
+  geoFilterCorner1 = null;
+  geoFilterMarkers.forEach(m => m.remove());
+  geoFilterMarkers = [];
+  if (geoFilterRectLayer) { geoFilterRectLayer.remove(); geoFilterRectLayer = null; }
+  areaSuggestFilterClear.classList.add("hidden");
+  areaSuggestDrawToggle.classList.remove("active");
+  const hint = areaSuggestMapWrap?.querySelector(".area-suggest-map-hint");
+  if (hint) hint.textContent = "地図をクリックして範囲の2点を選択してください";
+}
+
+function toggleAreaSuggestDrawMap() {
+  const isHidden = areaSuggestMapWrap.classList.contains("hidden");
+  areaSuggestMapWrap.classList.toggle("hidden", !isHidden);
+  if (isHidden) initAreaSuggestMap();
+}
+
 function getAreaSuggestCount() {
   const s = loadAppSettings();
   return (typeof s.areaSuggestCount === "number" && s.areaSuggestCount >= 1) ? s.areaSuggestCount : 6;
@@ -1419,10 +1515,11 @@ function toggleAreaSuggestPanel() {
 
 async function handleAreaSuggest() {
   const areaName = areaSuggestInput.value.trim();
-  if (!areaName) {
-    setAreaSuggestStatus("エリア名を入力してください。", true);
+  if (!areaName && !geoFilterBounds) {
+    setAreaSuggestStatus("エリア名を入力するか、地図で範囲を指定してください。", true);
     return;
   }
+  const displayName = areaName || "指定範囲";
   areaSuggestResults.innerHTML = "";
   const timeoutSec = getAreaSuggestTimeout();
   setAreaSuggestStatus(`観光スポットを検索中（最大 ${timeoutSec} 秒）...`, false);
@@ -1439,12 +1536,12 @@ async function handleAreaSuggest() {
     if (!suggestions.length) {
       const msg = didTimeout
         ? `${timeoutSec}秒以内に候補が見つかりませんでした。設定で上限時間を延ばすか、別のエリア名を試してください。`
-        : "候補が見つかりませんでした。別のエリア名を試してください。";
+        : "候補が見つかりませんでした。別のエリア名や別の範囲を試してください。";
       setAreaSuggestStatus(msg, true);
       return;
     }
     const suffix = didTimeout ? `（${timeoutSec}秒でタイムアウト・途中結果）` : "";
-    setAreaSuggestStatus(`「${areaName}」周辺の有名スポット ${suggestions.length} 件${suffix}`, false);
+    setAreaSuggestStatus(`「${displayName}」周辺の有名スポット ${suggestions.length} 件${suffix}`, false);
     renderAreaSuggestions(suggestions);
   } catch (_) {
     setAreaSuggestStatus("取得に失敗しました。しばらく待ってから再試行してください。", true);
@@ -1455,30 +1552,41 @@ async function handleAreaSuggest() {
 }
 
 async function fetchAreaSuggestions(areaName, count, signal) {
-  // Step1: Nominatimでエリアの座標・バウンディングボックスを取得
-  const nominatimParams = new URLSearchParams({ q: areaName, format: "jsonv2", limit: "1" });
-  let nominatimRes;
-  try {
-    nominatimRes = await fetch(`https://nominatim.openstreetmap.org/search?${nominatimParams}`, {
-      headers: { "Accept-Language": "ja,en" },
-      signal,
-    });
-  } catch (e) {
-    if (e.name === "AbortError") return [];
-    throw e;
+  let minLat, maxLat, minLng, maxLng;
+
+  if (geoFilterBounds) {
+    // 地図で描いた範囲を使う
+    const sw = geoFilterBounds.getSouthWest();
+    const ne = geoFilterBounds.getNorthEast();
+    minLat = sw.lat; maxLat = ne.lat;
+    minLng = sw.lng; maxLng = ne.lng;
+  } else {
+    // Step1: Nominatimでエリアの座標・バウンディングボックスを取得
+    const nominatimParams = new URLSearchParams({ q: areaName, format: "jsonv2", limit: "1" });
+    let nominatimRes;
+    try {
+      nominatimRes = await fetch(`https://nominatim.openstreetmap.org/search?${nominatimParams}`, {
+        headers: { "Accept-Language": "ja,en" },
+        signal,
+      });
+    } catch (e) {
+      if (e.name === "AbortError") return [];
+      throw e;
+    }
+    if (!nominatimRes.ok) throw new Error("エリア検索失敗");
+    const nominatimData = await nominatimRes.json();
+    if (!nominatimData.length) return [];
+
+    const area = nominatimData[0];
+    const bbox = area.boundingbox; // [minlat, maxlat, minlng, maxlng]
+    if (!bbox) return [];
+
+    minLat = parseFloat(bbox[0]);
+    maxLat = parseFloat(bbox[1]);
+    minLng = parseFloat(bbox[2]);
+    maxLng = parseFloat(bbox[3]);
   }
-  if (!nominatimRes.ok) throw new Error("エリア検索失敗");
-  const nominatimData = await nominatimRes.json();
-  if (!nominatimData.length) return [];
 
-  const area = nominatimData[0];
-  const bbox = area.boundingbox; // [minlat, maxlat, minlng, maxlng]
-  if (!bbox) return [];
-
-  const minLat = parseFloat(bbox[0]);
-  const maxLat = parseFloat(bbox[1]);
-  const minLng = parseFloat(bbox[2]);
-  const maxLng = parseFloat(bbox[3]);
   const fetchLimit = Math.min(count * 8, 200);
 
   // wikidataタグ必須で著名スポットのみに絞る（品質確保のため常に適用）

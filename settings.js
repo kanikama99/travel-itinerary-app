@@ -33,6 +33,14 @@ const BG_THEMES = [
   },
 ];
 
+const THEME_COLOR_MAP = {
+  warm:     { accent: "#ff7a45", accentDeep: "#ce5428", accentLight: "#ff9a52", accentSoft: "rgba(255,122,69,0.12)",   line: "rgba(166,97,54,0.2)",    panel: "rgba(255,252,245,0.88)", shadow: "0 24px 50px rgba(149,90,48,0.16)"   },
+  sky:      { accent: "#3b8fd4", accentDeep: "#1a6aad", accentLight: "#60aee8", accentSoft: "rgba(59,143,212,0.12)",   line: "rgba(59,120,200,0.22)",  panel: "rgba(240,248,255,0.88)", shadow: "0 24px 50px rgba(30,90,160,0.14)"   },
+  mint:     { accent: "#2da868", accentDeep: "#1a7a48", accentLight: "#52c485", accentSoft: "rgba(45,168,104,0.12)",   line: "rgba(45,150,90,0.22)",   panel: "rgba(240,255,248,0.88)", shadow: "0 24px 50px rgba(30,110,60,0.14)"   },
+  lavender: { accent: "#8b64cc", accentDeep: "#6a45a8", accentLight: "#a884e0", accentSoft: "rgba(139,100,204,0.12)",  line: "rgba(120,80,200,0.22)",  panel: "rgba(248,244,255,0.88)", shadow: "0 24px 50px rgba(90,60,150,0.14)"   },
+  gray:     { accent: "#7a8a98", accentDeep: "#5a6a78", accentLight: "#96a6b4", accentSoft: "rgba(122,138,152,0.12)",  line: "rgba(100,120,140,0.22)", panel: "rgba(245,247,250,0.88)", shadow: "0 24px 50px rgba(60,80,100,0.14)"   },
+};
+
 function loadSettings() {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
@@ -58,6 +66,15 @@ applyBgFull(settings.bgTheme);
 function applyBgFull(key) {
   const theme = BG_THEMES.find((t) => t.key === key) || BG_THEMES[0];
   document.body.style.background = theme.full;
+  const colors = THEME_COLOR_MAP[key] || THEME_COLOR_MAP.warm;
+  const root = document.documentElement;
+  root.style.setProperty("--accent",       colors.accent);
+  root.style.setProperty("--accent-deep",  colors.accentDeep);
+  root.style.setProperty("--accent-light", colors.accentLight);
+  root.style.setProperty("--accent-soft",  colors.accentSoft);
+  root.style.setProperty("--line",         colors.line);
+  root.style.setProperty("--panel",        colors.panel);
+  root.style.setProperty("--shadow",       colors.shadow);
 }
 
 // ── Hamburger drawer ─────────────────────────────────────────────────────────

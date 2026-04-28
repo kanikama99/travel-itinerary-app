@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>スポットマップ整理アプリ</title>
+  <title>行きたい場所！ — Trip Pop Map</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
@@ -15,7 +15,7 @@
     <header class="hero">
       <div class="hero-copy-wrap">
         <p class="eyebrow">Trip Pop Map</p>
-        <h1>スポットマップ整理アプリ</h1>
+        <h1>行きたい場所！</h1>
         <p class="hero-copy">
           スポット名または Google Maps の URL を登録すると、場所一覧と地図を自動生成します。近い場所は全体図ではまとめて表示し、拡大図で個別に確認できます。
         </p>
@@ -50,10 +50,18 @@
           <svg class="area-suggest-chevron" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div id="areaSuggestPanel" class="area-suggest-panel hidden">
-          <p class="area-suggest-desc">エリア名を入力すると、そのエリアの有名スポットを候補として表示します。</p>
+          <p class="area-suggest-desc">エリア名を入力するか、地図で範囲を指定して有名スポットを候補表示します。</p>
           <div class="area-suggest-row">
             <input id="areaSuggestInput" type="text" placeholder="例: 東京、大阪、京都、沖縄..." class="area-suggest-input" />
             <button id="areaSuggestSearchBtn" class="primary-button" type="button">提案を取得</button>
+          </div>
+          <div class="area-suggest-draw-row">
+            <button id="areaSuggestDrawToggle" class="area-suggest-draw-btn" type="button">✏ 地図で範囲を絞る</button>
+            <button id="areaSuggestFilterClear" class="area-suggest-filter-clear hidden" type="button">× 範囲リセット</button>
+          </div>
+          <div id="areaSuggestMapWrap" class="area-suggest-map-wrap hidden">
+            <p class="area-suggest-map-hint">地図をクリックして範囲の2点を選択してください</p>
+            <div id="areaSuggestMapEl" class="area-suggest-map-el"></div>
           </div>
           <p id="areaSuggestStatus" class="area-suggest-status hidden"></p>
           <div id="areaSuggestResults" class="area-suggest-results"></div>
@@ -118,6 +126,13 @@
         </div>
         <div id="spotList" class="spot-list empty-state">まだスポットが登録されていません。</div>
       </section>
+
+      <div class="page-nav page-nav--end">
+        <a href="./schedule.html" class="page-nav-btn page-nav-btn--next">
+          スケジュールへ
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+      </div>
   </div>
 
   <template id="spotItemTemplate">
@@ -178,7 +193,23 @@
       <p class="drawer-kicker">Menu</p>
     </div>
     <nav class="drawer-nav">
-      <a href="/settings.html" class="drawer-nav-item">
+      <a href="./bookmarks.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">📒</span>
+        <span>しおりを選ぶ</span>
+      </a>
+      <a href="./index.html" class="drawer-nav-item drawer-nav-item--active">
+        <span class="drawer-nav-icon">📍</span>
+        <span>行きたい場所！</span>
+      </a>
+      <a href="./schedule.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">📅</span>
+        <span>スケジュール</span>
+      </a>
+      <a href="./hotel.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">🏨</span>
+        <span>ホテルを見つける</span>
+      </a>
+      <a href="./settings.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">⚙</span>
         <span>設定</span>
       </a>

@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ホテルを見つける — Trip Pop Map</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+  <style>
+    .hotel-shell {
+      width: min(760px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 40px 0 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .hotel-eyebrow {
+      font-size: 0.75rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .hotel-title { font-size: clamp(1.5rem, 4vw, 2rem); font-weight: 700; line-height: 1.2; }
+    .hotel-list-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      border: 1px solid rgba(255, 122, 69, 0.22);
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--accent-deep);
+      margin-top: 8px;
+    }
+
+    /* 検索カード */
+    .hotel-search-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: 0 4px 16px rgba(149, 90, 48, 0.08);
+    }
+    .hotel-card-kicker {
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .hotel-search-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .hotel-field { display: flex; flex-direction: column; gap: 5px; }
+    .hotel-field-label { font-size: 0.74rem; font-weight: 700; color: var(--muted); }
+    .hotel-input {
+      font: inherit; font-size: 0.88rem; color: var(--text);
+      border: 1.5px solid var(--line); border-radius: 10px;
+      padding: 9px 12px; background: rgba(255,255,255,0.85);
+      outline: none; width: 100%;
+    }
+    .hotel-input:focus { border-color: var(--accent); background: #fff; }
+    .hotel-input::placeholder { color: #c0c8cc; }
+
+    /* 検索ボタン群 */
+    .hotel-sites-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+    }
+    .hotel-site-btn {
+      display: flex; align-items: center; gap: 10px;
+      padding: 13px 16px;
+      background: rgba(255,255,255,0.6);
+      border: 1.5px solid rgba(166,97,54,0.14);
+      border-radius: 14px;
+      font: inherit; font-size: 0.88rem; font-weight: 700;
+      color: var(--text); cursor: pointer; text-align: left;
+      transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .hotel-site-btn:hover {
+      border-color: var(--accent);
+      box-shadow: 0 4px 14px rgba(255,122,69,0.18);
+      transform: translateY(-2px);
+    }
+    .hotel-site-btn:active { transform: scale(0.97); }
+    .hotel-site-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+      background: var(--accent-soft);
+    }
+    .hotel-site-name { font-size: 0.84rem; font-weight: 700; }
+    .hotel-site-desc { font-size: 0.7rem; color: var(--muted); font-weight: 400; }
+
+    /* ヒントカード */
+    .hotel-hint-card {
+      background: rgba(255,210,87,0.12);
+      border: 1px solid rgba(255,210,87,0.4);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      font-size: 0.84rem;
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .hotel-hint-title { font-weight: 700; color: var(--accent-deep); margin-bottom: 6px; font-size: 0.82rem; }
+
+    @media (max-width: 600px) {
+      .hotel-search-grid { grid-template-columns: 1fr; }
+      .hotel-sites-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="hotel-shell">
+    <header>
+      <p class="hotel-eyebrow">Hotel Search</p>
+      <h1 class="hotel-title">ホテルを見つける</h1>
+      <div class="hotel-list-badge">
+        <span>📒</span>
+        <span id="listNameBadge">—</span>
+      </div>
+    </header>
+
+    <div class="hotel-search-card">
+      <p class="hotel-card-kicker">Search — エリアと日程を入力</p>
+      <div class="hotel-search-grid">
+        <div class="hotel-field">
+          <label class="hotel-field-label" for="hotelArea">エリア・都市</label>
+          <input id="hotelArea" class="hotel-input" type="text" placeholder="例：東京、京都、沖縄" />
+        </div>
+        <div class="hotel-field">
+          <label class="hotel-field-label" for="checkin">チェックイン</label>
+          <input id="checkin" class="hotel-input" type="date" />
+        </div>
+        <div class="hotel-field">
+          <label class="hotel-field-label" for="checkout">チェックアウト</label>
+          <input id="checkout" class="hotel-input" type="date" />
+        </div>
+      </div>
+      <div class="hotel-sites-grid">
+        <button class="hotel-site-btn" type="button" onclick="searchGoogle()">
+          <div class="hotel-site-icon">🔍</div>
+          <div>
+            <div class="hotel-site-name">Google で検索</div>
+            <div class="hotel-site-desc">ホテルを一括検索</div>
+          </div>
+        </button>
+        <button class="hotel-site-btn" type="button" onclick="searchBooking()">
+          <div class="hotel-site-icon">🏨</div>
+          <div>
+            <div class="hotel-site-name">Booking.com</div>
+            <div class="hotel-site-desc">海外対応・格安多数</div>
+          </div>
+        </button>
+        <button class="hotel-site-btn" type="button" onclick="searchJalan()">
+          <div class="hotel-site-icon">🌸</div>
+          <div>
+            <div class="hotel-site-name">じゃらん</div>
+            <div class="hotel-site-desc">国内旅行に強い</div>
+          </div>
+        </button>
+        <button class="hotel-site-btn" type="button" onclick="searchRakuten()">
+          <div class="hotel-site-icon">🛍</div>
+          <div>
+            <div class="hotel-site-name">楽天トラベル</div>
+            <div class="hotel-site-desc">ポイント対応</div>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <div id="spotCentroidCard" class="hotel-hint-card hidden" style="background:rgba(112,214,197,0.12);border-color:rgba(112,214,197,0.4);">
+      <p class="hotel-hint-title">📍 スポットの中心地から提案</p>
+      <p id="spotCentroidText">計算中...</p>
+      <button id="spotCentroidApplyBtn" class="hotel-site-btn" type="button" style="margin-top:12px;width:100%;justify-content:flex-start;">
+        <div class="hotel-site-icon">🗺</div>
+        <div>
+          <div class="hotel-site-name" id="spotCentroidAreaName">—</div>
+          <div class="hotel-site-desc">このエリアをホテル検索に使う</div>
+        </div>
+      </button>
+    </div>
+
+    <div class="hotel-hint-card">
+      <p class="hotel-hint-title">💡 使い方のヒント</p>
+      <p>エリアとチェックイン・アウト日を入力してから各ボタンを押すと、そのサイトの検索結果が開きます。スケジュールページで集合・解散日時を設定しておくと、日付が自動的に入力されます。</p>
+    </div>
+
+    <div class="page-nav page-nav--end">
+      <a href="./schedule.html" class="page-nav-btn page-nav-btn--prev">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        スケジュールに戻る
+      </a>
+    </div>
+  </div>
+
+  <button id="hamburgerBtn" class="hamburger-btn" type="button" aria-label="メニューを開く">
+    <span class="hamburger-line"></span>
+    <span class="hamburger-line"></span>
+    <span class="hamburger-line"></span>
+  </button>
+
+  <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
+  <aside id="sideDrawer" class="side-drawer hidden" aria-hidden="true">
+    <div class="drawer-head">
+      <p class="drawer-kicker">Menu</p>
+    </div>
+    <nav class="drawer-nav">
+      <a href="./bookmarks.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">📒</span>
+        <span>しおりを選ぶ</span>
+      </a>
+      <a href="./index.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">📍</span>
+        <span>行きたい場所！</span>
+      </a>
+      <a href="./schedule.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">📅</span>
+        <span>スケジュール</span>
+      </a>
+      <a href="./hotel.html" class="drawer-nav-item drawer-nav-item--active">
+        <span class="drawer-nav-icon">🏨</span>
+        <span>ホテルを見つける</span>
+      </a>
+      <a href="./settings.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">⚙</span>
+        <span>設定</span>
+      </a>
+    </nav>
+  </aside>
+
+  <script>
+    // テーマ適用
+    (function() {
+      try {
+        const sk = JSON.parse(localStorage.getItem("spot-map-settings.v1") || "{}");
+        const k = sk.bgTheme || "warm";
+        const BGS = {
+          warm:     "radial-gradient(circle at 8% 10%, rgba(255,210,87,.55), transparent 22%), radial-gradient(circle at 92% 14%, rgba(112,214,197,.34), transparent 20%), radial-gradient(circle at 80% 80%, rgba(255,143,177,.28), transparent 18%), linear-gradient(180deg,#fff8ea 0%,#ffeccd 100%)",
+          sky:      "radial-gradient(circle at 8% 10%, rgba(135,206,250,.45), transparent 22%), radial-gradient(circle at 92% 14%, rgba(100,180,255,.28), transparent 20%), radial-gradient(circle at 80% 80%, rgba(173,216,230,.25), transparent 18%), linear-gradient(180deg,#eaf5ff 0%,#d0e8ff 100%)",
+          mint:     "radial-gradient(circle at 8% 10%, rgba(144,238,144,.4), transparent 22%), radial-gradient(circle at 92% 14%, rgba(100,200,150,.28), transparent 20%), radial-gradient(circle at 80% 80%, rgba(152,251,152,.22), transparent 18%), linear-gradient(180deg,#eafff4 0%,#d0f5e0 100%)",
+          lavender: "radial-gradient(circle at 8% 10%, rgba(216,191,255,.45), transparent 22%), radial-gradient(circle at 92% 14%, rgba(180,150,240,.28), transparent 20%), radial-gradient(circle at 80% 80%, rgba(200,170,255,.22), transparent 18%), linear-gradient(180deg,#f4eeff 0%,#e5d8ff 100%)",
+          gray:     "radial-gradient(circle at 8% 10%, rgba(200,210,220,.45), transparent 22%), radial-gradient(circle at 92% 14%, rgba(180,190,200,.28), transparent 20%), radial-gradient(circle at 80% 80%, rgba(190,200,210,.22), transparent 18%), linear-gradient(180deg,#f2f4f6 0%,#e4e8ec 100%)",
+        };
+        const CS = {
+          warm:     ["#ff7a45","#ce5428","#ff9a52","rgba(255,122,69,0.12)","rgba(166,97,54,0.2)","rgba(255,252,245,0.88)","0 24px 50px rgba(149,90,48,0.16)"],
+          sky:      ["#3b8fd4","#1a6aad","#60aee8","rgba(59,143,212,0.12)","rgba(59,120,200,0.22)","rgba(240,248,255,0.88)","0 24px 50px rgba(30,90,160,0.14)"],
+          mint:     ["#2da868","#1a7a48","#52c485","rgba(45,168,104,0.12)","rgba(45,150,90,0.22)","rgba(240,255,248,0.88)","0 24px 50px rgba(30,110,60,0.14)"],
+          lavender: ["#8b64cc","#6a45a8","#a884e0","rgba(139,100,204,0.12)","rgba(120,80,200,0.22)","rgba(248,244,255,0.88)","0 24px 50px rgba(90,60,150,0.14)"],
+          gray:     ["#7a8a98","#5a6a78","#96a6b4","rgba(122,138,152,0.12)","rgba(100,120,140,0.22)","rgba(245,247,250,0.88)","0 24px 50px rgba(60,80,100,0.14)"],
+        };
+        document.body.style.background = BGS[k] || BGS.warm;
+        const c = CS[k] || CS.warm;
+        const r = document.documentElement;
+        r.style.setProperty("--accent",       c[0]);
+        r.style.setProperty("--accent-deep",  c[1]);
+        r.style.setProperty("--accent-light", c[2]);
+        r.style.setProperty("--accent-soft",  c[3]);
+        r.style.setProperty("--line",         c[4]);
+        r.style.setProperty("--panel",        c[5]);
+        r.style.setProperty("--shadow",       c[6]);
+      } catch {}
+    })();
+
+    const LISTS_KEY    = "spot-map-lists.v1";
+    const SCHEDULE_KEY = "spot-map-schedule.v1";
+
+    function escHtml(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    // アクティブリストとスケジュールから日付を自動入力
+    function init() {
+      try {
+        const listsRaw = localStorage.getItem(LISTS_KEY);
+        if (listsRaw) {
+          const listsData = JSON.parse(listsRaw);
+          const activeList = listsData.lists?.find(l => l.id === listsData.activeListId) || listsData.lists?.[0];
+          if (activeList) {
+            document.getElementById("listNameBadge").textContent = escHtml(activeList.name);
+
+            const schedRaw = localStorage.getItem(SCHEDULE_KEY);
+            if (schedRaw) {
+              const all = JSON.parse(schedRaw);
+              const sched = all[activeList.id];
+              if (sched) {
+                if (sched.tripMeetDate)    document.getElementById("checkin").value  = sched.tripMeetDate;
+                if (sched.tripDismissDate) document.getElementById("checkout").value = sched.tripDismissDate;
+                if (sched.tripMeetPlace)   document.getElementById("hotelArea").value = sched.tripMeetPlace;
+              }
+            }
+          }
+        }
+      } catch {}
+    }
+
+    // スポットの重心からホテルエリアを提案する
+    async function suggestHotelFromSpots() {
+      try {
+        const listsRaw = localStorage.getItem(LISTS_KEY);
+        if (!listsRaw) return;
+        const listsData = JSON.parse(listsRaw);
+        const activeList = listsData.lists?.find(l => l.id === listsData.activeListId) || listsData.lists?.[0];
+        if (!activeList) return;
+
+        const spots = (activeList.spots || []).filter(s => s.lat && s.lng);
+        if (spots.length < 1) return;
+
+        const avgLat = spots.reduce((sum, s) => sum + s.lat, 0) / spots.length;
+        const avgLng = spots.reduce((sum, s) => sum + s.lng, 0) / spots.length;
+
+        const card = document.getElementById("spotCentroidCard");
+        const text = document.getElementById("spotCentroidText");
+        const areaNameEl = document.getElementById("spotCentroidAreaName");
+        card.classList.remove("hidden");
+        text.textContent = `${spots.length}件のスポットの重心を計算中...`;
+
+        const params = new URLSearchParams({ lat: avgLat, lon: avgLng, format: "jsonv2", zoom: "12", addressdetails: "1" });
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?${params}`, {
+          headers: { "Accept-Language": "ja,en" },
+        });
+        if (!res.ok) throw new Error("逆ジオコード失敗");
+        const data = await res.json();
+        const addr = data.address || {};
+        const areaName = addr.city || addr.town || addr.suburb || addr.county || addr.state || data.display_name?.split(",")[0] || "";
+        if (!areaName) { card.classList.add("hidden"); return; }
+
+        areaNameEl.textContent = areaName;
+        text.textContent = `${spots.length}件のスポットの中心地から「${areaName}」周辺がアクセス便利な宿泊地として提案されます。`;
+
+        document.getElementById("spotCentroidApplyBtn").addEventListener("click", () => {
+          document.getElementById("hotelArea").value = areaName;
+        });
+      } catch (_) {
+        document.getElementById("spotCentroidCard")?.classList.add("hidden");
+      }
+    }
+
+    function getArea() {
+      return document.getElementById("hotelArea").value.trim() || "日本";
+    }
+    function getCheckin() {
+      return document.getElementById("checkin").value;
+    }
+    function getCheckout() {
+      return document.getElementById("checkout").value;
+    }
+
+    function searchGoogle() {
+      const area = getArea();
+      const cin  = getCheckin();
+      const cout = getCheckout();
+      let q = `${area} ホテル 予約`;
+      if (cin)  q += ` ${cin}`;
+      if (cout) q += `〜${cout}`;
+      window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}`, "_blank");
+    }
+
+    function searchBooking() {
+      const area = getArea();
+      const cin  = getCheckin();
+      const cout = getCheckout();
+      let url = `https://www.booking.com/search.html?ss=${encodeURIComponent(area)}&lang=ja`;
+      if (cin)  url += `&checkin=${cin}`;
+      if (cout) url += `&checkout=${cout}`;
+      window.open(url, "_blank");
+    }
+
+    function searchJalan() {
+      const area = getArea();
+      window.open(`https://www.jalan.net/search/search.do?keyword=${encodeURIComponent(area)}`, "_blank");
+    }
+
+    function searchRakuten() {
+      const area = getArea();
+      window.open(`https://travel.rakuten.co.jp/search/?f_area=${encodeURIComponent(area)}`, "_blank");
+    }
+
+    // ── ハンバーガーメニュー ──
+    const hamburgerBtn   = document.getElementById("hamburgerBtn");
+    const drawerBackdrop = document.getElementById("drawerBackdrop");
+    const sideDrawer     = document.getElementById("sideDrawer");
+
+    hamburgerBtn.addEventListener("click", () => {
+      sideDrawer.classList.remove("hidden");
+      drawerBackdrop.classList.remove("hidden");
+      sideDrawer.setAttribute("aria-hidden", "false");
+    });
+    drawerBackdrop.addEventListener("click", () => {
+      sideDrawer.classList.add("hidden");
+      drawerBackdrop.classList.add("hidden");
+      sideDrawer.setAttribute("aria-hidden", "true");
+    });
+
+    init();
+    suggestHotelFromSpots();
+  </script>
+</body>
+</html>

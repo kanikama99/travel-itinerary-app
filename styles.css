@@ -7,6 +7,7 @@
   --muted: #5f6d73;
   --accent: #ff7a45;
   --accent-deep: #ce5428;
+  --accent-light: #ff9a52;
   --accent-soft: rgba(255, 122, 69, 0.14);
   --accent-yellow: #ffd257;
   --accent-pink: #ff8fb1;
@@ -82,7 +83,7 @@ button {
   height: 1.6em;
   margin-right: 0.35em;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent) 0%, #ff9a52 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
   color: #fff;
   font-size: 0.72em;
   font-weight: 700;
@@ -176,7 +177,7 @@ button {
 input,
 textarea {
   width: 100%;
-  border: 1px solid rgba(166, 97, 54, 0.16);
+  border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.92);
   border-radius: var(--radius-md);
   padding: 14px 16px;
@@ -204,7 +205,7 @@ textarea:focus {
 }
 
 .primary-button {
-  background: linear-gradient(135deg, var(--accent) 0%, #ff9a52 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
   color: #fff9f4;
 }
 
@@ -662,7 +663,7 @@ textarea:focus {
   letter-spacing: 0.04em;
   color: #fff9f4;
   font-weight: 700;
-  background: linear-gradient(135deg, var(--accent) 0%, #ff9a52 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
   border-radius: 24px 24px 0 0;
 }
 
@@ -973,6 +974,11 @@ textarea:focus {
 
 .drawer-nav-item:hover {
   background: rgba(255, 122, 69, 0.09);
+}
+
+.drawer-nav-item--active {
+  background: rgba(255, 122, 69, 0.13);
+  color: var(--accent-deep);
 }
 
 .drawer-nav-icon {
@@ -1736,6 +1742,66 @@ textarea:focus {
   cursor: default;
 }
 
+.area-suggest-draw-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.area-suggest-draw-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: none;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.area-suggest-draw-btn:hover,
+.area-suggest-draw-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+}
+
+.area-suggest-filter-clear {
+  padding: 6px 14px;
+  border: 1.5px solid rgba(204, 51, 51, 0.3);
+  border-radius: 999px;
+  background: none;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #c33;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.area-suggest-filter-clear:hover { border-color: #c33; background: rgba(204, 51, 51, 0.08); }
+.area-suggest-filter-clear.hidden { display: none; }
+
+.area-suggest-map-wrap { margin: 10px 0; }
+.area-suggest-map-wrap.hidden { display: none; }
+
+.area-suggest-map-hint {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.area-suggest-map-el {
+  width: 100%;
+  height: 220px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1.5px solid var(--line);
+}
+
 .btn-mobile-label {
   display: none;
 }
@@ -1745,6 +1811,59 @@ textarea:focus {
 .is-capturing .map-head .icon-btn {
   display: none !important;
 }
+
+/* ── ページ間ナビゲーション ─────────────────────────────────────────────────── */
+
+.page-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0 4px;
+  margin-top: 8px;
+}
+
+.page-nav--end {
+  justify-content: flex-end;
+}
+
+.page-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 22px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s, border-color 0.18s, background 0.18s;
+}
+
+.page-nav-btn--prev {
+  border: 1.5px solid var(--line);
+  background: rgba(255, 255, 255, 0.65);
+  color: var(--text);
+}
+.page-nav-btn--prev:hover {
+  border-color: var(--accent);
+  color: var(--accent-deep);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.page-nav-btn--next {
+  border: none;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+  color: #fff9f4;
+  box-shadow: 0 6px 18px rgba(255, 122, 69, 0.36);
+}
+.page-nav-btn--next:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(255, 122, 69, 0.46);
+}
+.page-nav-btn--next:active { transform: scale(0.97); }
 
 /* ── 設定画面 ─────────────────────────────────────────────────────────────── */
 
