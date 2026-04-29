@@ -1,13 +1,16 @@
 const STORAGE_KEY = "spot-map-organizer.v9";
 const LISTS_KEY = "spot-map-lists.v1";
-const RELATIVE_CLUSTER_THRESHOLD = 0.08;
-const MAP_W = 640;
-const MAP_H = 420;
+const RELATIVE_CLUSTER_THRESHOLD = 0.12;
 const MAP_PAD = 30;
-const LABEL_W = 220;
-const LABEL_H = 32;
-const LABEL_GAP = 16;
+const LABEL_MIN_W = 92;
+const LABEL_MAX_W = 520;
+const LABEL_CHAR_W = 15;
+const LABEL_H = 38;
+const LABEL_GAP = 24;
+const LABEL_PIN_PAD = 20;
+const LABEL_EDGE_PAD = 8;
 const LABEL_DIRS = ["right", "left", "top", "bottom"];
+const LABEL_DISTANCES = [24, 54, 84, 114];
 const DETAIL_PADDING_RATIO = 0.35;
 const OVERVIEW_PADDING_RATIO = 0.15;
 const SHORT_HOSTS = new Set(["maps.app.goo.gl", "goo.gl"]);
@@ -185,6 +188,7 @@ const spotMenu = document.getElementById("spotMenu");
 const spotMenuTitle = document.getElementById("spotMenuTitle");
 const spotMenuClose = document.getElementById("spotMenuClose");
 const spotNameInput = document.getElementById("spotNameInput");
+const spotBudgetInput = document.getElementById("spotBudgetInput");
 const spotDescriptionInput = document.getElementById("spotDescriptionInput");
 const spotDescriptionSave = document.getElementById("spotDescriptionSave");
 const spotDeleteButton = document.getElementById("spotDeleteButton");
@@ -339,6 +343,7 @@ function normalizeSpot(spot) {
   return {
     ...spot,
     description: spot?.description || "",
+    budget: Number.isFinite(Number(spot?.budget)) ? Number(spot.budget) : 0,
     type: "spot",
     spotCategory,
   };
@@ -623,8 +628,15 @@ function deleteCheckedSpots() {
   render();
 }
 
+function hasSpotCoords(spot) {
+  return Number.isFinite(Number(spot?.lat)) && Number.isFinite(Number(spot?.lng));
+}
+
 function buildSpotMeta(spot) {
-  const parts = [`${spot.lat.toFixed(5)}, ${spot.lng.toFixed(5)}`];
+  const parts = hasSpotCoords(spot)
+    ? [`${Number(spot.lat).toFixed(5)}, ${Number(spot.lng).toFixed(5)}`]
+    : ["座標未設定"];
+  if (spot.budget) parts.push(`予算: ¥${Number(spot.budget).toLocaleString()}`);
   if (spot.description) parts.push(`メモ: ${spot.description}`);
   if (spot.sourceType === "search" && spot.sourceQuery) parts.push(`検索: ${spot.sourceQuery}`);
   if (spot.sourceUrl) parts.push(spot.sourceUrl);
@@ -637,6 +649,7 @@ function openSpotMenu(id) {
   state.editingSpotId = id;
   spotMenuTitle.textContent = spot.name;
   spotNameInput.value = spot.name || "";
+  spotBudgetInput.value = spot.budget || "";
   spotDescriptionInput.value = spot.description || "";
 
   spotCategorySelect.innerHTML = "";
@@ -734,6 +747,7 @@ function saveSpotDescription() {
   state.spots[targetIndex] = {
     ...state.spots[targetIndex],
     name: spotNameInput.value.trim() || state.spots[targetIndex].name,
+    budget: Math.max(0, parseInt(spotBudgetInput.value, 10) || 0),
     description: spotDescriptionInput.value.trim(),
     type: "spot",
     spotCategory: newCategory,
@@ -763,12 +777,19 @@ function renderMaps() {
   });
   state.maps = [];
 
+  const mappableSpots = state.spots.filter(hasSpotCoords);
+
   if (state.spots.length === 0) {
     mapPanels.innerHTML = '<div class="empty-state">場所を追加すると地図が表示されます。</div>';
     return;
   }
 
-  const groups = buildMapGroups(state.spots);
+  if (mappableSpots.length === 0) {
+    mapPanels.innerHTML = '<div class="empty-state">座標のあるスポットを追加すると地図が表示されます。</div>';
+    return;
+  }
+
+  const groups = buildMapGroups(mappableSpots);
   mapPanels.innerHTML = "";
 
   groups.forEach((group, index) => {
@@ -815,65 +836,114 @@ function renderMaps() {
   });
 }
 
-function estimateZoom(bounds) {
-  const [[south, west], [north, east]] = bounds;
-  const zLat = Math.log2((MAP_H - 2 * MAP_PAD) * 180 / (256 * (north - south)));
-  const zLng = Math.log2((MAP_W - 2 * MAP_PAD) * 360 / (256 * (east - west)));
-  return Math.min(zLat, zLng);
+function estimateLabelSize(point) {
+  const name = String(point?.name || "");
+  const w = Math.min(LABEL_MAX_W, Math.max(LABEL_MIN_W, name.length * LABEL_CHAR_W + 28));
+  return { w, h: LABEL_H };
 }
 
-function spotToPx(spot, zoom) {
-  const sc = 256 * Math.pow(2, zoom);
-  const x = (spot.lng + 180) / 360 * sc;
-  const s = Math.sin(spot.lat * Math.PI / 180);
-  const y = (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * sc;
-  return { x, y };
+function estimateClusterLabelSize(item) {
+  const rows = Math.max(1, item?.points?.length || 1);
+  return { w: 150, h: Math.min(120, 12 + rows * 20) };
 }
 
-function labelRect(px, dir) {
-  const g = LABEL_GAP, w = LABEL_W, h = LABEL_H;
+function pointToLayerPx(map, point) {
+  const p = map.latLngToLayerPoint([point.lat, point.lng]);
+  return { x: p.x, y: p.y };
+}
+
+function labelRect(px, dir, point, distance = LABEL_GAP, size = estimateLabelSize(point)) {
+  const g = distance;
+  const { w, h } = size;
   if (dir === "right")  return { x1: px.x + g,       x2: px.x + g + w,     y1: px.y - h / 2, y2: px.y + h / 2 };
   if (dir === "left")   return { x1: px.x - g - w,    x2: px.x - g,         y1: px.y - h / 2, y2: px.y + h / 2 };
   if (dir === "top")    return { x1: px.x - w / 2,    x2: px.x + w / 2,     y1: px.y - g - h, y2: px.y - g     };
   return                       { x1: px.x - w / 2,    x2: px.x + w / 2,     y1: px.y + g,     y2: px.y + g + h };
 }
 
+function pinRect(px) {
+  const p = LABEL_PIN_PAD;
+  return { x1: px.x - p, x2: px.x + p, y1: px.y - p, y2: px.y + p };
+}
+
+function labelViewRect(map) {
+  const size = map.getSize();
+  return {
+    x1: LABEL_EDGE_PAD,
+    x2: Math.max(LABEL_EDGE_PAD, size.x - LABEL_EDGE_PAD),
+    y1: LABEL_EDGE_PAD,
+    y2: Math.max(LABEL_EDGE_PAD, size.y - LABEL_EDGE_PAD),
+  };
+}
+
 function rectsOverlap(a, b) {
   return a.x1 < b.x2 && a.x2 > b.x1 && a.y1 < b.y2 && a.y2 > b.y1;
 }
 
-function chooseLabelDirs(points, zoom) {
-  const placed = [];
+function overlapArea(a, b) {
+  if (!rectsOverlap(a, b)) return 0;
+  return (Math.min(a.x2, b.x2) - Math.max(a.x1, b.x1)) * (Math.min(a.y2, b.y2) - Math.max(a.y1, b.y1));
+}
+
+function outOfBoundsArea(r, bounds) {
+  if (!bounds) return 0;
+  const insideW = Math.max(0, Math.min(r.x2, bounds.x2) - Math.max(r.x1, bounds.x1));
+  const insideH = Math.max(0, Math.min(r.y2, bounds.y2) - Math.max(r.y1, bounds.y1));
+  return Math.max(0, (r.x2 - r.x1) * (r.y2 - r.y1) - insideW * insideH);
+}
+
+function chooseLabelPlacements(map, points, options = {}) {
+  const viewRect = labelViewRect(map);
+  const placed = [
+    ...points.map(point => pinRect(pointToLayerPx(map, point))),
+    ...(options.initialRects || [])
+  ];
+  const sizeFor = options.sizeFor || estimateLabelSize;
+  const dirOrder = options.preferredDirs || LABEL_DIRS;
+  const distances = options.distances || LABEL_DISTANCES;
   const result = new Map();
   points.forEach((point) => {
-    const px = spotToPx(point, zoom);
-    let chosen = null;
-    let minOverlapArea = Infinity;
-    let bestDir = LABEL_DIRS[0];
+    const px = pointToLayerPx(map, point);
+    const size = sizeFor(point);
+    let best = null;
+    let bestPenalty = Infinity;
 
-    for (const dir of LABEL_DIRS) {
-      const r = labelRect(px, dir);
-      const overlapArea = placed.reduce((sum, b) => {
-        if (!rectsOverlap(r, b)) return sum;
-        return sum + (Math.min(r.x2, b.x2) - Math.max(r.x1, b.x1)) * (Math.min(r.y2, b.y2) - Math.max(r.y1, b.y1));
-      }, 0);
-      if (overlapArea === 0) { chosen = dir; placed.push(r); break; }
-      if (overlapArea < minOverlapArea) { minOverlapArea = overlapArea; bestDir = dir; }
+    for (const dir of dirOrder) {
+      for (const distance of distances) {
+        const r = labelRect(px, dir, point, distance, size);
+        const overlapPenalty = placed.reduce((sum, b) => sum + overlapArea(r, b), 0);
+        const edgePenalty = outOfBoundsArea(r, viewRect) * 12;
+        const distancePenalty = distance * 0.15;
+        const penalty = overlapPenalty + edgePenalty + distancePenalty;
+        if (penalty < bestPenalty) {
+          bestPenalty = penalty;
+          best = { direction: dir, distance, rect: r };
+        }
+      }
     }
-    if (!chosen) { chosen = bestDir; placed.push(labelRect(px, bestDir)); }
-    result.set(point.id, chosen);
+    if (best) {
+      placed.push(best.rect);
+      result.set(point.id, { direction: best.direction, distance: best.distance, rect: best.rect });
+    }
   });
   return result;
 }
 
-function addMarkerToMap(map, point, direction = "right") {
-  const offsets = { right: [16, 0], left: [-16, 0], top: [0, -16], bottom: [0, 16] };
+function addMarkerToMap(map, point, placement = "right") {
+  const direction = typeof placement === "string" ? placement : placement.direction;
+  const distance = typeof placement === "string" ? LABEL_GAP : placement.distance;
+  const offsets = {
+    right: [distance, 0],
+    left: [-distance, 0],
+    top: [0, -distance],
+    bottom: [0, distance]
+  };
   const marker = L.marker([point.lat, point.lng], { icon: createMarkerIcon(point.type, point.spotCategory) }).addTo(map);
   marker.bindTooltip(escapeHtml(point.name), {
     permanent: true,
     direction,
     offset: offsets[direction] || [16, 0],
-    className: "spot-label",
+    className: `spot-label spot-label-gap-${distance}`,
   });
   marker.on("click", () => openSpotMenu(point.id));
   setTimeout(() => {
@@ -884,11 +954,38 @@ function addMarkerToMap(map, point, direction = "right") {
 
 function renderOverviewLayer(map, items, bounds) {
   const singles = items.filter((i) => i.type === "single").map((i) => i.point);
-  const dirs = singles.length > 0 ? chooseLabelDirs(singles, estimateZoom(bounds)) : new Map();
+  const allPointRects = items.flatMap((item) =>
+    item.type === "single"
+      ? [pinRect(pointToLayerPx(map, item.point))]
+      : item.points.map(point => pinRect(pointToLayerPx(map, point)))
+  );
+  const clusters = items.filter((i) => i.type !== "single");
+  const clusterPoints = clusters.map((item, index) => ({
+    id: `cluster-${index}`,
+    lat: item.center.lat,
+    lng: item.center.lng,
+    _clusterItem: item
+  }));
+  const clusterPlacements = clusterPoints.length > 0
+    ? chooseLabelPlacements(map, clusterPoints, {
+        initialRects: allPointRects,
+        sizeFor: point => estimateClusterLabelSize(point._clusterItem),
+        preferredDirs: ["right", "bottom", "top", "left"],
+        distances: [34, 64, 94, 124, 154]
+      })
+    : new Map();
+  const clusterRects = [...clusterPlacements.values()].map(p => p.rect).filter(Boolean);
+  const placements = singles.length > 0
+    ? chooseLabelPlacements(map, singles, {
+        initialRects: [...allPointRects, ...clusterRects],
+        preferredDirs: clusters.length > 0 ? ["left", "bottom", "top", "right"] : LABEL_DIRS,
+        distances: [34, 64, 94, 124, 154]
+      })
+    : new Map();
 
   items.forEach((item) => {
     if (item.type === "single") {
-      addMarkerToMap(map, item.point, dirs.get(item.point.id) || "right");
+      addMarkerToMap(map, item.point, placements.get(item.point.id) || "right");
       return;
     }
 
@@ -899,10 +996,9 @@ function renderOverviewLayer(map, items, bounds) {
       dashArray: "6 6",
     }).addTo(map);
 
-    const labelHtml = item.points.map((point, i) => {
-      const sep = i === 0 ? "" : '<span class="cluster-sep">, </span>';
-      return `${sep}<span class="cluster-part cluster-spot-link" onclick="event.stopPropagation();openSpotMenu('${point.id}')">${escapeHtml(point.name)}</span>`;
-    }).join("");
+    const labelHtml = item.points.map((point) =>
+      `<span class="cluster-part cluster-spot-link" onclick="event.stopPropagation();openSpotMenu('${point.id}')">${escapeHtml(point.name)}</span>`
+    ).join("");
 
     // クラスター内の各スポットに小ピンを配置
     item.points.forEach((point) => {
@@ -920,21 +1016,32 @@ function renderOverviewLayer(map, items, bounds) {
       memberMarker.on("click", () => openSpotMenu(point.id));
     });
 
-    // 矩形の下端に配置してピン・スポット名との重なりを回避
-    L.marker([item.bounds[0][0], item.center.lng], {
+    const clusterIndex = clusters.indexOf(item);
+    const placement = clusterPlacements.get(`cluster-${clusterIndex}`) || { direction: "bottom", distance: LABEL_GAP };
+    const size = estimateClusterLabelSize(item);
+    const anchor = clusterIconAnchor(placement.direction, placement.distance, size);
+
+    L.marker([item.center.lat, item.center.lng], {
       icon: L.divIcon({
         className: "",
-        html: `<div class="cluster-label" style="transform:translateX(-50%);margin-top:4px">${labelHtml}</div>`,
-        iconSize: [1, 1],
-        iconAnchor: [0, 0],
+        html: `<div class="cluster-label">${labelHtml}</div>`,
+        iconSize: [size.w, size.h],
+        iconAnchor: anchor,
       }),
     }).addTo(map);
   });
 }
 
+function clusterIconAnchor(direction, distance, size) {
+  if (direction === "right") return [-distance, size.h / 2];
+  if (direction === "left") return [size.w + distance, size.h / 2];
+  if (direction === "top") return [size.w / 2, size.h + distance];
+  return [size.w / 2, -distance];
+}
+
 function renderDetailLayer(map, points, bounds) {
-  const dirs = chooseLabelDirs(points, estimateZoom(bounds));
-  points.forEach((point) => addMarkerToMap(map, point, dirs.get(point.id) || "right"));
+  const placements = chooseLabelPlacements(map, points);
+  points.forEach((point) => addMarkerToMap(map, point, placements.get(point.id) || "right"));
 }
 
 function buildMapGroups(points) {

@@ -239,6 +239,18 @@ textarea:focus {
   padding: 10px 12px;
 }
 
+#categoryCustomizeBtn {
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--accent-deep);
+  border-color: rgba(35, 48, 56, 0.18);
+  box-shadow: 0 4px 12px rgb(var(--shadow-base-rgb) / 0.12);
+}
+
+#categoryCustomizeBtn:hover {
+  background: #fff;
+  border-color: var(--accent);
+}
+
 .form-actions {
   display: flex;
   gap: 12px;
@@ -554,25 +566,31 @@ textarea:focus {
 .leaflet-tooltip.spot-label,
 .cluster-label {
   display: inline-block;
-  max-width: 220px;
   background: rgba(255, 250, 238, 0.98);
   border: 1px solid rgba(166, 97, 54, 0.18);
   color: var(--text);
-  border-radius: 999px;
+  border-radius: 14px;
   box-shadow: 0 10px 20px rgb(var(--shadow-base-rgb) / 0.18);
   font-family: "Zen Kaku Gothic New", sans-serif;
-  font-size: 1rem;
+  font-size: 0.94rem;
   font-weight: 700;
-  padding: 6px 14px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.25;
+  padding: 7px 13px;
+  overflow: visible;
 }
 
 .leaflet-tooltip.spot-label {
+  width: max-content;
+  max-width: none;
   pointer-events: auto;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
+  text-align: left;
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
 }
 
 .leaflet-tooltip.spot-label:hover {
@@ -583,13 +601,24 @@ textarea:focus {
 .cluster-label {
   display: block;
   min-width: 0;
-  text-align: center;
-  line-height: 1.45;
+  width: 150px;
+  max-width: 150px;
+  box-sizing: border-box;
+  text-align: left;
+  line-height: 1.32;
   white-space: normal;
+  font-size: 0.78rem;
+  padding: 5px 8px;
+  border-radius: 10px;
+  box-shadow: 0 6px 14px rgb(var(--shadow-base-rgb) / 0.14);
 }
 
-.cluster-part,
-.cluster-sep {
+.cluster-part {
+  display: block;
+  max-width: 100%;
+  margin: 1px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -605,7 +634,99 @@ textarea:focus {
   color: var(--accent-deep);
 }
 
-.leaflet-tooltip.spot-label::before,
+.leaflet-tooltip.spot-label::before {
+  display: block;
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: rgba(255, 250, 238, 0.98);
+  border: 1px solid rgba(166, 97, 54, 0.18);
+  box-shadow: -2px 2px 5px rgb(var(--shadow-base-rgb) / 0.08);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+.leaflet-tooltip.spot-label::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  background: rgba(126, 84, 49, 0.62);
+}
+
+.leaflet-tooltip-right.spot-label::after,
+.leaflet-tooltip-left.spot-label::after {
+  top: 50%;
+  height: 2px;
+  transform: translateY(-50%);
+}
+
+.leaflet-tooltip-top.spot-label::after,
+.leaflet-tooltip-bottom.spot-label::after {
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+}
+
+.leaflet-tooltip-right.spot-label::after { right: 100%; }
+.leaflet-tooltip-left.spot-label::after { left: 100%; }
+.leaflet-tooltip-top.spot-label::after { top: 100%; }
+.leaflet-tooltip-bottom.spot-label::after { bottom: 100%; }
+
+.spot-label-gap-24.leaflet-tooltip-right::after,
+.spot-label-gap-24.leaflet-tooltip-left::after { width: 18px; }
+.spot-label-gap-54.leaflet-tooltip-right::after,
+.spot-label-gap-54.leaflet-tooltip-left::after { width: 48px; }
+.spot-label-gap-84.leaflet-tooltip-right::after,
+.spot-label-gap-84.leaflet-tooltip-left::after { width: 78px; }
+.spot-label-gap-114.leaflet-tooltip-right::after,
+.spot-label-gap-114.leaflet-tooltip-left::after { width: 108px; }
+
+.spot-label-gap-24.leaflet-tooltip-top::after,
+.spot-label-gap-24.leaflet-tooltip-bottom::after { height: 18px; }
+.spot-label-gap-54.leaflet-tooltip-top::after,
+.spot-label-gap-54.leaflet-tooltip-bottom::after { height: 48px; }
+.spot-label-gap-84.leaflet-tooltip-top::after,
+.spot-label-gap-84.leaflet-tooltip-bottom::after { height: 78px; }
+.spot-label-gap-114.leaflet-tooltip-top::after,
+.spot-label-gap-114.leaflet-tooltip-bottom::after { height: 108px; }
+
+.leaflet-tooltip-right.spot-label::before {
+  left: -7px;
+  top: 50%;
+  margin-top: -6px;
+  border-top: 0;
+  border-right: 0;
+}
+
+.leaflet-tooltip-left.spot-label::before {
+  right: -7px;
+  top: 50%;
+  margin-top: -6px;
+  border-bottom: 0;
+  border-left: 0;
+}
+
+.leaflet-tooltip-top.spot-label::before {
+  left: 50%;
+  bottom: -7px;
+  margin-left: -6px;
+  border-top: 0;
+  border-left: 0;
+}
+
+.leaflet-tooltip-bottom.spot-label::before {
+  left: 50%;
+  top: -7px;
+  margin-left: -6px;
+  border-bottom: 0;
+  border-right: 0;
+}
+
+.leaflet-tooltip.spot-label:hover::before {
+  background: rgba(255, 239, 226, 0.98);
+}
+
 .cluster-label::before {
   display: none;
 }

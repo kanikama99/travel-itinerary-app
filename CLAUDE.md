@@ -12,36 +12,51 @@
 ## ⚠️ 地図プレビューの吹き出し（ラベル）重なり — 再発注意
 
 **症状:** スポットピンの横に出るラベル（spot-label tooltip）が他のラベルやピンと重なる。
+近いスポットが多いと吹き出しが欠けたり、どのピンのラベルか分からなくなる。
 
 **根本原因:**
-- Leaflet の permanent tooltip は CSS でサイズが決まるが、**衝突判定は app.js の `chooseLabelDirs()` がタイル座標で計算する。**
-- 定数 `LABEL_W` / `LABEL_H` が実際の描画サイズと合わないと判定がズレる。
-- styles.css の `.leaflet-tooltip.spot-label` に `max-width: 220px` を設定し、`LABEL_W = 220` / `LABEL_H = 32` と揃えること。
+- Leaflet の permanent tooltip は CSS でサイズが決まるが、**衝突判定は app.js の `chooseLabelPlacements()` が実際の Leaflet レイヤー座標で計算する。**
+- ラベル寸法の見積もり（`LABEL_MIN_W` / `LABEL_MAX_W` / `LABEL_CHAR_W` / `LABEL_H`）が実際の描画サイズと合わないと判定がズレる。
+- spot-label は横書き固定。`white-space: nowrap` / `word-break: keep-all` / `writing-mode: horizontal-tb` を崩さないこと。
+- 衝突判定は app.js の `estimateLabelSize()` がスポット名の長さから幅を見積もる。`LABEL_MIN_W` / `LABEL_MAX_W` / `LABEL_CHAR_W` / `LABEL_H` と実CSSのフォント・paddingを大きくズラさないこと。
+- `chooseLabelPlacements(map, points)` はラベル同士・ピン・地図枠を避ける。推定ズームや固定 `MAP_W` / `MAP_H` ベースに戻さないこと。
+- `chooseLabelPlacements()` の戻り値には `rect` を必ず含める。`renderOverviewLayer()` のクラスターラベル配置が単独ラベルを避けるために `occupiedRects` として使う。
+- 近いスポットは `RELATIVE_CLUSTER_THRESHOLD` で全体図クラスタ化する。近接スポットの渋滞が再発したら閾値も確認する。
 
 **禁止パターン:**
-- `LABEL_W = 180` のように実際より小さい値にしない（長い日本語スポット名でラベルが重なる）
-- 吹き出し方向を一律 `"right"` にハードコードしない（`chooseLabelDirs()` を必ず呼ぶ）
+- ラベル幅見積もりを実際より小さい値にしない（長い日本語スポット名でラベルが重なる）
+- `overflow-wrap: anywhere` を spot-label に指定しない（日本語が1文字ずつ縦に並ぶ）
+- スケジュール画面のSPOTS名にも `overflow-wrap: anywhere` を指定しない。狭い欄でも横書き・省略表示を優先し、1文字ずつの縦表記は禁止。
+- `text-overflow: ellipsis` や `overflow: hidden` で長いスポット名を切らない
+- 吹き出し方向を一律 `"right"` にハードコードしない（`chooseLabelPlacements()` を必ず呼ぶ）
+- `estimateZoom(bounds)` や固定幅でラベル配置を推定しない（実表示とズレて地図端で吹き出しが欠ける）
 
 **正しい実装:**
 ```js
 // app.js
-const LABEL_W = 220;  // spot-label の max-width に合わせる
-const LABEL_H = 32;   // padding + line-height の実測値
-const LABEL_GAP = 16; // ピンからラベルまでの余白（Leaflet offset と揃える）
+const LABEL_MIN_W = 92;
+const LABEL_MAX_W = 520;
+const LABEL_CHAR_W = 15; // 横書きラベルの文字幅見積もり
+const LABEL_H = 38;      // 1行横書き + padding の実測値
+const LABEL_GAP = 24;    // ピンからラベルまでの余白（Leaflet offset と揃える）
+const LABEL_PIN_PAD = 20;
+const LABEL_EDGE_PAD = 8;
+const LABEL_DISTANCES = [24, 54, 84, 114]; // 近接時に段階的に離す
 const LABEL_DIRS = ["right", "left", "top", "bottom"]; // 4方向を試す
 
-// renderOverviewLayer で必ず chooseLabelDirs() を使う
-const dirs = chooseLabelDirs(singles, estimateZoom(bounds));
-addMarkerToMap(map, point, dirs.get(point.id) || "right");
+// renderOverviewLayer / renderDetailLayer で必ず chooseLabelPlacements() を使う
+const placements = chooseLabelPlacements(map, singles);
+addMarkerToMap(map, point, placements.get(point.id) || "right");
 ```
 
 ```css
 /* styles.css */
 .leaflet-tooltip.spot-label {
-  max-width: 220px;         /* LABEL_W と合わせる */
+  width: max-content;
+  max-width: none;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: keep-all;
+  writing-mode: horizontal-tb;
 }
 ```
 

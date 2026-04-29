@@ -76,7 +76,7 @@
     /* 検索ボタン群 */
     .hotel-sites-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 10px;
     }
     .hotel-site-btn {
@@ -127,6 +127,7 @@
       margin-bottom: 14px;
     }
     .hotel-night-form { display: grid; grid-template-columns: 1fr 200px; gap: 12px; align-items: end; }
+    .hotel-night-form--booking { grid-template-columns: 1fr 180px 150px; }
     .hotel-geo-status {
       font-size: 0.78rem; color: var(--muted); margin-top: 6px;
     }
@@ -170,6 +171,9 @@
       .hotel-sites-grid { grid-template-columns: 1fr 1fr; }
       .hotel-night-form { grid-template-columns: 1fr; }
     }
+    @media (min-width: 601px) and (max-width: 760px) {
+      .hotel-sites-grid { grid-template-columns: 1fr 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -187,14 +191,18 @@
     <div id="nightRegistrationCard" class="hotel-night-card hidden">
       <p class="hotel-card-kicker">Night Registration — この夜の宿泊先を登録</p>
       <p id="nightDateLabel" class="hotel-night-date"></p>
-      <div class="hotel-night-form">
+      <div class="hotel-night-form hotel-night-form--booking">
         <div class="hotel-field">
           <label class="hotel-field-label" for="hotelNameInput">ホテル名・宿泊先</label>
-          <input id="hotelNameInput" class="hotel-input" type="text" placeholder="例：東横イン新宿" />
+          <input id="hotelNameInput" class="hotel-input" type="text" placeholder="例：東横イン新宿" required />
         </div>
         <div class="hotel-field">
-          <label class="hotel-field-label" for="hotelBudgetInput">1泊の予算（円）</label>
+          <label class="hotel-field-label" for="hotelBudgetInput">1名あたり予約金額（円）</label>
           <input id="hotelBudgetInput" class="hotel-input" type="number" min="0" step="500" placeholder="例：12000" />
+        </div>
+        <div class="hotel-field">
+          <label class="hotel-field-label" for="hotelCheckinTimeInput">チェックイン予定時刻</label>
+          <input id="hotelCheckinTimeInput" class="hotel-input" type="time" />
         </div>
       </div>
       <p id="hotelGeoStatus" class="hotel-geo-status"></p>
@@ -223,15 +231,20 @@
           <label class="hotel-field-label" for="checkout">チェックアウト</label>
           <input id="checkout" class="hotel-input" type="date" data-cal />
         </div>
+        <div class="hotel-field">
+          <label class="hotel-field-label" for="hotelAdults">人数</label>
+          <input id="hotelAdults" class="hotel-input" type="number" min="1" max="20" step="1" value="2" />
+        </div>
+        <div class="hotel-field">
+          <label class="hotel-field-label" for="hotelRooms">部屋数</label>
+          <input id="hotelRooms" class="hotel-input" type="number" min="1" max="10" step="1" value="1" />
+        </div>
+        <div class="hotel-field">
+          <label class="hotel-field-label" for="hotelBudgetMax">予算上限（円）</label>
+          <input id="hotelBudgetMax" class="hotel-input" type="number" min="0" step="500" placeholder="例：15000" />
+        </div>
       </div>
       <div class="hotel-sites-grid">
-        <button class="hotel-site-btn" type="button" onclick="searchGoogle()">
-          <div class="hotel-site-icon">🔍</div>
-          <div>
-            <div class="hotel-site-name">Google で検索</div>
-            <div class="hotel-site-desc">ホテルを一括検索</div>
-          </div>
-        </button>
         <button class="hotel-site-btn" type="button" onclick="searchBooking()">
           <div class="hotel-site-icon">🏨</div>
           <div>
@@ -251,6 +264,13 @@
           <div>
             <div class="hotel-site-name">楽天トラベル</div>
             <div class="hotel-site-desc">ポイント対応</div>
+          </div>
+        </button>
+        <button class="hotel-site-btn" type="button" onclick="searchGoogle()">
+          <div class="hotel-site-icon">🔍</div>
+          <div>
+            <div class="hotel-site-name">Google で検索</div>
+            <div class="hotel-site-desc">ホテルを一括検索</div>
           </div>
         </button>
       </div>
@@ -442,35 +462,144 @@
     function getCheckout() {
       return document.getElementById("checkout").value;
     }
+    function getPositiveInt(id, fallback) {
+      const n = parseInt(document.getElementById(id)?.value, 10);
+      return Number.isFinite(n) && n > 0 ? n : fallback;
+    }
+    function getBudgetMax() {
+      const n = parseInt(document.getElementById("hotelBudgetMax")?.value, 10);
+      return Number.isFinite(n) && n > 0 ? n : 0;
+    }
+    function getSearchOptions() {
+      return {
+        area: getArea(),
+        checkin: getCheckin(),
+        checkout: getCheckout(),
+        adults: getPositiveInt("hotelAdults", 2),
+        rooms: getPositiveInt("hotelRooms", 1),
+        budgetMax: getBudgetMax()
+      };
+    }
+    function splitDate(value) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || "");
+      if (!m) return null;
+      return { year: m[1], month: String(parseInt(m[2], 10)), day: String(parseInt(m[3], 10)) };
+    }
+    function getStayCount(checkin, checkout) {
+      if (!checkin || !checkout) return 1;
+      const start = new Date(`${checkin}T00:00:00`);
+      const end = new Date(`${checkout}T00:00:00`);
+      const nights = Math.round((end - start) / 86400000);
+      return nights > 0 ? nights : 1;
+    }
+    function addParam(url, key, value) {
+      if (value !== undefined && value !== null && value !== "") url.searchParams.set(key, value);
+    }
+    function submitGetForm(action, params, charset = "UTF-8") {
+      const form = document.createElement("form");
+      form.method = "GET";
+      form.action = action;
+      form.target = "_blank";
+      form.acceptCharset = charset;
+      form.style.display = "none";
+      Object.entries(params).forEach(([key, value]) => {
+        if (value === undefined || value === null || value === "") return;
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key;
+        input.value = String(value);
+        form.appendChild(input);
+      });
+      document.body.appendChild(form);
+      form.submit();
+      setTimeout(() => form.remove(), 0);
+    }
 
     function searchGoogle() {
-      const area = getArea();
-      const cin  = getCheckin();
-      const cout = getCheckout();
-      let q = `${area} ホテル 予約`;
-      if (cin)  q += ` ${cin}`;
-      if (cout) q += `〜${cout}`;
+      const opts = getSearchOptions();
+      let q = `${opts.area} ホテル 予約`;
+      if (opts.checkin)  q += ` ${opts.checkin}`;
+      if (opts.checkout) q += `〜${opts.checkout}`;
+      q += ` ${opts.adults}名 ${opts.rooms}部屋`;
+      if (opts.budgetMax) q += ` ${opts.budgetMax}円以下`;
       window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}`, "_blank");
     }
 
     function searchBooking() {
-      const area = getArea();
-      const cin  = getCheckin();
-      const cout = getCheckout();
-      let url = `https://www.booking.com/search.html?ss=${encodeURIComponent(area)}&lang=ja`;
-      if (cin)  url += `&checkin=${cin}`;
-      if (cout) url += `&checkout=${cout}`;
-      window.open(url, "_blank");
+      const opts = getSearchOptions();
+      const url = new URL("https://www.booking.com/searchresults.ja.html");
+      addParam(url, "ss", opts.area);
+      addParam(url, "lang", "ja");
+      addParam(url, "selected_currency", "JPY");
+      addParam(url, "group_adults", opts.adults);
+      addParam(url, "no_rooms", opts.rooms);
+      const cin = splitDate(opts.checkin);
+      const cout = splitDate(opts.checkout);
+      if (cin) {
+        addParam(url, "checkin_year", cin.year);
+        addParam(url, "checkin_month", cin.month);
+        addParam(url, "checkin_monthday", cin.day);
+      }
+      if (cout) {
+        addParam(url, "checkout_year", cout.year);
+        addParam(url, "checkout_month", cout.month);
+        addParam(url, "checkout_monthday", cout.day);
+      }
+      if (opts.budgetMax) addParam(url, "nflt", `price=JPY-0-${opts.budgetMax}-1`);
+      window.open(url.toString(), "_blank");
     }
 
     function searchJalan() {
-      const area = getArea();
-      window.open(`https://www.jalan.net/search/search.do?keyword=${encodeURIComponent(area)}`, "_blank");
+      const opts = getSearchOptions();
+      const params = {
+        actionId: "G",
+        keyword: opts.area,
+        rootCd: "7705",
+        screenId: "UWW2011",
+        activeSort: "1",
+        roomCount: opts.rooms,
+        adultNum: opts.adults,
+        roomCrack: `${Math.min(opts.adults, 9)}00000`,
+        minPrice: "0"
+      };
+      const cin = splitDate(opts.checkin);
+      if (cin) {
+        params.dateUndecided = "0";
+        params.stayYear = cin.year;
+        params.stayMonth = cin.month.padStart(2, "0");
+        params.stayDay = cin.day.padStart(2, "0");
+        params.stayCount = getStayCount(opts.checkin, opts.checkout);
+      } else {
+        params.dateUndecided = "1";
+      }
+      if (opts.budgetMax) params.maxPrice = opts.budgetMax;
+      submitGetForm("https://www.jalan.net/uw/uwp2011/uww2011init.do", params, "Shift_JIS");
     }
 
     function searchRakuten() {
-      const area = getArea();
-      window.open(`https://travel.rakuten.co.jp/search/?f_area=${encodeURIComponent(area)}`, "_blank");
+      const opts = getSearchOptions();
+      const params = {
+        f_query: opts.area,
+        f_max: "30",
+        f_sort: "0",
+        f_su: opts.adults,
+        f_otona_su: opts.adults,
+        f_heya_su: opts.rooms
+      };
+      const cin = splitDate(opts.checkin);
+      const cout = splitDate(opts.checkout);
+      if (cin) {
+        params.f_nen1 = cin.year;
+        params.f_tuki1 = cin.month.padStart(2, "0");
+        params.f_hi1 = cin.day.padStart(2, "0");
+      }
+      if (cout) {
+        params.f_nen2 = cout.year;
+        params.f_tuki2 = cout.month.padStart(2, "0");
+        params.f_hi2 = cout.day.padStart(2, "0");
+      }
+      if (opts.budgetMax) params.f_kin2 = opts.budgetMax;
+      submitGetForm("https://kw.travel.rakuten.co.jp/keyword/Search.do", params, "Shift_JIS");
     }
 
     // ── 夜別宿泊先登録 ──
@@ -528,11 +657,11 @@
         list.innerHTML = "";
 
         for (const [nightId, h] of entries) {
-          totalBudget += (h.budget || 0);
+          totalBudget += (h.pricePerPerson || h.budget || 0);
           const item = document.createElement("div");
           item.className = "hotel-registered-item";
           const nightLabel  = h.checkin ? fmtDate(h.checkin) : nightId;
-          const budgetLabel = h.budget ? `¥${Number(h.budget).toLocaleString()}` : "予算未設定";
+          const budgetLabel = (h.pricePerPerson || h.budget) ? `¥${Number(h.pricePerPerson || h.budget).toLocaleString()}/名` : "金額未設定";
           item.innerHTML =
             `<span class="hotel-reg-night">${escHtml(nightLabel)}</span>` +
             `<span class="hotel-reg-name">${escHtml(h.name || "（名称未設定）")}</span>` +
@@ -555,7 +684,7 @@
         });
 
         if (totalBudget > 0) {
-          totalEl.textContent = `宿泊費合計：¥${totalBudget.toLocaleString()}`;
+          totalEl.textContent = `宿泊費合計（1名あたり）：¥${totalBudget.toLocaleString()}`;
           totalEl.classList.remove("hidden");
         } else {
           totalEl.classList.add("hidden");
@@ -592,7 +721,8 @@
           const existing = JSON.parse(localStorage.getItem(SCHEDULE_KEY) || "{}")?.[activeList.id]?.hotels?.[nightId];
           if (existing) {
             document.getElementById("hotelNameInput").value   = existing.name   || "";
-            document.getElementById("hotelBudgetInput").value = existing.budget || "";
+            document.getElementById("hotelBudgetInput").value = existing.pricePerPerson || existing.budget || "";
+            document.getElementById("hotelCheckinTimeInput").value = existing.checkinTime || "";
             if (existing.lat && existing.lng) {
               currentGeo = { lat: existing.lat, lng: existing.lng };
               document.getElementById("hotelGeoStatus").textContent =
@@ -628,7 +758,8 @@
       // 保存ボタン
       document.getElementById("saveNightBtn").addEventListener("click", async () => {
         const name   = nameInput.value.trim();
-        const budget = parseInt(document.getElementById("hotelBudgetInput").value) || 0;
+        const pricePerPerson = parseInt(document.getElementById("hotelBudgetInput").value) || 0;
+        const checkinTime = document.getElementById("hotelCheckinTimeInput").value || "";
 
         if (!name) {
           geoStatus.textContent = "⚠ ホテル名を入力してください";
@@ -656,7 +787,9 @@
             name,
             lat:      currentGeo?.lat  ?? null,
             lng:      currentGeo?.lng  ?? null,
-            budget,
+            budget: pricePerPerson,
+            pricePerPerson,
+            checkinTime,
             checkin:  checkin  || null,
             checkout: checkout || null,
             // affiliateProvider: null,  // 例: "booking" / "jalan" / "rakuten"

@@ -89,14 +89,64 @@
       font: inherit; font-size: 0.84rem; color: var(--text);
       border: 1.5px solid var(--line); border-radius: 8px;
       padding: 6px 10px; background: rgba(255,255,255,0.85);
-      outline: none; margin-top: 4px;
+      outline: none;
     }
     .trip-place-input:focus { border-color: var(--accent); }
     .trip-place-input::placeholder { color: #c0c8cc; }
+    .trip-place-controls {
+      margin-top: 4px;
+    }
+    .trip-place-add-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+    }
+    .trip-place-select {
+      width: 100%;
+      font: inherit; font-size: 0.84rem; color: var(--text);
+      border: 1.5px solid var(--line); border-radius: 8px;
+      padding: 6px 10px; background: rgba(255,255,255,0.85);
+      outline: none;
+    }
+    .trip-place-add-btn {
+      padding: 6px 10px;
+      border: 1.5px solid rgba(166,97,54,0.18);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.7);
+      color: var(--accent-deep);
+      font: inherit; font-size: 0.8rem; font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .trip-place-add-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
+    .trip-transport-row {
+      margin-top: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .trip-transport-label {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: var(--accent-deep);
+    }
+    .trip-transport-select {
+      min-width: 170px;
+      border: 1.5px solid var(--line);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.86);
+      color: var(--text);
+      padding: 8px 12px;
+      font: inherit;
+      font-size: 0.86rem;
+      outline: none;
+    }
+    .trip-transport-select:focus { border-color: var(--accent); }
 
     .schedule-layout {
       display: grid;
-      grid-template-columns: 1fr 280px;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 360px);
       gap: 20px;
       align-items: start;
     }
@@ -314,14 +364,24 @@
     .unscheduled-list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
     .spot-chip {
       display: flex; align-items: center; gap: 8px;
-      padding: 9px 12px;
+      padding: 8px 10px;
       background: rgba(255,255,255,0.5); border: 1px solid rgba(166,97,54,0.12);
       border-radius: 10px; font: inherit; font-size: 0.88rem; font-weight: 600;
       color: var(--text); text-align: left; cursor: pointer;
       transition: background 0.15s, border-color 0.15s, transform 0.15s cubic-bezier(0.34,1.56,0.64,1);
     }
     .spot-chip:hover { background: var(--accent-soft); border-color: var(--accent); transform: translateX(3px); }
-    .spot-chip-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .spot-chip-name {
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.25;
+      word-break: keep-all;
+      overflow-wrap: normal;
+      writing-mode: horizontal-tb;
+    }
     .spot-chip-empty { font-size: 0.82rem; color: var(--muted); padding: 10px 0; text-align: center; }
 
     .sidebar-drag-hint {
@@ -330,9 +390,19 @@
     }
 
     .spot-chip-wrap {
-      display: flex; align-items: center; gap: 4px;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 5px;
     }
-    .spot-chip-wrap .spot-chip { flex: 1; min-width: 0; }
+    .spot-chip-wrap .spot-chip {
+      grid-column: 2;
+      grid-row: 1;
+      min-width: 0;
+      width: 100%;
+    }
+    .spot-chip-wrap .spot-order-btn:first-child { grid-column: 1; grid-row: 1; }
+    .spot-chip-wrap .spot-order-btn:last-child { grid-column: 3; grid-row: 1; }
     .spot-order-btn {
       background: none; border: none; padding: 4px 5px; border-radius: 6px;
       color: var(--muted); cursor: pointer; font-size: 0.68rem; line-height: 1; flex-shrink: 0;
@@ -353,6 +423,26 @@
       transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.18s;
     }
     .auto-place-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px var(--accent-soft); }
+
+    .return-all-spots-btn {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      width: 100%; margin-top: 8px;
+      padding: 9px 14px; border: 1.5px solid rgba(166,97,54,0.18); border-radius: 999px;
+      font: inherit; font-size: 0.82rem; font-weight: 700;
+      color: var(--accent-deep);
+      background: rgba(255,255,255,0.62);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.15s;
+    }
+    .return-all-spots-btn:hover:not(:disabled) {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+    .return-all-spots-btn:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
 
     /* 日付ピッカー */
     .day-picker-overlay {
@@ -424,8 +514,15 @@
 
     /* 滞在時間デフォルト入力（SPOTSサイドバー） */
     .spot-stay-wrap {
+      grid-column: 2;
+      grid-row: 2;
       display: flex; align-items: center; gap: 3px; flex-shrink: 0;
+      padding: 2px 4px;
+      border: 1px solid rgb(var(--accent-rgb, 255,122,69) / 0.20);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.42);
     }
+    .spot-stay-label { font-size: 0.68rem; font-weight: 700; color: var(--accent-deep); }
     .spot-stay-default {
       width: 50px; font: inherit; font-size: 0.8rem; color: var(--text);
       border: 1px solid var(--line); border-radius: 6px;
@@ -434,6 +531,22 @@
     }
     .spot-stay-default:focus { border-color: var(--accent); }
     .spot-stay-unit { font-size: 0.72rem; color: var(--muted); }
+    .spot-hours-input {
+      grid-column: 3;
+      grid-row: 2;
+      width: 112px;
+      min-width: 0;
+      font: inherit;
+      font-size: 0.72rem;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 6px 7px;
+      background: rgba(255,255,255,0.78);
+      outline: none;
+    }
+    .spot-hours-input:focus { border-color: var(--accent); }
+    .spot-hours-input::placeholder { color: #a6b0b6; }
 
     /* 統合タイムライン */
     .unified-timeline {
@@ -484,6 +597,17 @@
       font-size: 0.91rem; font-weight: 600;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       flex: 1; min-width: 50px;
+    }
+    .tl-hours-warn {
+      flex-shrink: 0;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #b45420;
+      background: rgba(255, 176, 92, 0.16);
+      border: 1px solid rgba(180, 84, 32, 0.22);
+      border-radius: 999px;
+      padding: 2px 6px;
+      white-space: nowrap;
     }
     .tl-stay-input {
       width: 48px; flex-shrink: 0;
@@ -556,6 +680,7 @@
     .tl-hotel-find { color: var(--muted); flex: 1; font-size: 0.82rem; }
     .tl-hotel-budget { font-size: 0.73rem; color: var(--accent-deep); font-weight: 700; flex-shrink: 0; background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; }
     .tl-hotel-chevron { color: var(--muted); flex-shrink: 0; font-size: 1rem; line-height: 1; }
+    .tl-spot-budget { font-size: 0.73rem; color: var(--accent-deep); font-weight: 700; flex-shrink: 0; background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; }
 
     .tl-over-warn {
       margin: 6px 0 4px; padding: 7px 12px;
@@ -598,7 +723,13 @@
             <input id="tripMeetDate" class="trip-date-input" type="date" data-cal title="集合日" />
             <input id="tripMeetTime" class="trip-time-input" type="time" value="09:00" title="集合時刻" />
           </div>
-          <input id="tripMeetPlace" class="trip-place-input" type="text" placeholder="集合場所（例：東京駅）" />
+          <div class="trip-place-controls">
+            <select id="tripMeetSpotSelect" class="trip-place-select" title="SPOTSから集合場所を選択"></select>
+          </div>
+          <div class="trip-place-add-row">
+            <input id="tripMeetPlace" class="trip-place-input" type="text" placeholder="集合場所（例：東京駅）" />
+            <button id="tripMeetAddBtn" class="trip-place-add-btn" type="button">新規追加</button>
+          </div>
         </div>
         <div class="trip-setting-group">
           <span class="trip-setting-label">🏁 解散</span>
@@ -606,8 +737,21 @@
             <input id="tripDismissDate" class="trip-date-input" type="date" data-cal title="解散日" />
             <input id="tripDismissTime" class="trip-time-input" type="time" value="18:00" title="解散時刻" />
           </div>
-          <input id="tripDismissPlace" class="trip-place-input" type="text" placeholder="解散場所（例：新宿駅）" />
+          <div class="trip-place-controls">
+            <select id="tripDismissSpotSelect" class="trip-place-select" title="SPOTSから解散場所を選択"></select>
+          </div>
+          <div class="trip-place-add-row">
+            <input id="tripDismissPlace" class="trip-place-input" type="text" placeholder="解散場所（例：新宿駅）" />
+            <button id="tripDismissAddBtn" class="trip-place-add-btn" type="button">新規追加</button>
+          </div>
         </div>
+      </div>
+      <div class="trip-transport-row">
+        <label class="trip-transport-label" for="travelModeSelect">移動手段</label>
+        <select id="travelModeSelect" class="trip-transport-select" title="移動手段の優先モード">
+          <option value="transit">公共交通優先</option>
+          <option value="driving">車優先</option>
+        </select>
       </div>
       <p id="tripSummary" class="trip-summary hidden"></p>
     </div>
@@ -630,10 +774,11 @@
 
       <aside class="spots-sidebar">
         <div class="sidebar-card">
-          <p class="sidebar-kicker">Spots — クリックで日程に追加</p>
-          <p class="sidebar-drag-hint">↕ ドラッグ&amp;ドロップで日程間の移動や SPOTS へ戻すこともできます</p>
+          <p class="sidebar-kicker">Spots — 滞在時間を入れて日程に追加</p>
+          <p class="sidebar-drag-hint">滞在時間と営業時間を入れると、自動配置がより崩れにくくなります。</p>
           <div id="unscheduledList" class="unscheduled-list"></div>
           <button id="autoPlaceBtn" class="auto-place-btn" type="button">✨ 自動配置</button>
+          <button id="returnAllSpotsBtn" class="return-all-spots-btn" type="button">↩ 配置済みをSPOTSへ戻す</button>
         </div>
       </aside>
     </div>
@@ -796,6 +941,19 @@
       } catch {}
     }
 
+    function saveActiveList() {
+      try {
+        const raw = localStorage.getItem(LISTS_KEY);
+        const data = raw ? JSON.parse(raw) : {};
+        if (!Array.isArray(data.lists) || !activeList) return;
+        const idx = data.lists.findIndex(l => l.id === activeList.id);
+        if (idx >= 0) data.lists[idx] = activeList;
+        else data.lists.push(activeList);
+        data.activeListId = activeList.id;
+        localStorage.setItem(LISTS_KEY, JSON.stringify(data));
+      } catch {}
+    }
+
     // ── 状態 ───────────────────────────────────────────────────────
     let activeList  = null;
     let schedule    = null;
@@ -804,6 +962,16 @@
 
     function getSpotById(spotId) {
       return activeList?.spots?.find(s => s.id === spotId) || null;
+    }
+
+    function setExclusiveSpotCategory(spotId, category) {
+      if (!activeList?.spots) return null;
+      activeList.spots = activeList.spots.map(s => ({
+        ...s,
+        spotCategory: s.id === spotId ? category : (s.spotCategory === category ? "other" : s.spotCategory)
+      }));
+      saveActiveList();
+      return getSpotById(spotId);
     }
 
     function getOrderedSpots() {
@@ -836,9 +1004,11 @@
       if (sched.tripDismissDate  === undefined) sched.tripDismissDate  = "";
       if (sched.tripMeetPlace    === undefined) sched.tripMeetPlace    = "";
       if (sched.tripDismissPlace === undefined) sched.tripDismissPlace = "";
+      if (sched.travelMode       === undefined) sched.travelMode       = "transit";
       if (!Array.isArray(sched.days))        sched.days             = [];
       if (!Array.isArray(sched.spotsOrder))  sched.spotsOrder       = [];
       if (!sched.defaultStayTimes)           sched.defaultStayTimes = {};
+      if (!sched.spotHours)                  sched.spotHours        = {};
       if (!sched.hotels)                     sched.hotels           = {};
     }
 
@@ -858,12 +1028,55 @@
       return spot.name || "";
     }
 
+    function parseTimeRange(value) {
+      const text = String(value || "").trim();
+      const m = text.match(/^(\d{1,2}):(\d{2})\s*[-〜~]\s*(\d{1,2}):(\d{2})$/);
+      if (!m) return null;
+      const open = Math.min(23 * 60 + 59, Math.max(0, Number(m[1]) * 60 + Number(m[2])));
+      const close = Math.min(24 * 60, Math.max(0, Number(m[3]) * 60 + Number(m[4])));
+      if (close <= open) return null;
+      return { open, close };
+    }
+
+    function getSpotHoursRange(spotId) {
+      return parseTimeRange(schedule?.spotHours?.[spotId]);
+    }
+
+    function getDayWindow(dayIdx, totalDays) {
+      const isFirst = dayIdx === 0;
+      const isLast = dayIdx === totalDays - 1;
+      return {
+        start: timeToMinutes(isFirst ? (schedule.tripMeetTime || "09:00") : "09:00"),
+        end: timeToMinutes(isLast ? (schedule.tripDismissTime || "18:00") : "21:00")
+      };
+    }
+
+    function canPlaceWithinHours(day, dayIdx, totalDays, spot) {
+      const hours = getSpotHoursRange(spot.id);
+      if (!hours) return true;
+      const stay = (schedule.defaultStayTimes?.[spot.id]) ?? getDefaultStayTime(spot.spotCategory);
+      const dayWindow = getDayWindow(dayIdx, totalDays);
+      const start = Math.max(dayWindow.start, hours.open);
+      const end = Math.min(dayWindow.end, hours.close);
+      return start + stay <= end;
+    }
+
+    function isVisitOutsideHours(spotId, arriveT, stay) {
+      const hours = getSpotHoursRange(spotId);
+      if (!hours) return false;
+      return arriveT < hours.open || arriveT + stay > hours.close;
+    }
+
     // ── HERE Transit API ──────────────────────────────────────────
 
     const HERE_API_KEY = "y7NJ8mod9XAB3hxh5H7iJUMVkTSKz9OClBoYCjk5_cg";
 
-    function transitCacheKey(lat1, lng1, lat2, lng2) {
-      return `${lat1},${lng1}|${lat2},${lng2}`;
+    function getTravelMode() {
+      return schedule?.travelMode === "driving" ? "driving" : "transit";
+    }
+
+    function transitCacheKey(lat1, lng1, lat2, lng2, mode = getTravelMode()) {
+      return `${mode}|${lat1},${lng1}|${lat2},${lng2}`;
     }
 
     async function fetchTransitTime(fromLat, fromLng, toLat, toLng) {
@@ -981,11 +1194,16 @@
       });
 
       if (pairs.length === 0) return;
+      const mode = getTravelMode();
       const results = await Promise.all(
         pairs.map(async p => {
           // 公共交通を優先。失敗時は車で代替
-          const result = await fetchTransitTime(p.fromLat, p.fromLng, p.toLat, p.toLng)
-            || await fetchDrivingTime(p.fromLat, p.fromLng, p.toLat, p.toLng)
+          const result = mode === "driving"
+            ? await fetchDrivingTime(p.fromLat, p.fromLng, p.toLat, p.toLng)
+              || await fetchTransitTime(p.fromLat, p.fromLng, p.toLat, p.toLng)
+              || { failed: true }
+            : await fetchTransitTime(p.fromLat, p.fromLng, p.toLat, p.toLng)
+              || await fetchDrivingTime(p.fromLat, p.fromLng, p.toLat, p.toLng)
             || { failed: true }; // 失敗をキャッシュして再フェッチを防ぐ
           return { key: p.key, result };
         })
@@ -1099,7 +1317,16 @@
         }
 
         steps.push({ type: "travel", duration: travelDuration, travelInfo, fromSpot: prevSpot, toSpot: spot, noCoords: !hasCoords });
-        steps.push({ type: "spot", name: spot.name, time: arriveT, duration: stay, color: getSpotCatColor(spot.spotCategory), spotId: spot.id });
+        steps.push({
+          type: "spot",
+          name: spot.name,
+          time: arriveT,
+          duration: stay,
+          color: getSpotCatColor(spot.spotCategory),
+          spotId: spot.id,
+          budget: spot.budget || 0,
+          outsideHours: isVisitOutsideHours(spot.id, arriveT, stay)
+        });
         t = arriveT + stay;
         prevSpot = spot;
 
@@ -1277,6 +1504,26 @@
       document.getElementById("tripMeetPlace").value    = schedule.tripMeetPlace    || "";
       document.getElementById("tripDismissTime").value  = schedule.tripDismissTime  || "18:00";
       document.getElementById("tripDismissPlace").value = schedule.tripDismissPlace || "";
+      document.getElementById("travelModeSelect").value = getTravelMode();
+      renderTripPlaceSelects();
+    }
+
+    function renderTripPlaceSelects() {
+      const fill = (selectId, category, placeholder) => {
+        const select = document.getElementById(selectId);
+        if (!select) return;
+        const current = activeList?.spots?.find(s => s.spotCategory === category)?.id || "";
+        select.innerHTML = `<option value="">${placeholder}</option>`;
+        (activeList?.spots || []).forEach(spot => {
+          const opt = document.createElement("option");
+          opt.value = spot.id;
+          opt.textContent = `${getSpotCatEmoji(spot.spotCategory)} ${spot.name}`;
+          select.appendChild(opt);
+        });
+        select.value = current;
+      };
+      fill("tripMeetSpotSelect", "meet", "SPOTSから集合場所を選択");
+      fill("tripDismissSpotSelect", "dismiss", "SPOTSから解散場所を選択");
     }
 
     function renderUnscheduled() {
@@ -1285,6 +1532,8 @@
       const scheduledIds = new Set(
         schedule.days.flatMap(d => (d.entries || []).map(e => e.spotId))
       );
+      const returnAllBtn = document.getElementById("returnAllSpotsBtn");
+      if (returnAllBtn) returnAllBtn.disabled = scheduledIds.size === 0;
       const unscheduled = getOrderedSpots().filter(s => !scheduledIds.has(s.id));
 
       if (unscheduled.length === 0) {
@@ -1328,6 +1577,9 @@
         // 滞在時間デフォルト入力
         const stayWrap = document.createElement("div");
         stayWrap.className = "spot-stay-wrap";
+        const stayLabel = document.createElement("span");
+        stayLabel.className = "spot-stay-label";
+        stayLabel.textContent = "滞在";
         const stayInput = document.createElement("input");
         stayInput.type = "number";
         stayInput.min = "5";
@@ -1345,8 +1597,24 @@
         const stayUnit = document.createElement("span");
         stayUnit.className = "spot-stay-unit";
         stayUnit.textContent = "分";
+        stayWrap.appendChild(stayLabel);
         stayWrap.appendChild(stayInput);
         stayWrap.appendChild(stayUnit);
+
+        const hoursInput = document.createElement("input");
+        hoursInput.type = "text";
+        hoursInput.className = "spot-hours-input";
+        hoursInput.placeholder = "例 10:00-18:00";
+        hoursInput.title = "営業時間（例 10:00-18:00）";
+        hoursInput.value = schedule.spotHours?.[spot.id] || "";
+        hoursInput.addEventListener("click", e => e.stopPropagation());
+        hoursInput.addEventListener("change", e => {
+          if (!schedule.spotHours) schedule.spotHours = {};
+          const value = e.target.value.trim();
+          if (value) schedule.spotHours[spot.id] = value;
+          else delete schedule.spotHours[spot.id];
+          saveSchedule(schedule);
+        });
 
         const downBtn = document.createElement("button");
         downBtn.className = "spot-order-btn";
@@ -1359,6 +1627,7 @@
         wrap.appendChild(upBtn);
         wrap.appendChild(btn);
         wrap.appendChild(stayWrap);
+        wrap.appendChild(hoursInput);
         wrap.appendChild(downBtn);
         el.appendChild(wrap);
       });
@@ -1456,11 +1725,17 @@
               nameSpan.className = "tl-hotel-name";
               nameSpan.textContent = hotel.name;
               btn.appendChild(nameSpan);
-              if (hotel.budget) {
+              if (hotel.pricePerPerson || hotel.budget) {
                 const budgetSpan = document.createElement("span");
                 budgetSpan.className = "tl-hotel-budget";
-                budgetSpan.textContent = `¥${Number(hotel.budget).toLocaleString()}`;
+                budgetSpan.textContent = `¥${Number(hotel.pricePerPerson || hotel.budget).toLocaleString()}/名`;
                 btn.appendChild(budgetSpan);
+              }
+              if (hotel.checkinTime) {
+                const timeSpan = document.createElement("span");
+                timeSpan.className = "tl-hotel-budget";
+                timeSpan.textContent = `${hotel.checkinTime}IN`;
+                btn.appendChild(timeSpan);
               }
             } else {
               const findSpan = document.createElement("span");
@@ -1539,7 +1814,7 @@
           // Google Maps 経路リンク（両スポットに座標がある場合）
           if (step.fromSpot?.lat && step.toSpot?.lat) {
             const gmLink = document.createElement("a");
-            gmLink.href = `https://www.google.com/maps/dir/?api=1&origin=${step.fromSpot.lat},${step.fromSpot.lng}&destination=${step.toSpot.lat},${step.toSpot.lng}&travelmode=transit`;
+            gmLink.href = `https://www.google.com/maps/dir/?api=1&origin=${step.fromSpot.lat},${step.fromSpot.lng}&destination=${step.toSpot.lat},${step.toSpot.lng}&travelmode=${getTravelMode() === "driving" ? "driving" : "transit"}`;
             gmLink.target = "_blank";
             gmLink.rel = "noopener noreferrer";
             gmLink.className = "tl-route-link";
@@ -1579,6 +1854,14 @@
           nameEl.className = "tl-spot-name";
           nameEl.textContent = step.name;
 
+          const budgetEl = document.createElement("span");
+          budgetEl.className = "tl-spot-budget";
+          budgetEl.textContent = `¥${Number(step.budget).toLocaleString()}`;
+
+          const hoursWarnEl = document.createElement("span");
+          hoursWarnEl.className = "tl-hours-warn";
+          hoursWarnEl.textContent = "営業時間外";
+
           const stayInput = document.createElement("input");
           stayInput.className = "tl-stay-input";
           stayInput.type = "number"; stayInput.min = "5"; stayInput.max = "480"; stayInput.step = "5";
@@ -1608,6 +1891,8 @@
           rightEl.appendChild(handle);
           rightEl.appendChild(dot);
           rightEl.appendChild(nameEl);
+          if (step.budget) rightEl.appendChild(budgetEl);
+          if (step.outsideHours) rightEl.appendChild(hoursWarnEl);
           rightEl.appendChild(stayInput);
           rightEl.appendChild(staySuffix);
           rightEl.appendChild(noteInput);
@@ -1812,9 +2097,71 @@
           renderAll();
         });
       });
+
+      document.getElementById("travelModeSelect").addEventListener("change", e => {
+        schedule.travelMode = e.target.value === "driving" ? "driving" : "transit";
+        schedule.transitCache = {};
+        saveSchedule(schedule);
+        renderAll();
+      });
+
+      document.getElementById("tripMeetSpotSelect").addEventListener("change", e => {
+        if (!e.target.value) return;
+        const spot = setExclusiveSpotCategory(e.target.value, "meet");
+        if (spot) schedule.tripMeetPlace = spot.name;
+        saveSchedule(schedule);
+        renderAll();
+      });
+      document.getElementById("tripDismissSpotSelect").addEventListener("change", e => {
+        if (!e.target.value) return;
+        const spot = setExclusiveSpotCategory(e.target.value, "dismiss");
+        if (spot) schedule.tripDismissPlace = spot.name;
+        saveSchedule(schedule);
+        renderAll();
+      });
+      document.getElementById("tripMeetAddBtn").addEventListener("click", () => addTripPlaceSpot("meet"));
+      document.getElementById("tripDismissAddBtn").addEventListener("click", () => addTripPlaceSpot("dismiss"));
+    }
+
+    function addTripPlaceSpot(category) {
+      if (!activeList) return;
+      const inputId = category === "meet" ? "tripMeetPlace" : "tripDismissPlace";
+      const key = category === "meet" ? "tripMeetPlace" : "tripDismissPlace";
+      const input = document.getElementById(inputId);
+      const name = input.value.trim();
+      if (!name) { input.focus(); return; }
+
+      if (!Array.isArray(activeList.spots)) activeList.spots = [];
+      const spot = {
+        id: makeId(),
+        name,
+        description: "",
+        budget: 0,
+        type: "spot",
+        spotCategory: category,
+        lat: null,
+        lng: null,
+        sourceType: "manual"
+      };
+      activeList.spots = activeList.spots.map(s => s.spotCategory === category ? { ...s, spotCategory: "other" } : s);
+      activeList.spots.push(spot);
+      schedule[key] = name;
+      saveActiveList();
+      saveSchedule(schedule);
+      renderAll();
     }
 
     // ── 自動配置 ──────────────────────────────────────────────────
+
+    function pickAutoPlaceDay(spot, fallbackIndex) {
+      const totalDays = schedule.days.length;
+      const candidates = schedule.days
+        .map((day, idx) => ({ day, idx, count: (day.entries || []).length }))
+        .filter(({ day, idx }) => canPlaceWithinHours(day, idx, totalDays, spot))
+        .sort((a, b) => a.count - b.count || a.idx - b.idx);
+      if (candidates.length > 0) return candidates[0].idx;
+      return fallbackIndex % totalDays;
+    }
 
     document.getElementById("autoPlaceBtn").addEventListener("click", () => {
       if (schedule.days.length === 0) {
@@ -1839,13 +2186,33 @@
         day.stayTimes[spot.id] = (schedule.defaultStayTimes?.[spot.id]) ?? getDefaultStayTime(spot.spotCategory);
       });
       others.forEach((spot, i) => {
-        const dayIdx = i % schedule.days.length;
+        const dayIdx = pickAutoPlaceDay(spot, i);
         const day    = schedule.days[dayIdx];
         if (day.entries.some(en => en.spotId === spot.id)) return;
         day.entries.push({ id: makeId(), spotId: spot.id, time: "", note: "" });
         if (!day.stayTimes) day.stayTimes = {};
         day.stayTimes[spot.id] = (schedule.defaultStayTimes?.[spot.id]) ?? getDefaultStayTime(spot.spotCategory);
       });
+      saveSchedule(schedule);
+      renderAll();
+    });
+
+    document.getElementById("returnAllSpotsBtn").addEventListener("click", () => {
+      if (!schedule.days.length) {
+        alert("戻すスポットがありません。");
+        return;
+      }
+      const scheduledCount = schedule.days.reduce((sum, day) => sum + (day.entries || []).length, 0);
+      if (scheduledCount === 0) {
+        alert("すでにすべてSPOTSにあります。");
+        return;
+      }
+      if (!confirm(`配置済みスポット${scheduledCount}件をすべてSPOTSへ戻します。日程の日付やホテル登録は残ります。`)) return;
+      schedule.days.forEach(day => {
+        day.entries = [];
+        day.stayTimes = {};
+      });
+      schedule.transitCache = {};
       saveSchedule(schedule);
       renderAll();
     });
