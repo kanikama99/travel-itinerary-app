@@ -127,7 +127,12 @@
       margin-bottom: 14px;
     }
     .hotel-night-form { display: grid; grid-template-columns: 1fr 200px; gap: 12px; align-items: end; }
-    .hotel-night-form--booking { grid-template-columns: 1fr 180px 150px; }
+    .hotel-night-form--booking { grid-template-columns: 1fr 160px 130px 130px; }
+    .hotel-add-spot-option {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-top: 10px; font-size: 0.84rem; color: var(--text);
+    }
+    .hotel-add-spot-option input { width: auto; }
     .hotel-geo-status {
       font-size: 0.78rem; color: var(--muted); margin-top: 6px;
     }
@@ -204,7 +209,15 @@
           <label class="hotel-field-label" for="hotelCheckinTimeInput">チェックイン予定時刻</label>
           <input id="hotelCheckinTimeInput" class="hotel-input" type="time" />
         </div>
+        <div class="hotel-field">
+          <label class="hotel-field-label" for="hotelCheckoutTimeInput">チェックアウト予定時刻</label>
+          <input id="hotelCheckoutTimeInput" class="hotel-input" type="time" />
+        </div>
       </div>
+      <label class="hotel-add-spot-option">
+        <input id="hotelAddSpotInput" type="checkbox" checked />
+        <span>宿泊先をホテルスポットとしてSPOTSにも追加する</span>
+      </label>
       <p id="hotelGeoStatus" class="hotel-geo-status"></p>
       <button id="saveNightBtn" class="hotel-save-btn" type="button">✓ この夜の宿泊先を保存してスケジュールに戻る</button>
     </div>
@@ -328,6 +341,26 @@
       <a href="./hotel.html" class="drawer-nav-item drawer-nav-item--active">
         <span class="drawer-nav-icon">🏨</span>
         <span>ホテルを見つける</span>
+      </a>
+      <a href="./flight.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">✈</span>
+        <span>飛行機を見つける</span>
+      </a>
+      <a href="./tour.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">🗺</span>
+        <span>ツアーを見つける</span>
+      </a>
+      <a href="./gourmet.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">🍜</span>
+        <span>グルメを見つける</span>
+      </a>
+      <a href="./checklist.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">📋</span>
+        <span>持ち物リスト</span>
+      </a>
+      <a href="./print.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">🖨</span>
+        <span>印刷する</span>
       </a>
       <a href="./settings.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">⚙</span>
@@ -723,6 +756,7 @@
             document.getElementById("hotelNameInput").value   = existing.name   || "";
             document.getElementById("hotelBudgetInput").value = existing.pricePerPerson || existing.budget || "";
             document.getElementById("hotelCheckinTimeInput").value = existing.checkinTime || "";
+            document.getElementById("hotelCheckoutTimeInput").value = existing.checkoutTime || "";
             if (existing.lat && existing.lng) {
               currentGeo = { lat: existing.lat, lng: existing.lng };
               document.getElementById("hotelGeoStatus").textContent =
@@ -760,6 +794,8 @@
         const name   = nameInput.value.trim();
         const pricePerPerson = parseInt(document.getElementById("hotelBudgetInput").value) || 0;
         const checkinTime = document.getElementById("hotelCheckinTimeInput").value || "";
+        const checkoutTime = document.getElementById("hotelCheckoutTimeInput").value || "";
+        const addAsSpot = document.getElementById("hotelAddSpotInput")?.checked !== false;
 
         if (!name) {
           geoStatus.textContent = "⚠ ホテル名を入力してください";
@@ -790,11 +826,38 @@
             budget: pricePerPerson,
             pricePerPerson,
             checkinTime,
+            checkoutTime,
             checkin:  checkin  || null,
             checkout: checkout || null,
             // affiliateProvider: null,  // 例: "booking" / "jalan" / "rakuten"
             // affiliateUrl: null,       // アフィリエイトリンクURL
           };
+
+          if (addAsSpot) {
+            if (!Array.isArray(activeList.spots)) activeList.spots = [];
+            const existingSpotIndex = activeList.spots.findIndex(s => s.sourceNightId === nightId || (s.spotCategory === "hotel" && s.name === name));
+            const hotelSpot = {
+              ...(existingSpotIndex >= 0 ? activeList.spots[existingSpotIndex] : {}),
+              id: existingSpotIndex >= 0 ? activeList.spots[existingSpotIndex].id : makeId(),
+              name,
+              description: "",
+              type: "spot",
+              spotCategory: "hotel",
+              spotRole: "",
+              budget: pricePerPerson,
+              lat: currentGeo?.lat ?? activeList.spots[existingSpotIndex]?.lat ?? null,
+              lng: currentGeo?.lng ?? activeList.spots[existingSpotIndex]?.lng ?? null,
+              hotelCheckinTime: checkinTime || null,
+              hotelCheckoutTime: checkoutTime || null,
+              sourceType: "hotel",
+              sourceNightId: nightId
+            };
+            if (existingSpotIndex >= 0) activeList.spots[existingSpotIndex] = hotelSpot;
+            else activeList.spots.push(hotelSpot);
+            const listIdx = listsData.lists.findIndex(l => l.id === activeList.id);
+            if (listIdx >= 0) listsData.lists[listIdx] = activeList;
+            localStorage.setItem(LISTS_KEY, JSON.stringify(listsData));
+          }
 
           localStorage.setItem(SCHEDULE_KEY, JSON.stringify(all));
           location.href = "./schedule.html";
@@ -821,6 +884,7 @@
     });
 
     init();
+    initNightRegistration();
     suggestHotelFromSpots();
   </script>
   <script src="./calendar.js"></script>

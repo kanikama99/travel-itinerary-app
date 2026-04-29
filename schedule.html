@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
@@ -27,7 +27,7 @@
       font-weight: 700;
       margin-bottom: 4px;
     }
-    .schedule-title { font-size: clamp(1.5rem, 4vw, 2rem); font-weight: 700; line-height: 1.2; }
+    .schedule-title { font-size: clamp(1.7rem, 4vw, 2.25rem); font-weight: 700; line-height: 1.2; }
     .schedule-list-badge {
       display: inline-flex;
       align-items: center;
@@ -86,7 +86,7 @@
     .trip-summary.hidden { display: none; }
     .trip-place-input {
       width: 100%;
-      font: inherit; font-size: 0.84rem; color: var(--text);
+      font: inherit; font-size: 0.94rem; color: var(--text);
       border: 1.5px solid var(--line); border-radius: 8px;
       padding: 6px 10px; background: rgba(255,255,255,0.85);
       outline: none;
@@ -103,7 +103,7 @@
     }
     .trip-place-select {
       width: 100%;
-      font: inherit; font-size: 0.84rem; color: var(--text);
+      font: inherit; font-size: 0.94rem; color: var(--text);
       border: 1.5px solid var(--line); border-radius: 8px;
       padding: 6px 10px; background: rgba(255,255,255,0.85);
       outline: none;
@@ -204,6 +204,25 @@
       cursor: pointer; transition: color 0.15s, background 0.15s; flex-shrink: 0;
     }
     .day-delete-btn:hover { color: var(--danger); background: rgba(181,58,72,0.08); }
+
+    /* 各日の開始・終了時刻編集行 */
+    .day-time-row {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      padding: 6px 20px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.1);
+      font-size: 0.8rem;
+    }
+    .day-time-label { color: var(--muted); font-size: 0.8rem; flex-shrink: 0; }
+    .day-time-input {
+      font: inherit; font-size: 0.82rem; color: var(--text);
+      border: 1.5px solid var(--line); border-radius: 8px;
+      padding: 4px 8px; background: rgba(255,255,255,0.85);
+      outline: none; width: 100px;
+      transition: border-color 0.18s;
+    }
+    .day-time-input:focus { border-color: var(--accent); }
+    .day-time-sep { color: var(--muted); flex-shrink: 0; font-size: 0.78rem; }
 
     /* 移動時間 */
     .travel-row {
@@ -391,12 +410,12 @@
 
     .spot-chip-wrap {
       display: grid;
-      grid-template-columns: auto minmax(0, 1fr) auto;
+      grid-template-columns: minmax(0, 1fr);
       align-items: center;
       gap: 5px;
     }
     .spot-chip-wrap .spot-chip {
-      grid-column: 2;
+      grid-column: 1;
       grid-row: 1;
       min-width: 0;
       width: 100%;
@@ -514,7 +533,7 @@
 
     /* 滞在時間デフォルト入力（SPOTSサイドバー） */
     .spot-stay-wrap {
-      grid-column: 2;
+      grid-column: 1;
       grid-row: 2;
       display: flex; align-items: center; gap: 3px; flex-shrink: 0;
       padding: 2px 4px;
@@ -524,12 +543,13 @@
     }
     .spot-stay-label { font-size: 0.68rem; font-weight: 700; color: var(--accent-deep); }
     .spot-stay-default {
-      width: 50px; font: inherit; font-size: 0.8rem; color: var(--text);
+      width: 44px; font: inherit; font-size: 0.8rem; color: var(--text);
       border: 1px solid var(--line); border-radius: 6px;
       padding: 3px 5px; text-align: center;
       background: rgba(255,255,255,0.85); outline: none;
     }
     .spot-stay-default:focus { border-color: var(--accent); }
+    .spot-stay-hours { width: 38px; }
     .spot-stay-unit { font-size: 0.72rem; color: var(--muted); }
     .spot-hours-input {
       grid-column: 3;
@@ -570,7 +590,7 @@
       width: 56px; flex-shrink: 0;
     }
     .tl-time {
-      font-size: 0.86rem; font-weight: 700; color: var(--accent-deep);
+      font-size: 0.96rem; font-weight: 700; color: var(--accent-deep);
       white-space: nowrap; height: 24px; line-height: 24px;
       text-align: center; width: 100%;
     }
@@ -584,9 +604,9 @@
     }
     .tl-row--transit .tl-right { padding-bottom: 0; }
     .tl-anchor-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
-    .tl-anchor-name { font-size: 0.95rem; font-weight: 600; color: var(--accent-deep); }
+    .tl-anchor-name { font-size: 1.08rem; font-weight: 700; color: var(--accent-deep); }
     .tl-transit-label {
-      font-size: 0.83rem; color: var(--muted); font-style: italic; padding: 2px 0;
+      font-size: 0.9rem; color: var(--muted); font-style: italic; padding: 2px 0;
     }
     .tl-drag-handle {
       color: var(--muted); opacity: 0.45; cursor: grab;
@@ -594,7 +614,7 @@
     }
     .tl-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
     .tl-spot-name {
-      font-size: 0.91rem; font-weight: 600;
+      font-size: 1.02rem; font-weight: 700;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       flex: 1; min-width: 50px;
     }
@@ -610,13 +630,14 @@
       white-space: nowrap;
     }
     .tl-stay-input {
-      width: 48px; flex-shrink: 0;
+      width: 42px; flex-shrink: 0;
       font: inherit; font-size: 0.76rem; color: var(--text);
       border: 1px solid var(--line); border-radius: 6px;
       padding: 2px 4px; text-align: center;
       background: rgba(255,255,255,0.7); outline: none;
     }
     .tl-stay-input:focus { border-color: var(--accent); }
+    .tl-stay-hours { width: 38px; }
     .tl-stay-suffix { font-size: 0.7rem; color: var(--muted); flex-shrink: 0; }
     .tl-note {
       font: inherit; font-size: 0.76rem; color: var(--muted);
@@ -668,19 +689,24 @@
     /* 宿泊先ボタン */
     .tl-hotel-btn {
       display: inline-flex; align-items: center; gap: 7px;
-      padding: 5px 12px 5px 9px; border-radius: 10px;
-      background: rgba(255,255,255,0.55);
-      border: 1.5px solid rgb(var(--accent-rgb, 255,122,69) / 0.22);
-      color: var(--text); font: inherit; font-size: 0.88rem;
+      padding: 8px 14px 8px 11px; border-radius: 12px;
+      background: linear-gradient(135deg, rgb(var(--accent-rgb, 255,122,69) / 0.16), rgba(255,255,255,0.76));
+      border: 2px solid rgb(var(--accent-rgb, 255,122,69) / 0.34);
+      color: var(--text); font: inherit; font-size: 0.98rem;
       cursor: pointer; text-align: left; max-width: 100%;
+      box-shadow: 0 5px 14px rgb(var(--shadow-base-rgb, 149,90,48) / 0.10);
       transition: background 0.15s, border-color 0.15s, transform 0.15s cubic-bezier(0.34,1.56,0.64,1);
     }
     .tl-hotel-btn:hover { background: var(--accent-soft); border-color: var(--accent); transform: translateX(3px); }
     .tl-hotel-name { font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px; }
-    .tl-hotel-find { color: var(--muted); flex: 1; font-size: 0.82rem; }
+    .tl-hotel-find { color: var(--accent-deep); flex: 1; font-size: 0.96rem; font-weight: 800; }
     .tl-hotel-budget { font-size: 0.73rem; color: var(--accent-deep); font-weight: 700; flex-shrink: 0; background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; }
     .tl-hotel-chevron { color: var(--muted); flex-shrink: 0; font-size: 1rem; line-height: 1; }
     .tl-spot-budget { font-size: 0.73rem; color: var(--accent-deep); font-weight: 700; flex-shrink: 0; background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; }
+    .tl-flight-btn {
+      border-color: rgba(36, 113, 163, 0.34);
+      background: linear-gradient(135deg, rgba(52,152,219,0.18), rgba(255,255,255,0.78));
+    }
 
     .tl-over-warn {
       margin: 6px 0 4px; padding: 7px 12px;
@@ -775,7 +801,7 @@
       <aside class="spots-sidebar">
         <div class="sidebar-card">
           <p class="sidebar-kicker">Spots — 滞在時間を入れて日程に追加</p>
-          <p class="sidebar-drag-hint">滞在時間と営業時間を入れると、自動配置がより崩れにくくなります。</p>
+          <p class="sidebar-drag-hint">営業時間は「行きたい場所」のスポットメニューで設定できます。</p>
           <div id="unscheduledList" class="unscheduled-list"></div>
           <button id="autoPlaceBtn" class="auto-place-btn" type="button">✨ 自動配置</button>
           <button id="returnAllSpotsBtn" class="return-all-spots-btn" type="button">↩ 配置済みをSPOTSへ戻す</button>
@@ -819,6 +845,26 @@
       <a href="./hotel.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">🏨</span>
         <span>ホテルを見つける</span>
+      </a>
+      <a href="./flight.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">✈</span>
+        <span>飛行機を見つける</span>
+      </a>
+      <a href="./tour.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">🗺</span>
+        <span>ツアーを見つける</span>
+      </a>
+      <a href="./gourmet.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">🍜</span>
+        <span>グルメを見つける</span>
+      </a>
+      <a href="./checklist.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">📋</span>
+        <span>持ち物リスト</span>
+      </a>
+      <a href="./print.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">🖨</span>
+        <span>印刷する</span>
       </a>
       <a href="./settings.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">⚙</span>
@@ -910,6 +956,23 @@
       return (CAT_STAY[key] !== undefined) ? CAT_STAY[key] : 60;
     }
 
+    function getSpotStayDefault(spot) {
+      return Number.isFinite(Number(spot?.defaultStayMinutes)) && Number(spot.defaultStayMinutes) > 0
+        ? Number(spot.defaultStayMinutes)
+        : getDefaultStayTime(spot?.spotCategory);
+    }
+
+    function splitDuration(mins) {
+      const total = Math.max(0, parseInt(mins, 10) || 0);
+      return { hours: Math.floor(total / 60), minutes: total % 60 };
+    }
+
+    function combineDuration(hours, minutes, fallback = 60) {
+      const h = Math.max(0, parseInt(hours, 10) || 0);
+      const m = Math.max(0, parseInt(minutes, 10) || 0);
+      return Math.max(5, h * 60 + m || fallback);
+    }
+
     // ── データ読み書き ─────────────────────────────────────────────
 
     function loadActiveList() {
@@ -964,12 +1027,36 @@
       return activeList?.spots?.find(s => s.id === spotId) || null;
     }
 
+    function getSpotRole(spot) {
+      if (!spot) return "";
+      return getSpotRoles(spot)[0] || "";
+    }
+
+    function getSpotRoles(spot) {
+      if (!spot) return [];
+      const roles = Array.isArray(spot.spotRoles) ? [...spot.spotRoles] : [];
+      if (spot.spotRole && !roles.includes(spot.spotRole)) roles.push(spot.spotRole);
+      if ((spot.spotCategory === "meet" || spot.spotCategory === "dismiss") && !roles.includes(spot.spotCategory)) {
+        roles.push(spot.spotCategory);
+      }
+      return roles.filter(role => role === "meet" || role === "dismiss");
+    }
+
+    function isMeetSpot(spot) { return getSpotRoles(spot).includes("meet"); }
+    function isDismissSpot(spot) { return getSpotRoles(spot).includes("dismiss"); }
+
     function setExclusiveSpotCategory(spotId, category) {
       if (!activeList?.spots) return null;
-      activeList.spots = activeList.spots.map(s => ({
-        ...s,
-        spotCategory: s.id === spotId ? category : (s.spotCategory === category ? "other" : s.spotCategory)
-      }));
+      activeList.spots = activeList.spots.map(s => {
+        let roles = getSpotRoles(s).filter(role => role !== category);
+        if (s.id === spotId) roles = [...roles, category];
+        return {
+          ...s,
+          spotRoles: roles,
+          spotRole: roles[0] || "",
+          spotCategory: (s.spotCategory === "meet" || s.spotCategory === "dismiss") ? "other" : s.spotCategory
+        };
+      });
       saveActiveList();
       return getSpotById(spotId);
     }
@@ -1000,8 +1087,16 @@
     function ensureScheduleDefaults(sched) {
       if (sched.tripMeetTime     === undefined) sched.tripMeetTime     = "09:00";
       if (sched.tripDismissTime  === undefined) sched.tripDismissTime  = "18:00";
-      if (sched.tripMeetDate     === undefined) sched.tripMeetDate     = "";
-      if (sched.tripDismissDate  === undefined) sched.tripDismissDate  = "";
+      if (sched.tripMeetDate     === undefined) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        sched.tripMeetDate = tomorrow.toISOString().split("T")[0];
+      }
+      if (!sched.tripDismissDate) {
+        const dismiss = new Date(`${sched.tripMeetDate}T00:00:00`);
+        dismiss.setDate(dismiss.getDate() + 1);
+        sched.tripDismissDate = dismiss.toISOString().split("T")[0];
+      }
       if (sched.tripMeetPlace    === undefined) sched.tripMeetPlace    = "";
       if (sched.tripDismissPlace === undefined) sched.tripDismissPlace = "";
       if (sched.travelMode       === undefined) sched.travelMode       = "transit";
@@ -1010,12 +1105,34 @@
       if (!sched.defaultStayTimes)           sched.defaultStayTimes = {};
       if (!sched.spotHours)                  sched.spotHours        = {};
       if (!sched.hotels)                     sched.hotels           = {};
+      if (!sched.flights)                    sched.flights          = {};
     }
 
     function ensureDayDefaults(day) {
       if (!day.travelMinutes) day.travelMinutes = 20;
       if (!day.stayTimes)     day.stayTimes     = {};
       if (!day.entries)       day.entries       = [];
+    }
+
+    // 解散日時が集合日時以前の場合、解散日を翌日に繰り上げる
+    function autoFixDismissDate() {
+      const meetDate    = schedule.tripMeetDate;
+      const meetTime    = schedule.tripMeetTime    || "09:00";
+      const dismissDate = schedule.tripDismissDate;
+      const dismissTime = schedule.tripDismissTime || "18:00";
+      if (!meetDate || !dismissDate) return;
+      const meetDT    = new Date(`${meetDate}T${meetTime}`);
+      const dismissDT = new Date(`${dismissDate}T${dismissTime}`);
+      if (isNaN(meetDT) || isNaN(dismissDT)) return;
+      if (dismissDT <= meetDT) {
+        const advanced = new Date(meetDT);
+        advanced.setDate(advanced.getDate() + 1);
+        schedule.tripDismissDate = advanced.toISOString().split("T")[0];
+        const el = document.getElementById("tripDismissDate");
+        if (el) { el.value = schedule.tripDismissDate; window.CalendarPicker?.updateDisplay(el); }
+        saveSchedule(schedule);
+        syncDaysToDateRange();
+      }
     }
 
     // ── プラン生成 ─────────────────────────────────────────────────
@@ -1038,31 +1155,41 @@
       return { open, close };
     }
 
-    function getSpotHoursRange(spotId) {
-      return parseTimeRange(schedule?.spotHours?.[spotId]);
+    function getDayKey(dateStr) {
+      const d = new Date(`${dateStr}T00:00:00`);
+      if (isNaN(d)) return null;
+      return ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][d.getDay()];
     }
 
-    function getDayWindow(dayIdx, totalDays) {
+    function getSpotHoursRange(spotId, day) {
+      const spot = getSpotById(spotId);
+      const dayKey = getDayKey(day?.date);
+      const menuHours = dayKey ? spot?.businessHours?.[dayKey] : "";
+      return parseTimeRange(menuHours || schedule?.spotHours?.[spotId]);
+    }
+
+    function getDayWindow(dayIdx, totalDays, day) {
       const isFirst = dayIdx === 0;
-      const isLast = dayIdx === totalDays - 1;
+      const isLast  = dayIdx === totalDays - 1;
       return {
-        start: timeToMinutes(isFirst ? (schedule.tripMeetTime || "09:00") : "09:00"),
-        end: timeToMinutes(isLast ? (schedule.tripDismissTime || "18:00") : "21:00")
+        start: timeToMinutes(isFirst ? (schedule.tripMeetTime || "09:00") : (day?.startTime || "09:00")),
+        end:   timeToMinutes(isLast  ? (schedule.tripDismissTime || "18:00") : (day?.endTime || "21:00"))
       };
     }
 
     function canPlaceWithinHours(day, dayIdx, totalDays, spot) {
-      const hours = getSpotHoursRange(spot.id);
+      const hours = getSpotHoursRange(spot.id, day);
       if (!hours) return true;
-      const stay = (schedule.defaultStayTimes?.[spot.id]) ?? getDefaultStayTime(spot.spotCategory);
-      const dayWindow = getDayWindow(dayIdx, totalDays);
+      const stay = (schedule.defaultStayTimes?.[spot.id]) ?? getSpotStayDefault(spot);
+      const dayWindow = getDayWindow(dayIdx, totalDays, day);
       const start = Math.max(dayWindow.start, hours.open);
       const end = Math.min(dayWindow.end, hours.close);
       return start + stay <= end;
     }
 
-    function isVisitOutsideHours(spotId, arriveT, stay) {
-      const hours = getSpotHoursRange(spotId);
+    function isVisitOutsideHours(spotId, arriveT, stay, day = null) {
+      if (!day) day = schedule?.days?.find(d => (d.entries || []).some(en => en.spotId === spotId));
+      const hours = getSpotHoursRange(spotId, day);
       if (!hours) return false;
       return arriveT < hours.open || arriveT + stay > hours.close;
     }
@@ -1083,10 +1210,10 @@
       try {
         const url = `https://transit.router.hereapi.com/v8/routes?origin=${fromLat},${fromLng}&destination=${toLat},${toLng}&return=summary&apikey=${HERE_API_KEY}`;
         const res = await fetch(url);
-        if (!res.ok) return null;
+        if (!res.ok) return { failed: true, mode: "transit", error: `transit HTTP ${res.status}` };
         const data = await res.json();
         const route = data.routes?.[0];
-        if (!route?.sections) return null;
+        if (!route?.sections) return { failed: true, mode: "transit", error: "公共交通ルートなし" };
         const sections = route.sections;
         const totalSec = sections.reduce((sum, s) => sum + (s.summary?.duration ?? 0), 0);
         const transitSections = sections.filter(s => s.type === "transit");
@@ -1111,24 +1238,28 @@
           segments,
           mode: "transit",
         };
-      } catch { return null; }
+      } catch (e) {
+        return { failed: true, mode: "transit", error: e?.message || "公共交通API通信エラー" };
+      }
     }
 
     async function fetchDrivingTime(fromLat, fromLng, toLat, toLng) {
       try {
         const url = `https://router.hereapi.com/v8/routes?origin=${fromLat},${fromLng}&destination=${toLat},${toLng}&transportMode=car&return=summary&apikey=${HERE_API_KEY}`;
         const res = await fetch(url);
-        if (!res.ok) return null;
+        if (!res.ok) return { failed: true, mode: "driving", error: `driving HTTP ${res.status}` };
         const data = await res.json();
         const dur = data.routes?.[0]?.sections?.[0]?.summary?.duration;
-        if (!dur) return null;
+        if (!dur) return { failed: true, mode: "driving", error: "車ルートなし" };
         return {
           durationMin: Math.max(1, Math.round(dur / 60)),
           transfers: 0,
           segments: ["🚗"],
           mode: "driving",
         };
-      } catch { return null; }
+      } catch (e) {
+        return { failed: true, mode: "driving", error: e?.message || "車API通信エラー" };
+      }
     }
 
     async function scheduleTransitFetches() {
@@ -1149,12 +1280,12 @@
         }
       }
       // 集合/解散スポット（エントリ外）↔ 初日・最終日の端スポット の区間も追加
-      const globalMeet    = activeList?.spots?.find(s => s.spotCategory === "meet");
-      const globalDismiss = activeList?.spots?.find(s => s.spotCategory === "dismiss");
+      const globalMeet    = activeList?.spots?.find(isMeetSpot);
+      const globalDismiss = activeList?.spots?.find(isDismissSpot);
 
       const firstDay = schedule.days[0];
       if (firstDay && globalMeet?.lat && globalMeet?.lng) {
-        const firstNonMeet = firstDay.entries?.find(en => getSpotById(en.spotId)?.spotCategory !== "meet");
+        const firstNonMeet = firstDay.entries?.find(en => !isMeetSpot(getSpotById(en.spotId)));
         const firstSpot    = firstNonMeet ? getSpotById(firstNonMeet.spotId) : null;
         if (firstSpot?.lat && firstSpot?.lng) {
           const key = transitCacheKey(globalMeet.lat, globalMeet.lng, firstSpot.lat, firstSpot.lng);
@@ -1164,7 +1295,7 @@
 
       const lastDay = schedule.days[schedule.days.length - 1];
       if (lastDay && globalDismiss?.lat && globalDismiss?.lng) {
-        const lastNonDismiss = [...(lastDay.entries || [])].reverse().find(en => getSpotById(en.spotId)?.spotCategory !== "dismiss");
+        const lastNonDismiss = [...(lastDay.entries || [])].reverse().find(en => !isDismissSpot(getSpotById(en.spotId)));
         const lastSpot       = lastNonDismiss ? getSpotById(lastNonDismiss.spotId) : null;
         if (lastSpot?.lat && lastSpot?.lng) {
           const key = transitCacheKey(lastSpot.lat, lastSpot.lng, globalDismiss.lat, globalDismiss.lng);
@@ -1177,7 +1308,7 @@
         const hotel = schedule.hotels?.[d.id];
         if (!hotel?.lat || !hotel?.lng) return;
 
-        const lastEnt = [...(d.entries || [])].reverse().find(en => getSpotById(en.spotId)?.spotCategory !== "dismiss");
+        const lastEnt = [...(d.entries || [])].reverse().find(en => !isDismissSpot(getSpotById(en.spotId)));
         const lastSp  = lastEnt ? getSpotById(lastEnt.spotId) : null;
         if (lastSp?.lat && lastSp?.lng) {
           const key = transitCacheKey(lastSp.lat, lastSp.lng, hotel.lat, hotel.lng);
@@ -1185,7 +1316,7 @@
         }
 
         const nextDay  = schedule.days[idx + 1];
-        const firstEnt = nextDay?.entries?.find(en => getSpotById(en.spotId)?.spotCategory !== "meet");
+        const firstEnt = nextDay?.entries?.find(en => !isMeetSpot(getSpotById(en.spotId)));
         const firstSp  = firstEnt ? getSpotById(firstEnt.spotId) : null;
         if (firstSp?.lat && firstSp?.lng) {
           const key = transitCacheKey(hotel.lat, hotel.lng, firstSp.lat, firstSp.lng);
@@ -1197,14 +1328,16 @@
       const mode = getTravelMode();
       const results = await Promise.all(
         pairs.map(async p => {
-          // 公共交通を優先。失敗時は車で代替
           const result = mode === "driving"
             ? await fetchDrivingTime(p.fromLat, p.fromLng, p.toLat, p.toLng)
-              || await fetchTransitTime(p.fromLat, p.fromLng, p.toLat, p.toLng)
-              || { failed: true }
+              || { failed: true, mode: "driving", error: "車ルート取得失敗" }
             : await fetchTransitTime(p.fromLat, p.fromLng, p.toLat, p.toLng)
-              || await fetchDrivingTime(p.fromLat, p.fromLng, p.toLat, p.toLng)
-            || { failed: true }; // 失敗をキャッシュして再フェッチを防ぐ
+              || { failed: true, mode: "transit", error: "公共交通ルート取得失敗" };
+          if (result.mode && result.mode !== mode) {
+            result.failed = true;
+            result.mode = mode;
+            result.segments = [];
+          }
           return { key: p.key, result };
         })
       );
@@ -1228,10 +1361,10 @@
       // 集合/解散スポットをエントリ内から探す。なければリストから、さらに宿泊先登録データから座標を補完する
       let meetSpot = isFirst
         ? (() => {
-            const e = day.entries.find(en => getSpotById(en.spotId)?.spotCategory === "meet");
+            const e = day.entries.find(en => isMeetSpot(getSpotById(en.spotId)));
             return e
               ? getSpotById(e.spotId)
-              : (activeList?.spots?.find(s => s.spotCategory === "meet") || null);
+              : (activeList?.spots?.find(isMeetSpot) || null);
           })()
         : null;
       // 非初日: 前の夜の宿泊先が登録済みならその座標を出発点に使う
@@ -1242,10 +1375,10 @@
 
       let dismissSpot = isLast
         ? (() => {
-            const e = day.entries.find(en => getSpotById(en.spotId)?.spotCategory === "dismiss");
+            const e = day.entries.find(en => isDismissSpot(getSpotById(en.spotId)));
             return e
               ? getSpotById(e.spotId)
-              : (activeList?.spots?.find(s => s.spotCategory === "dismiss") || null);
+              : (activeList?.spots?.find(isDismissSpot) || null);
           })()
         : null;
       // 非最終日: 当夜の宿泊先が登録済みならその座標を終着点に使う
@@ -1259,14 +1392,14 @@
         startTime  = schedule.tripMeetTime    || "09:00";
         meetName   = meetSpot?.name || schedule.tripMeetPlace || "集合場所";
       } else {
-        startTime  = "09:00";
+        startTime  = day.startTime || "09:00";
         meetName   = "宿泊先";
       }
       if (isLast) {
         endTime     = schedule.tripDismissTime  || "18:00";
         dismissName = dismissSpot?.name || schedule.tripDismissPlace || "解散場所";
       } else {
-        endTime     = "21:00";
+        endTime     = day.endTime || "21:00";
         dismissName = "宿泊先";
       }
 
@@ -1275,6 +1408,7 @@
 
       steps.push({
         type: "meet", name: meetName, time: t,
+        anchorSpot: meetSpot || null,
         // 非初日の「宿泊先」行をホテルボタンとしてレンダリングするための情報
         hotelNightDayId: !isFirst ? (schedule.days[dayIdx - 1]?.id ?? null) : null,
         hotelCheckin:    !isFirst ? (schedule.days[dayIdx - 1]?.date ?? null) : null,
@@ -1288,9 +1422,9 @@
         if (!spot) continue;
 
         // 集合場所（初日）はアンカーと同一なのでスポットとしては追加しない
-        if (isFirst && spot.spotCategory === "meet") { prevSpot = spot; continue; }
+        if (isFirst && isMeetSpot(spot)) { prevSpot = spot; continue; }
         // 解散場所（最終日）も同様（最後の移動先として後で使う）
-        if (isLast && spot.spotCategory === "dismiss") continue;
+        if (isLast && isDismissSpot(spot)) continue;
 
         // キャッシュから移動時間を取得（なければ目安値）
         const hasCoords = !!(prevSpot?.lat && prevSpot?.lng && spot.lat && spot.lng);
@@ -1309,7 +1443,7 @@
           for (let j = i; j < day.entries.length; j++) {
             const s = getSpotById(day.entries[j].spotId);
             // 集合/解散アンカーはスキップ済みなので「収まらなかった」リストに入れない
-            if (s && !(isFirst && s.spotCategory === "meet") && !(isLast && s.spotCategory === "dismiss")) {
+            if (s && !(isFirst && isMeetSpot(s)) && !(isLast && isDismissSpot(s))) {
               skipped.push(s.name);
             }
           }
@@ -1325,7 +1459,7 @@
           color: getSpotCatColor(spot.spotCategory),
           spotId: spot.id,
           budget: spot.budget || 0,
-          outsideHours: isVisitOutsideHours(spot.id, arriveT, stay)
+          outsideHours: isVisitOutsideHours(spot.id, arriveT, stay, day)
         });
         t = arriveT + stay;
         prevSpot = spot;
@@ -1333,7 +1467,7 @@
         if (t >= endT) {
           for (let j = i + 1; j < day.entries.length; j++) {
             const s = getSpotById(day.entries[j].spotId);
-            if (s && !(isFirst && s.spotCategory === "meet") && !(isLast && s.spotCategory === "dismiss")) {
+            if (s && !(isFirst && isMeetSpot(s)) && !(isLast && isDismissSpot(s))) {
               skipped.push(s.name);
             }
           }
@@ -1355,6 +1489,7 @@
       steps.push({ type: "travel", duration: finalTravelDuration, travelInfo: finalTravelInfo, fromSpot: prevSpot, toSpot: dismissSpot, noCoords: !finalHasCoords });
       steps.push({
         type: "dismiss", name: dismissName, time: t + finalTravelDuration,
+        anchorSpot: dismissSpot || null,
         hotelNightDayId: !isLast ? (day.id ?? null) : null,
         hotelCheckin:    !isLast ? (day.date ?? null) : null,
         hotelCheckout:   !isLast ? (schedule.days[dayIdx + 1]?.date ?? null) : null,
@@ -1375,9 +1510,11 @@
 
         if (step.type === "travel") {
           let travelLabel;
-          if (step.travelInfo) {
+          if (step.travelInfo && !step.travelInfo.failed) {
             const xfers = step.travelInfo.transfers === 0 ? "乗り換えなし" : `${step.travelInfo.transfers}回乗り換え`;
             travelLabel = `→ 🚃 約${step.duration}分（${xfers}）`;
+          } else if (step.travelInfo?.failed) {
+            travelLabel = `→ ⚠ 経路取得失敗${step.travelInfo.error ? `（${escHtml(step.travelInfo.error)}）` : ""}`;
           } else {
             travelLabel = `→ 移動 約${step.duration}分（目安）`;
           }
@@ -1512,7 +1649,7 @@
       const fill = (selectId, category, placeholder) => {
         const select = document.getElementById(selectId);
         if (!select) return;
-        const current = activeList?.spots?.find(s => s.spotCategory === category)?.id || "";
+        const current = activeList?.spots?.find(s => getSpotRoles(s).includes(category))?.id || "";
         select.innerHTML = `<option value="">${placeholder}</option>`;
         (activeList?.spots || []).forEach(spot => {
           const opt = document.createElement("option");
@@ -1548,20 +1685,14 @@
         const wrap = document.createElement("div");
         wrap.className = "spot-chip-wrap";
 
-        const upBtn = document.createElement("button");
-        upBtn.className = "spot-order-btn";
-        upBtn.type = "button";
-        upBtn.title = "優先度を上げる";
-        upBtn.textContent = "▲";
-        upBtn.disabled = (idx === 0);
-        upBtn.addEventListener("click", () => moveSpotInOrder(spot.id, "up"));
-
         const btn = document.createElement("button");
         btn.className = "spot-chip";
         btn.type = "button";
         btn.draggable = true;
+        const roles = getSpotRoles(spot);
+        const roleEmoji = `${roles.includes("meet") ? "🤝" : ""}${roles.includes("dismiss") ? "👋" : ""}`;
         btn.innerHTML = `
-          <span>${escHtml(getSpotCatEmoji(spot.spotCategory))}</span>
+          <span>${escHtml(roleEmoji || getSpotCatEmoji(spot.spotCategory))}</span>
           <span class="spot-chip-name">${escHtml(spot.name)}</span>
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         `;
@@ -1580,55 +1711,48 @@
         const stayLabel = document.createElement("span");
         stayLabel.className = "spot-stay-label";
         stayLabel.textContent = "滞在";
+        const stayValue = (schedule.defaultStayTimes?.[spot.id]) ?? getSpotStayDefault(spot);
+        const stayParts = splitDuration(stayValue);
+        const stayHourInput = document.createElement("input");
+        stayHourInput.type = "number";
+        stayHourInput.min = "0";
+        stayHourInput.max = "12";
+        stayHourInput.step = "1";
+        stayHourInput.className = "spot-stay-default spot-stay-hours";
+        stayHourInput.title = "滞在時間（時間）";
+        stayHourInput.value = stayParts.hours;
+        const stayHourUnit = document.createElement("span");
+        stayHourUnit.className = "spot-stay-unit";
+        stayHourUnit.textContent = "時間";
         const stayInput = document.createElement("input");
         stayInput.type = "number";
-        stayInput.min = "5";
-        stayInput.max = "480";
+        stayInput.min = "0";
+        stayInput.max = "55";
         stayInput.step = "5";
         stayInput.className = "spot-stay-default";
         stayInput.title = "デフォルト滞在時間（分）";
-        stayInput.value = (schedule.defaultStayTimes?.[spot.id]) ?? getDefaultStayTime(spot.spotCategory);
-        stayInput.addEventListener("click", e => e.stopPropagation());
-        stayInput.addEventListener("change", e => {
+        stayInput.value = stayParts.minutes;
+        const saveStay = e => {
+          e?.stopPropagation?.();
           if (!schedule.defaultStayTimes) schedule.defaultStayTimes = {};
-          schedule.defaultStayTimes[spot.id] = Math.max(5, parseInt(e.target.value) || 60);
+          schedule.defaultStayTimes[spot.id] = combineDuration(stayHourInput.value, stayInput.value, stayValue);
           saveSchedule(schedule);
-        });
+        };
+        stayHourInput.addEventListener("click", e => e.stopPropagation());
+        stayHourInput.addEventListener("change", saveStay);
+        stayInput.addEventListener("click", e => e.stopPropagation());
+        stayInput.addEventListener("change", saveStay);
         const stayUnit = document.createElement("span");
         stayUnit.className = "spot-stay-unit";
         stayUnit.textContent = "分";
         stayWrap.appendChild(stayLabel);
+        stayWrap.appendChild(stayHourInput);
+        stayWrap.appendChild(stayHourUnit);
         stayWrap.appendChild(stayInput);
         stayWrap.appendChild(stayUnit);
 
-        const hoursInput = document.createElement("input");
-        hoursInput.type = "text";
-        hoursInput.className = "spot-hours-input";
-        hoursInput.placeholder = "例 10:00-18:00";
-        hoursInput.title = "営業時間（例 10:00-18:00）";
-        hoursInput.value = schedule.spotHours?.[spot.id] || "";
-        hoursInput.addEventListener("click", e => e.stopPropagation());
-        hoursInput.addEventListener("change", e => {
-          if (!schedule.spotHours) schedule.spotHours = {};
-          const value = e.target.value.trim();
-          if (value) schedule.spotHours[spot.id] = value;
-          else delete schedule.spotHours[spot.id];
-          saveSchedule(schedule);
-        });
-
-        const downBtn = document.createElement("button");
-        downBtn.className = "spot-order-btn";
-        downBtn.type = "button";
-        downBtn.title = "優先度を下げる";
-        downBtn.textContent = "▼";
-        downBtn.disabled = (idx === unscheduled.length - 1);
-        downBtn.addEventListener("click", () => moveSpotInOrder(spot.id, "down"));
-
-        wrap.appendChild(upBtn);
         wrap.appendChild(btn);
         wrap.appendChild(stayWrap);
-        wrap.appendChild(hoursInput);
-        wrap.appendChild(downBtn);
         el.appendChild(wrap);
       });
     }
@@ -1681,7 +1805,7 @@
         dragState = null;
         day.entries.push({ id: makeId(), spotId: spot.id, time: "", note: "" });
         if (!day.stayTimes) day.stayTimes = {};
-        day.stayTimes[spot.id] = (schedule.defaultStayTimes?.[spot.id]) ?? getDefaultStayTime(spot.spotCategory);
+        day.stayTimes[spot.id] = (schedule.defaultStayTimes?.[spot.id]) ?? getSpotStayDefault(spot);
         saveSchedule(schedule);
         renderAll();
       });
@@ -1758,6 +1882,27 @@
             // 集合/解散場所（通常アンカー）
             const dotColor = step.type === "meet" ? "var(--accent-teal, #70d6c5)" : "var(--accent-pink, #ff8fb1)";
             rightEl.innerHTML = `<span class="tl-anchor-dot" style="background:${dotColor}"></span><span class="tl-anchor-name">${escHtml(step.name)}</span>`;
+            if (step.anchorSpot?.spotCategory === "airport") {
+              const flightBtn = document.createElement("button");
+              flightBtn.type = "button";
+              flightBtn.className = "tl-hotel-btn tl-flight-btn";
+              flightBtn.title = "クリックして航空券を探す・登録する";
+              const flightKey = `${step.type}:${step.anchorSpot.id || step.anchorSpot.name}:${day.date || ""}`;
+              const flight = schedule.flights?.[flightKey];
+              const flightLabel = flight?.flightNumber
+                ? `${flight.flightNumber}${flight.pricePerPerson ? ` ¥${Number(flight.pricePerPerson).toLocaleString()}/名` : ""}`
+                : "航空券を探す・登録する";
+              flightBtn.innerHTML = `<span>✈</span><span class="tl-hotel-find">${escHtml(flightLabel)}</span><span class="tl-hotel-chevron">›</span>`;
+              const p = new URLSearchParams({
+                role: step.type,
+                airport: step.anchorSpot.name || step.name,
+                spotId: step.anchorSpot.id || "",
+                date: day.date || "",
+                time: minutesToTime(step.time),
+              });
+              flightBtn.addEventListener("click", () => { location.href = `./flight.html?${p}`; });
+              rightEl.appendChild(flightBtn);
+            }
           }
 
           row.appendChild(leftEl);
@@ -1796,7 +1941,7 @@
             }
           } else if (info?.failed) {
             // HERE API が返答したが経路なし（対応エリア外など）
-            summarySpan.textContent = `⚠ 経路を取得できませんでした（公共交通・車ともに対象外の可能性）`;
+            summarySpan.textContent = `⚠ 経路を取得できませんでした${info.error ? `（${info.error}）` : ""}`;
             summarySpan.style.color = "var(--muted)";
             wrapEl.appendChild(summarySpan);
           } else if (step.noCoords) {
@@ -1862,12 +2007,23 @@
           hoursWarnEl.className = "tl-hours-warn";
           hoursWarnEl.textContent = "営業時間外";
 
+          const stayParts = splitDuration(stayMin);
+          const stayHourInput = document.createElement("input");
+          stayHourInput.className = "tl-stay-input tl-stay-hours";
+          stayHourInput.type = "number"; stayHourInput.min = "0"; stayHourInput.max = "12"; stayHourInput.step = "1";
+          stayHourInput.value = stayParts.hours; stayHourInput.title = "滞在時間（時間）";
+          const stayHourSuffix = document.createElement("span");
+          stayHourSuffix.className = "tl-stay-suffix";
+          stayHourSuffix.textContent = "時間";
+
           const stayInput = document.createElement("input");
           stayInput.className = "tl-stay-input";
-          stayInput.type = "number"; stayInput.min = "5"; stayInput.max = "480"; stayInput.step = "5";
+          stayInput.type = "number"; stayInput.min = "0"; stayInput.max = "55"; stayInput.step = "5";
           stayInput.value = stayMin; stayInput.title = "滞在時間（分）";
 
           const staySuffix = document.createElement("span");
+          stayInput.value = stayParts.minutes;
+          stayInput.title = "滞在時間（分）";
           staySuffix.className = "tl-stay-suffix";
           staySuffix.textContent = "分";
 
@@ -1893,6 +2049,8 @@
           rightEl.appendChild(nameEl);
           if (step.budget) rightEl.appendChild(budgetEl);
           if (step.outsideHours) rightEl.appendChild(hoursWarnEl);
+          rightEl.appendChild(stayHourInput);
+          rightEl.appendChild(stayHourSuffix);
           rightEl.appendChild(stayInput);
           rightEl.appendChild(staySuffix);
           rightEl.appendChild(noteInput);
@@ -1902,14 +2060,17 @@
           row.appendChild(leftEl);
           row.appendChild(rightEl);
 
-          stayInput.addEventListener("click", e => e.stopPropagation());
-          stayInput.addEventListener("change", e => {
+          const saveStayTime = e => {
             e.stopPropagation();
             if (!day.stayTimes) day.stayTimes = {};
-            day.stayTimes[entry.spotId] = Math.max(5, parseInt(e.target.value) || 60);
+            day.stayTimes[entry.spotId] = combineDuration(stayHourInput.value, stayInput.value, stayMin);
             saveSchedule(schedule);
             renderDays();
-          });
+          };
+          stayHourInput.addEventListener("click", e => e.stopPropagation());
+          stayHourInput.addEventListener("change", saveStayTime);
+          stayInput.addEventListener("click", e => e.stopPropagation());
+          stayInput.addEventListener("change", saveStayTime);
           noteInput.addEventListener("click", e => e.stopPropagation());
           noteInput.addEventListener("change", e => { entry.note = e.target.value; saveSchedule(schedule); });
           upBtn.addEventListener("click", e => {
@@ -1971,7 +2132,7 @@
               if (!spot) { dragState = null; return; }
               const newEntry = { id: makeId(), spotId, time: "", note: "" };
               if (!day.stayTimes) day.stayTimes = {};
-              day.stayTimes[spotId] = (schedule.defaultStayTimes?.[spotId]) ?? getDefaultStayTime(spot.spotCategory);
+              day.stayTimes[spotId] = (schedule.defaultStayTimes?.[spotId]) ?? getSpotStayDefault(spot);
               const tIdx = day.entries.findIndex(en => en.spotId === step.spotId);
               day.entries.splice(dropBefore ? tIdx : tIdx + 1, 0, newEntry);
             }
@@ -2031,6 +2192,49 @@
       });
       card.appendChild(travelRow);
 
+      // 中日（非初日・非最終日）の開始/終了時刻編集行
+      const isFirst = idx === 0;
+      const isLast  = idx === schedule.days.length - 1;
+      if (!isFirst || !isLast) { // 1日のみ旅行では非表示
+        const timeRow = document.createElement("div");
+        timeRow.className = "day-time-row";
+        const startLabel = document.createElement("span");
+        startLabel.className = "day-time-label";
+        startLabel.textContent = isFirst ? "終了" : "開始";
+        const startInput = document.createElement("input");
+        startInput.type  = "time";
+        startInput.className = "day-time-input";
+        if (isFirst) {
+          startInput.value = day.endTime || "21:00";
+          startInput.title = "1日目の終了時刻";
+          startInput.addEventListener("change", e => { day.endTime = e.target.value; saveSchedule(schedule); renderDays(); });
+        } else {
+          startInput.value = day.startTime || "09:00";
+          startInput.title = "この日の開始時刻（前泊チェックアウト後）";
+          startInput.addEventListener("change", e => { day.startTime = e.target.value; saveSchedule(schedule); renderDays(); });
+        }
+        timeRow.appendChild(startLabel);
+        timeRow.appendChild(startInput);
+        if (!isFirst && !isLast) {
+          const sep = document.createElement("span");
+          sep.className = "day-time-sep";
+          sep.textContent = "〜";
+          const endLabel = document.createElement("span");
+          endLabel.className = "day-time-label";
+          endLabel.textContent = "終了";
+          const endInput = document.createElement("input");
+          endInput.type  = "time";
+          endInput.className = "day-time-input";
+          endInput.value = day.endTime || "21:00";
+          endInput.title = "この日の終了時刻（ホテルチェックイン前）";
+          endInput.addEventListener("change", e => { day.endTime = e.target.value; saveSchedule(schedule); renderDays(); });
+          timeRow.appendChild(sep);
+          timeRow.appendChild(endLabel);
+          timeRow.appendChild(endInput);
+        }
+        card.appendChild(timeRow);
+      }
+
       card.appendChild(renderUnifiedTimeline(day, idx, schedule.days.length));
       container.appendChild(card);
     }
@@ -2086,6 +2290,7 @@
         document.getElementById(key).addEventListener("change", e => {
           schedule[key] = e.target.value;
           saveSchedule(schedule);
+          autoFixDismissDate();
           syncDaysToDateRange();
         });
       });
@@ -2094,6 +2299,7 @@
         document.getElementById(key).addEventListener("change", e => {
           schedule[key] = e.target.value;
           saveSchedule(schedule);
+          if (key === "tripMeetTime" || key === "tripDismissTime") autoFixDismissDate();
           renderAll();
         });
       });
@@ -2138,12 +2344,17 @@
         description: "",
         budget: 0,
         type: "spot",
-        spotCategory: category,
+        spotCategory: "other",
+        spotRole: category,
+        spotRoles: [category],
         lat: null,
         lng: null,
         sourceType: "manual"
       };
-      activeList.spots = activeList.spots.map(s => s.spotCategory === category ? { ...s, spotCategory: "other" } : s);
+      activeList.spots = activeList.spots.map(s => {
+        const roles = getSpotRoles(s).filter(role => role !== category);
+        return { ...s, spotRoles: roles, spotRole: roles[0] || "" };
+      });
       activeList.spots.push(spot);
       schedule[key] = name;
       saveActiveList();
@@ -2175,15 +2386,15 @@
         return;
       }
       // カテゴリが meet/dismiss のスポットは初日・最終日に優先配置、残りは均等配分
-      const meetDismiss = unscheduled.filter(s => s.spotCategory === "meet" || s.spotCategory === "dismiss");
-      const others      = unscheduled.filter(s => s.spotCategory !== "meet" && s.spotCategory !== "dismiss");
+      const meetDismiss = unscheduled.filter(s => isMeetSpot(s) || isDismissSpot(s));
+      const others      = unscheduled.filter(s => !isMeetSpot(s) && !isDismissSpot(s));
       meetDismiss.forEach((spot, i) => {
         const dayIdx = i === 0 ? 0 : schedule.days.length - 1;
         const day    = schedule.days[dayIdx];
         if (day.entries.some(en => en.spotId === spot.id)) return;
         day.entries.push({ id: makeId(), spotId: spot.id, time: "", note: "" });
         if (!day.stayTimes) day.stayTimes = {};
-        day.stayTimes[spot.id] = (schedule.defaultStayTimes?.[spot.id]) ?? getDefaultStayTime(spot.spotCategory);
+        day.stayTimes[spot.id] = (schedule.defaultStayTimes?.[spot.id]) ?? getSpotStayDefault(spot);
       });
       others.forEach((spot, i) => {
         const dayIdx = pickAutoPlaceDay(spot, i);
@@ -2191,7 +2402,13 @@
         if (day.entries.some(en => en.spotId === spot.id)) return;
         day.entries.push({ id: makeId(), spotId: spot.id, time: "", note: "" });
         if (!day.stayTimes) day.stayTimes = {};
-        day.stayTimes[spot.id] = (schedule.defaultStayTimes?.[spot.id]) ?? getDefaultStayTime(spot.spotCategory);
+        day.stayTimes[spot.id] = (schedule.defaultStayTimes?.[spot.id]) ?? getSpotStayDefault(spot);
+      });
+      schedule.days.forEach((day, idx) => {
+        const plan = generatePlan(day, idx, schedule.days.length);
+        if (!plan.skipped.length) return;
+        const skippedNames = new Set(plan.skipped);
+        day.entries = (day.entries || []).filter(en => !skippedNames.has(getSpotById(en.spotId)?.name));
       });
       saveSchedule(schedule);
       renderAll();
@@ -2287,11 +2504,11 @@
       if (!activeList?.spots) return;
       let changed = false;
       if (!schedule.tripMeetPlace) {
-        const meetSpot = activeList.spots.find(s => s.spotCategory === "meet");
+        const meetSpot = activeList.spots.find(isMeetSpot);
         if (meetSpot) { schedule.tripMeetPlace = meetSpot.name; changed = true; }
       }
       if (!schedule.tripDismissPlace) {
-        const dismissSpot = activeList.spots.find(s => s.spotCategory === "dismiss");
+        const dismissSpot = activeList.spots.find(isDismissSpot);
         if (dismissSpot) { schedule.tripDismissPlace = dismissSpot.name; changed = true; }
       }
       if (changed) saveSchedule(schedule);
@@ -2305,3 +2522,4 @@
   </script>
 </body>
 </html>
+

@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>持ち物リスト — Trip Pop Map</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+  <style>
+    .stub-shell {
+      width: min(760px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 40px 0 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .stub-eyebrow {
+      font-size: 0.82rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+      font-weight: 700;
+      margin: 0 0 4px;
+    }
+    .stub-title { font-size: clamp(1.5rem, 4vw, 2rem); font-weight: 700; line-height: 1.2; margin: 0 0 8px; }
+    .stub-coming-soon {
+      padding: 48px 32px;
+      text-align: center;
+      background: var(--panel);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 1.1rem;
+    }
+    .stub-coming-soon .stub-icon { font-size: 3rem; display: block; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <div class="stub-shell">
+    <header>
+      <p class="stub-eyebrow">Packing List</p>
+      <h1 class="stub-title">📋 持ち物リスト</h1>
+    </header>
+
+    <div class="stub-coming-soon">
+      <span class="stub-icon">📋</span>
+      <p>持ち物リスト機能は準備中です。<br>もうしばらくお待ちください。</p>
+    </div>
+  </div>
+
+  <button id="hamburgerBtn" class="hamburger-btn" type="button" aria-label="メニューを開く">
+    <span class="hamburger-line"></span>
+    <span class="hamburger-line"></span>
+    <span class="hamburger-line"></span>
+  </button>
+
+  <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
+  <aside id="sideDrawer" class="side-drawer hidden" aria-hidden="true">
+    <div class="drawer-head">
+      <p class="drawer-kicker">Menu</p>
+    </div>
+    <nav class="drawer-nav">
+      <a href="./bookmarks.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">📒</span>
+        <span>しおりを選ぶ</span>
+      </a>
+      <a href="./spots.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">📍</span>
+        <span>行きたい場所</span>
+      </a>
+      <a href="./schedule.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">📅</span>
+        <span>スケジュール</span>
+      </a>
+      <a href="./hotel.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">🏨</span>
+        <span>ホテルを見つける</span>
+      </a>
+      <a href="./flight.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">✈</span>
+        <span>飛行機を見つける</span>
+      </a>
+      <a href="./tour.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">🗺</span>
+        <span>ツアーを見つける</span>
+      </a>
+      <a href="./gourmet.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">🍜</span>
+        <span>グルメを見つける</span>
+      </a>
+      <a href="./checklist.html" class="drawer-nav-item drawer-nav-item--active">
+        <span class="drawer-nav-icon">📋</span>
+        <span>持ち物リスト</span>
+      </a>
+      <a href="./print.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">🖨</span>
+        <span>印刷する</span>
+      </a>
+      <a href="./settings.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">⚙</span>
+        <span>設定</span>
+      </a>
+    </nav>
+  </aside>
+
+  <script>
+    const hamburgerBtn = document.getElementById("hamburgerBtn");
+    const sideDrawer = document.getElementById("sideDrawer");
+    const drawerBackdrop = document.getElementById("drawerBackdrop");
+    hamburgerBtn.addEventListener("click", () => {
+      const open = !sideDrawer.classList.contains("hidden");
+      sideDrawer.classList.toggle("hidden", open);
+      drawerBackdrop.classList.toggle("hidden", open);
+      sideDrawer.setAttribute("aria-hidden", String(open));
+    });
+    drawerBackdrop.addEventListener("click", () => {
+      sideDrawer.classList.add("hidden");
+      drawerBackdrop.classList.add("hidden");
+      sideDrawer.setAttribute("aria-hidden", "true");
+    });
+
+    (function () {
+      const saved = localStorage.getItem("spot-map-settings.v1");
+      if (!saved) return;
+      try {
+        const s = JSON.parse(saved);
+        const themes = [
+          ["#fff3dd","#fffaf0","rgba(166,97,54,0.18)","#233038","#5f6d73","#ff7a45","#ce5428","255,122,69","149,90,48"],
+          ["#e8f4fd","#f0f8ff","rgba(54,120,166,0.18)","#1a2a3a","#4a6070","#4a9ede","#2d7ab5","74,158,222","45,100,165"],
+          ["#f0fdf4","#f7fff9","rgba(54,166,97,0.18)","#1a3323","#3a6050","#34c97a","#1fa85e","52,201,122","30,140,80"],
+          ["#fdf0f8","#fff7fd","rgba(166,54,140,0.18)","#2a1a2a","#5f3a5a","#d44ab0","#a83285","212,74,176","140,50,120"],
+          ["#fff8f0","#fffaf5","rgba(200,120,40,0.18)","#2a1800","#6a4a20","#e08020","#b05a10","224,128,32","160,80,20"],
+          ["#f5f0ff","#faf7ff","rgba(120,80,200,0.18)","#180a2a","#4a3a6a","#8060d0","#6040a8","128,96,208","80,60,150"],
+          ["#fff0f0","#fff7f7","rgba(166,54,54,0.18)","#2a0a0a","#6a3a3a","#e05050","#b03030","224,80,80","160,40,40"],
+          ["#f0fff8","#f5fffb","rgba(40,160,120,0.18)","#001a12","#1a4a3a","#28c890","#10a870","40,200,144","20,140,90"]
+        ];
+        const idx = s.bgTheme ?? 0;
+        const c = themes[Math.max(0, Math.min(themes.length - 1, idx))];
+        const r = document.documentElement;
+        r.style.setProperty("--bg", c[0]);
+        r.style.setProperty("--panel", c[1]);
+        r.style.setProperty("--panel-strong", c[1]);
+        r.style.setProperty("--line", c[2]);
+        r.style.setProperty("--text", c[3]);
+        r.style.setProperty("--muted", c[4]);
+        r.style.setProperty("--accent", c[5]);
+        r.style.setProperty("--accent-deep", c[6]);
+        r.style.setProperty("--accent-rgb", c[7]);
+        r.style.setProperty("--shadow-base-rgb", c[8]);
+      } catch (e) {}
+    })();
+  </script>
+</body>
+</html>

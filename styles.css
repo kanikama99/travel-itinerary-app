@@ -415,6 +415,13 @@ textarea:focus {
   border: 1px solid rgba(142, 68, 173, 0.25);
 }
 
+.spot-type-badge.category-meet-dismiss {
+  background: linear-gradient(90deg, rgba(39, 174, 96, 0.18) 0 50%, rgba(142, 68, 173, 0.16) 50% 100%);
+  color: #3b3b4a;
+  border: 1px solid rgba(91, 112, 138, 0.28);
+  box-shadow: inset 3px 0 0 var(--meet-color), inset -3px 0 0 var(--dismiss-color);
+}
+
 .spot-type-badge.category-airport {
   background: rgba(52, 152, 219, 0.14);
   color: #2471a3;
@@ -527,6 +534,10 @@ textarea:focus {
 
 .map-pin-dismiss {
   background: linear-gradient(135deg, #b07fd4 0%, #8e44ad 100%);
+}
+
+.map-pin-meet-dismiss {
+  background: linear-gradient(135deg, #4ecb71 0 50%, #8e44ad 50% 100%);
 }
 
 .map-pin-airport {
@@ -725,6 +736,13 @@ textarea:focus {
 
 .leaflet-tooltip.spot-label:hover::before {
   background: rgba(255, 239, 226, 0.98);
+}
+
+@media (max-width: 520px) {
+  .leaflet-tooltip.spot-label {
+    font-size: 0.76rem;
+    padding: 5px 9px;
+  }
 }
 
 .cluster-label::before {
@@ -965,6 +983,271 @@ textarea:focus {
   margin-top: 14px;
 }
 
+/* Spot role (meet/dismiss) toggle section */
+.spot-role-section {
+  margin: 10px 0 4px;
+}
+
+.spot-role-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.spot-role-btn {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--line);
+  background: transparent;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.spot-role-btn[data-role="meet"]:hover,
+.spot-role-btn[data-role="meet"].spot-role-btn--active {
+  border-color: var(--meet-color);
+  background: rgba(39, 174, 96, 0.1);
+  color: var(--meet-color);
+}
+
+.spot-role-btn[data-role="dismiss"]:hover,
+.spot-role-btn[data-role="dismiss"].spot-role-btn--active {
+  border-color: var(--dismiss-color);
+  background: rgba(142, 68, 173, 0.1);
+  color: var(--dismiss-color);
+}
+
+/* Business hours table */
+.spot-hours-section {
+  gap: 6px;
+}
+
+.spot-hours-title {
+  font-size: 0.96rem;
+  line-height: 1.45;
+}
+
+.spot-hours-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  font-size: 0.94rem;
+}
+
+.spot-hours-table td {
+  padding: 6px 6px 6px 0;
+  vertical-align: middle;
+}
+
+.spot-hours-day {
+  width: 4.5em;
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.spot-hours-day label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.spot-hours-enabled {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+.spot-hours-range {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.spot-hours-range:not(.spot-hours-range--enabled) {
+  opacity: 0.42;
+}
+
+.spot-hours-slider {
+  position: relative;
+  width: 100%;
+  height: 30px;
+}
+
+.spot-hours-track,
+.spot-hours-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 13px;
+  height: 6px;
+  border-radius: 999px;
+}
+
+.spot-hours-track {
+  background: rgba(166, 97, 54, 0.16);
+}
+
+.spot-hours-fill {
+  background: linear-gradient(90deg, var(--accent), var(--accent-light));
+  left: var(--hours-open-pct, 42%);
+  right: calc(100% - var(--hours-close-pct, 75%));
+}
+
+.spot-hours-range-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 30px;
+  margin: 0;
+  background: transparent;
+  pointer-events: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.spot-hours-range-input::-webkit-slider-thumb {
+  pointer-events: auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: var(--accent);
+  box-shadow: 0 2px 7px rgb(var(--shadow-base-rgb, 149,90,48) / 0.26);
+  cursor: grab;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.spot-hours-range-input::-moz-range-thumb {
+  pointer-events: auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: var(--accent);
+  box-shadow: 0 2px 7px rgb(var(--shadow-base-rgb, 149,90,48) / 0.26);
+  cursor: grab;
+}
+
+.spot-hours-range-input::-webkit-slider-runnable-track {
+  background: transparent;
+}
+
+.spot-hours-range-input::-moz-range-track {
+  background: transparent;
+}
+
+.spot-hours-value {
+  min-width: 96px;
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: var(--accent-deep);
+  text-align: right;
+}
+
+.spot-hours-range:not(.spot-hours-range--enabled) .spot-hours-value {
+  color: var(--muted);
+}
+
+.spot-hours-time-input {
+  width: 100%;
+  min-width: 0;
+  padding: 7px 9px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel-strong);
+  font-size: 0.94rem;
+  color: var(--text);
+}
+
+.spot-hours-time-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.spot-duration-row,
+.spot-airport-time-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.spot-airport-time-row .spot-menu-label {
+  flex: 1 1 150px;
+}
+
+.drawer-nav a[href="./hotel.html"] {
+  display: none;
+}
+
+/* Category-specific fields (airport / hotel) */
+.spot-category-fields {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 210, 87, 0.1);
+  border: 1px solid var(--line);
+}
+
+.spot-category-fields h4 {
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--accent-deep);
+  letter-spacing: 0.06em;
+}
+
+.spot-checkin-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.spot-time-field {
+  padding: 5px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel-strong);
+  font-size: 0.85rem;
+  color: var(--text);
+  width: 110px;
+}
+
+.spot-time-field:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.spot-offset-field {
+  padding: 5px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel-strong);
+  font-size: 0.85rem;
+  color: var(--text);
+  width: 70px;
+  text-align: center;
+}
+
+.spot-offset-field:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.spot-menu-note {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin: 0;
+}
+
 .hidden {
   display: none !important;
 }
@@ -1153,6 +1436,33 @@ textarea:focus {
 
 .settings-section {
   margin-bottom: 20px;
+}
+
+.settings-back-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 24px;
+  border-radius: 999px;
+  border: 2px solid var(--accent);
+  background: transparent;
+  color: var(--accent-deep);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-outline:hover {
+  background: var(--accent-soft);
+  color: var(--accent-deep);
 }
 
 /* Map style cards */

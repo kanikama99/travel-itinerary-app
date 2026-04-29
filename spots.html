@@ -157,6 +157,17 @@
       <h3 id="spotMenuTitle">—</h3>
       <button id="spotMenuClose" class="ghost-button" type="button">閉じる</button>
     </div>
+
+    <!-- 役割設定（集合・解散場所） -->
+    <div class="spot-role-section">
+      <p class="spot-menu-sublabel">役割設定（集合・解散場所）</p>
+      <div class="spot-role-buttons">
+        <button id="spotMeetToggle" class="spot-role-btn" type="button" data-role="meet">🤝 集合場所として設定</button>
+        <button id="spotDismissToggle" class="spot-role-btn" type="button" data-role="dismiss">👋 解散場所として設定</button>
+      </div>
+      <p class="spot-menu-note">設定すると他のスポットの同役割が解除されます</p>
+    </div>
+
     <div class="spot-category-section">
       <p class="spot-menu-sublabel">スポットカテゴリ</p>
       <select id="spotCategorySelect" class="spot-category-select"></select>
@@ -165,6 +176,7 @@
         <button id="spotCategoryNewAddBtn" class="primary-button" type="button">追加</button>
       </div>
     </div>
+
     <label class="spot-menu-label">
       表示名
       <input id="spotNameInput" type="text" placeholder="表示名を変更" />
@@ -174,8 +186,80 @@
       <input id="spotBudgetInput" type="number" min="0" step="100" placeholder="例：3000" />
     </label>
     <label class="spot-menu-label">
+      優先度（自動配置の優先順位：数字が小さいほど優先）
+      <select id="spotPriorityInput" class="spot-category-select">
+        <option value="1">1 — 最高（必ず入れたい）</option>
+        <option value="2">2 — 高</option>
+        <option value="3" selected>3 — 普通</option>
+        <option value="4">4 — 低</option>
+        <option value="5">5 — 最低（余裕があれば）</option>
+      </select>
+    </label>
+    <div class="spot-menu-label">
+      滞在時間
+      <div class="spot-duration-row">
+        <input id="spotStayHoursInput" type="number" min="0" max="12" step="1" value="1" class="spot-offset-field" />
+        <span class="spot-menu-note">時間</span>
+        <input id="spotStayMinutesInput" type="number" min="0" max="55" step="5" value="0" class="spot-offset-field" />
+        <span class="spot-menu-note">分</span>
+      </div>
+    </div>
+
+    <!-- 営業時間（曜日ごと） -->
+    <div class="spot-menu-label spot-hours-section">
+      <p class="spot-menu-sublabel spot-hours-title">営業時間（任意・曜日ごと）</p>
+      <p class="spot-menu-note">使う曜日だけチェックして、バーの両端をドラッグしてください。</p>
+      <table class="spot-hours-table">
+        <tr><td class="spot-hours-day"><label><input type="checkbox" class="spot-hours-enabled" data-day="sun" /> 日</label></td><td><div class="spot-hours-range" data-day="sun"><div class="spot-hours-slider"><div class="spot-hours-track"></div><div class="spot-hours-fill"></div><input type="range" min="0" max="1440" step="30" value="600" data-part="open" class="spot-hours-range-input" aria-label="日曜の開始時刻" /><input type="range" min="0" max="1440" step="30" value="1080" data-part="close" class="spot-hours-range-input" aria-label="日曜の終了時刻" /></div><span class="spot-hours-value">10:00〜18:00</span></div></td></tr>
+        <tr><td class="spot-hours-day"><label><input type="checkbox" class="spot-hours-enabled" data-day="mon" /> 月</label></td><td><div class="spot-hours-range" data-day="mon"><div class="spot-hours-slider"><div class="spot-hours-track"></div><div class="spot-hours-fill"></div><input type="range" min="0" max="1440" step="30" value="600" data-part="open" class="spot-hours-range-input" aria-label="月曜の開始時刻" /><input type="range" min="0" max="1440" step="30" value="1080" data-part="close" class="spot-hours-range-input" aria-label="月曜の終了時刻" /></div><span class="spot-hours-value">10:00〜18:00</span></div></td></tr>
+        <tr><td class="spot-hours-day"><label><input type="checkbox" class="spot-hours-enabled" data-day="tue" /> 火</label></td><td><div class="spot-hours-range" data-day="tue"><div class="spot-hours-slider"><div class="spot-hours-track"></div><div class="spot-hours-fill"></div><input type="range" min="0" max="1440" step="30" value="600" data-part="open" class="spot-hours-range-input" aria-label="火曜の開始時刻" /><input type="range" min="0" max="1440" step="30" value="1080" data-part="close" class="spot-hours-range-input" aria-label="火曜の終了時刻" /></div><span class="spot-hours-value">10:00〜18:00</span></div></td></tr>
+        <tr><td class="spot-hours-day"><label><input type="checkbox" class="spot-hours-enabled" data-day="wed" /> 水</label></td><td><div class="spot-hours-range" data-day="wed"><div class="spot-hours-slider"><div class="spot-hours-track"></div><div class="spot-hours-fill"></div><input type="range" min="0" max="1440" step="30" value="600" data-part="open" class="spot-hours-range-input" aria-label="水曜の開始時刻" /><input type="range" min="0" max="1440" step="30" value="1080" data-part="close" class="spot-hours-range-input" aria-label="水曜の終了時刻" /></div><span class="spot-hours-value">10:00〜18:00</span></div></td></tr>
+        <tr><td class="spot-hours-day"><label><input type="checkbox" class="spot-hours-enabled" data-day="thu" /> 木</label></td><td><div class="spot-hours-range" data-day="thu"><div class="spot-hours-slider"><div class="spot-hours-track"></div><div class="spot-hours-fill"></div><input type="range" min="0" max="1440" step="30" value="600" data-part="open" class="spot-hours-range-input" aria-label="木曜の開始時刻" /><input type="range" min="0" max="1440" step="30" value="1080" data-part="close" class="spot-hours-range-input" aria-label="木曜の終了時刻" /></div><span class="spot-hours-value">10:00〜18:00</span></div></td></tr>
+        <tr><td class="spot-hours-day"><label><input type="checkbox" class="spot-hours-enabled" data-day="fri" /> 金</label></td><td><div class="spot-hours-range" data-day="fri"><div class="spot-hours-slider"><div class="spot-hours-track"></div><div class="spot-hours-fill"></div><input type="range" min="0" max="1440" step="30" value="600" data-part="open" class="spot-hours-range-input" aria-label="金曜の開始時刻" /><input type="range" min="0" max="1440" step="30" value="1080" data-part="close" class="spot-hours-range-input" aria-label="金曜の終了時刻" /></div><span class="spot-hours-value">10:00〜18:00</span></div></td></tr>
+        <tr><td class="spot-hours-day"><label><input type="checkbox" class="spot-hours-enabled" data-day="sat" /> 土</label></td><td><div class="spot-hours-range" data-day="sat"><div class="spot-hours-slider"><div class="spot-hours-track"></div><div class="spot-hours-fill"></div><input type="range" min="0" max="1440" step="30" value="600" data-part="open" class="spot-hours-range-input" aria-label="土曜の開始時刻" /><input type="range" min="0" max="1440" step="30" value="1080" data-part="close" class="spot-hours-range-input" aria-label="土曜の終了時刻" /></div><span class="spot-hours-value">10:00〜18:00</span></div></td></tr>
+      </table>
+    </div>
+
+    <!-- 空港専用フィールド -->
+    <div id="spotAirportSection" class="spot-category-fields hidden">
+      <p class="spot-menu-sublabel">✈ 空港専用</p>
+      <div class="spot-airport-time-row">
+        <label class="spot-menu-label">
+          離陸予定時刻
+          <input id="spotTakeoffTime" type="time" class="spot-time-field" />
+        </label>
+        <label class="spot-menu-label">
+          着陸予定時刻
+          <input id="spotLandingTime" type="time" class="spot-time-field" />
+        </label>
+      </div>
+      <div class="spot-menu-label">
+        チェックイン予定時刻
+        <div class="spot-checkin-row">
+          <input id="spotAirportCheckinTime" type="time" class="spot-time-field" />
+          <span class="spot-menu-note">または離陸</span>
+          <input id="spotAirportCheckinOffset" type="number" min="0" max="300" step="15" placeholder="90" class="spot-offset-field" />
+          <span class="spot-menu-note">分前</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ホテル専用フィールド -->
+    <div id="spotHotelSection" class="spot-category-fields hidden">
+      <p class="spot-menu-sublabel">🏨 ホテル専用</p>
+      <label class="spot-menu-label">
+        チェックイン予定時刻
+        <input id="spotHotelCheckinTime" type="time" class="spot-time-field" />
+      </label>
+      <label class="spot-menu-label">
+        チェックアウト予定時刻
+        <input id="spotHotelCheckoutTime" type="time" class="spot-time-field" />
+      </label>
+    </div>
+
+    <label class="spot-menu-label">
       簡単な説明
-      <textarea id="spotDescriptionInput" rows="5" placeholder="見どころ、集合メモ、持ち物など"></textarea>
+      <textarea id="spotDescriptionInput" rows="4" placeholder="見どころ、集合メモ、持ち物など"></textarea>
     </label>
     <div class="spot-menu-actions">
       <button id="spotDescriptionSave" class="primary-button" type="button">保存</button>
@@ -212,6 +296,26 @@
       <a href="./hotel.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">🏨</span>
         <span>ホテルを見つける</span>
+      </a>
+      <a href="./flight.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">✈</span>
+        <span>飛行機を見つける</span>
+      </a>
+      <a href="./tour.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">🗺</span>
+        <span>ツアーを見つける</span>
+      </a>
+      <a href="./gourmet.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">🍜</span>
+        <span>グルメを見つける</span>
+      </a>
+      <a href="./checklist.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">📋</span>
+        <span>持ち物リスト</span>
+      </a>
+      <a href="./print.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">🖨</span>
+        <span>印刷する</span>
       </a>
       <a href="./settings.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">⚙</span>

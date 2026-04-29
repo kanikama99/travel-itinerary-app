@@ -290,12 +290,29 @@ spotCategorySelect.addEventListener("change", () => {
     spotCategoryNewName.focus();
   } else {
     spotCategoryAddForm.classList.add("hidden");
+    updateSpotCategoryFields(spotCategorySelect.value, null);
   }
 });
 
 spotCategoryNewAddBtn.addEventListener("click", addCategoryFromSpotMenu);
 spotCategoryNewName.addEventListener("keydown", (e) => {
   if (e.key === "Enter") addCategoryFromSpotMenu();
+});
+
+document.querySelectorAll(".spot-hours-enabled").forEach(input => {
+  input.addEventListener("change", () => {
+    const row = document.querySelector(`.spot-hours-range[data-day="${input.dataset.day}"]`);
+    if (!row) return;
+    row.classList.toggle("spot-hours-range--enabled", input.checked);
+    updateBusinessHoursRange(row);
+  });
+});
+
+document.querySelectorAll(".spot-hours-range-input").forEach(input => {
+  input.addEventListener("input", () => {
+    const row = input.closest(".spot-hours-range");
+    if (row) updateBusinessHoursRange(row);
+  });
 });
 
 if (areaSuggestToggle) areaSuggestToggle.addEventListener("click", toggleAreaSuggestPanel);
@@ -337,15 +354,22 @@ function normalizeState(value) {
 function normalizeSpot(spot) {
   const oldType = spot?.type || "spot";
   let spotCategory = spot?.spotCategory || "other";
+  let spotRole = spot?.spotRole || "";
+  const spotRoles = Array.isArray(spot?.spotRoles) ? spot.spotRoles.filter(Boolean) : [];
   // 旧データの type="meet"/"dismiss" を spotCategory に移行
-  if (oldType === "meet") spotCategory = "meet";
-  else if (oldType === "dismiss") spotCategory = "dismiss";
+  if (oldType === "meet" || spotCategory === "meet") spotRole = "meet";
+  else if (oldType === "dismiss" || spotCategory === "dismiss") spotRole = "dismiss";
+  if (spotRole && !spotRoles.includes(spotRole)) spotRoles.push(spotRole);
+  if (spotCategory === "meet" || spotCategory === "dismiss") spotCategory = "other";
   return {
     ...spot,
     description: spot?.description || "",
     budget: Number.isFinite(Number(spot?.budget)) ? Number(spot.budget) : 0,
+    defaultStayMinutes: Number.isFinite(Number(spot?.defaultStayMinutes)) ? Number(spot.defaultStayMinutes) : null,
     type: "spot",
     spotCategory,
+    spotRole: spotRoles[0] || "",
+    spotRoles,
   };
 }
 
@@ -576,8 +600,11 @@ function renderSpotList() {
 
     const catDisplay = getCategoryDisplay();
     const cat = catDisplay[spot.spotCategory || "other"] || catDisplay["other"];
-    typeBadge.textContent = cat.label;
-    typeBadge.className = `spot-type-badge ${cat.cssClass}`;
+    const roles = getSpotRoles(spot);
+    const rolePrefix = `${roles.includes("meet") ? "🤝 " : ""}${roles.includes("dismiss") ? "👋 " : ""}`;
+    typeBadge.textContent = `${rolePrefix}${cat.label}`;
+    const roleClass = roles.includes("meet") && roles.includes("dismiss") ? "category-meet-dismiss" : (roles[0] ? `category-${roles[0]}` : cat.cssClass);
+    typeBadge.className = `spot-type-badge ${roleClass}`;
 
     fragment.querySelector(".spot-name").textContent = `${index + 1}. ${spot.name}`;
     fragment.querySelector(".spot-meta").textContent = buildSpotMeta(spot);
@@ -632,6 +659,43 @@ function hasSpotCoords(spot) {
   return Number.isFinite(Number(spot?.lat)) && Number.isFinite(Number(spot?.lng));
 }
 
+function getSpotRole(spot) {
+  if (!spot) return "";
+  return getSpotRoles(spot)[0] || "";
+}
+
+function getSpotRoles(spot) {
+  if (!spot) return [];
+  const roles = Array.isArray(spot.spotRoles) ? [...spot.spotRoles] : [];
+  if (spot.spotRole && !roles.includes(spot.spotRole)) roles.push(spot.spotRole);
+  if ((spot.spotCategory === "meet" || spot.spotCategory === "dismiss") && !roles.includes(spot.spotCategory)) {
+    roles.push(spot.spotCategory);
+  }
+  return roles.filter(role => role === "meet" || role === "dismiss");
+}
+
+function hasSpotRole(spot, role) {
+  return getSpotRoles(spot).includes(role);
+}
+
+function defaultStayMinutesForCategory(category) {
+  if (category === "airport") return 45;
+  if (category === "station") return 20;
+  return 90;
+}
+
+function splitSpotDuration(value) {
+  const mins = Math.max(0, Number(value) || 0);
+  return { hours: Math.floor(mins / 60), minutes: mins % 60 };
+}
+
+function readSpotDurationMinutes() {
+  const h = parseInt(document.getElementById("spotStayHoursInput")?.value, 10);
+  const m = parseInt(document.getElementById("spotStayMinutesInput")?.value, 10);
+  const total = (Number.isFinite(h) && h > 0 ? h * 60 : 0) + (Number.isFinite(m) && m > 0 ? m : 0);
+  return total > 0 ? total : null;
+}
+
 function buildSpotMeta(spot) {
   const parts = hasSpotCoords(spot)
     ? [`${Number(spot.lat).toFixed(5)}, ${Number(spot.lng).toFixed(5)}`]
@@ -651,10 +715,25 @@ function openSpotMenu(id) {
   spotNameInput.value = spot.name || "";
   spotBudgetInput.value = spot.budget || "";
   spotDescriptionInput.value = spot.description || "";
+  const stayParts = splitSpotDuration(spot.defaultStayMinutes ?? defaultStayMinutesForCategory(spot.spotCategory));
+  const stayHoursInput = document.getElementById("spotStayHoursInput");
+  const stayMinutesInput = document.getElementById("spotStayMinutesInput");
+  if (stayHoursInput) stayHoursInput.value = stayParts.hours;
+  if (stayMinutesInput) stayMinutesInput.value = stayParts.minutes;
 
+  // 役割（集合・解散）は通常カテゴリと分離して表示
+  const isMeet    = hasSpotRole(spot, "meet");
+  const isDismiss = hasSpotRole(spot, "dismiss");
+  const meetBtn    = document.getElementById("spotMeetToggle");
+  const dismissBtn = document.getElementById("spotDismissToggle");
+  setSpotRoleButtons({ meet: isMeet, dismiss: isDismiss });
+  if (meetBtn)    meetBtn.onclick    = () => toggleSpotRole("meet");
+  if (dismissBtn) dismissBtn.onclick = () => toggleSpotRole("dismiss");
+
+  // メインカテゴリから meet/dismiss を除外
   spotCategorySelect.innerHTML = "";
   const allCats = getAllCategories();
-  allCats.filter(cat => cat.key !== "other").forEach(cat => {
+  allCats.filter(cat => cat.key !== "other" && cat.key !== "meet" && cat.key !== "dismiss").forEach(cat => {
     const opt = document.createElement("option");
     opt.value = cat.key;
     opt.textContent = cat.label;
@@ -671,12 +750,137 @@ function openSpotMenu(id) {
   addOpt.value = "__add_new__";
   addOpt.textContent = "＋ 新しいカテゴリを追加...";
   spotCategorySelect.appendChild(addOpt);
+  // meet/dismiss の場合はドロップダウンでは "other" を表示
   spotCategorySelect.value = spot.spotCategory || "other";
   spotCategoryAddForm.classList.add("hidden");
+
+  // カテゴリ固有フィールドの表示切り替え
+  updateSpotCategoryFields(spot.spotCategory, spot);
+
+  // 優先度
+  const prioEl = document.getElementById("spotPriorityInput");
+  if (prioEl) prioEl.value = spot.priority || 3;
+
+  // 営業時間（曜日ごと）
+  fillBusinessHoursInputs(spot.businessHours);
 
   spotMenu.classList.remove("hidden");
   spotMenuBackdrop.classList.remove("hidden");
   spotMenu.setAttribute("aria-hidden", "false");
+}
+
+function setSpotRoleButtons(roles) {
+  const meetBtn    = document.getElementById("spotMeetToggle");
+  const dismissBtn = document.getElementById("spotDismissToggle");
+  const meetActive = !!roles?.meet;
+  const dismissActive = !!roles?.dismiss;
+  meetBtn?.classList.toggle("spot-role-btn--active", meetActive);
+  meetBtn?.setAttribute("aria-pressed", meetActive ? "true" : "false");
+  dismissBtn?.classList.toggle("spot-role-btn--active", dismissActive);
+  dismissBtn?.setAttribute("aria-pressed", dismissActive ? "true" : "false");
+}
+
+function toggleSpotRole(role) {
+  const meetBtn    = document.getElementById("spotMeetToggle");
+  const dismissBtn = document.getElementById("spotDismissToggle");
+  const target = role === "meet" ? meetBtn : dismissBtn;
+  const wasActive = target?.classList.contains("spot-role-btn--active");
+  target?.classList.toggle("spot-role-btn--active", !wasActive);
+  target?.setAttribute("aria-pressed", wasActive ? "false" : "true");
+}
+
+function splitBusinessHoursRange(value) {
+  if (!value) return { open: "", close: "" };
+  if (typeof value === "object") {
+    return {
+      open: value.open || value.start || "",
+      close: value.close || value.end || "",
+    };
+  }
+  const match = String(value).trim().match(/^(\d{1,2}:\d{2})\s*(?:-|〜|~|－|ー)\s*(\d{1,2}:\d{2})$/);
+  return match ? { open: match[1].padStart(5, "0"), close: match[2].padStart(5, "0") } : { open: "", close: "" };
+}
+
+function formatMinutesAsTime(value) {
+  const mins = Math.min(1440, Math.max(0, Number(value) || 0));
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+function timeToBusinessMinutes(value, fallback) {
+  const match = String(value || "").match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return fallback;
+  return Math.min(1440, Math.max(0, Number(match[1]) * 60 + Number(match[2])));
+}
+
+function updateBusinessHoursRange(row) {
+  const enabled = row.classList.contains("spot-hours-range--enabled");
+  const openInput = row.querySelector('[data-part="open"]');
+  const closeInput = row.querySelector('[data-part="close"]');
+  const valueEl = row.querySelector(".spot-hours-value");
+  let open = Number(openInput?.value || 600);
+  let close = Number(closeInput?.value || 1080);
+  if (close <= open) {
+    if (document.activeElement === openInput) open = Math.max(0, close - 30);
+    else close = Math.min(1440, open + 30);
+  }
+  if (openInput) openInput.value = open;
+  if (closeInput) closeInput.value = close;
+  row.style.setProperty("--hours-open-pct", `${(open / 1440) * 100}%`);
+  row.style.setProperty("--hours-close-pct", `${(close / 1440) * 100}%`);
+  if (valueEl) valueEl.textContent = enabled ? `${formatMinutesAsTime(open)}〜${formatMinutesAsTime(close)}` : "使用しない";
+}
+
+function fillBusinessHoursInputs(hours) {
+  document.querySelectorAll(".spot-hours-range").forEach(row => {
+    const day = row.dataset.day;
+    const enabledInput = document.querySelector(`.spot-hours-enabled[data-day="${day}"]`);
+    const openInput = row.querySelector('[data-part="open"]');
+    const closeInput = row.querySelector('[data-part="close"]');
+    const range = splitBusinessHoursRange(hours?.[day]);
+    const enabled = !!(range.open && range.close);
+    if (enabledInput) enabledInput.checked = enabled;
+    row.classList.toggle("spot-hours-range--enabled", enabled);
+    if (openInput) openInput.value = timeToBusinessMinutes(range.open, 600);
+    if (closeInput) closeInput.value = timeToBusinessMinutes(range.close, 1080);
+    updateBusinessHoursRange(row);
+  });
+}
+
+function readBusinessHoursInputs() {
+  const businessHours = {};
+  document.querySelectorAll(".spot-hours-range").forEach(row => {
+    const day = row.dataset.day;
+    const enabled = document.querySelector(`.spot-hours-enabled[data-day="${day}"]`)?.checked;
+    if (!enabled) return;
+    const openInput = row.querySelector('[data-part="open"]');
+    const closeInput = row.querySelector('[data-part="close"]');
+    const open = formatMinutesAsTime(openInput?.value);
+    const close = formatMinutesAsTime(closeInput?.value);
+    if (day && open && close) businessHours[day] = `${open}-${close}`;
+  });
+  return businessHours;
+}
+
+function updateSpotCategoryFields(cat, spot) {
+  const airportSec = document.getElementById("spotAirportSection");
+  const hotelSec   = document.getElementById("spotHotelSection");
+  if (airportSec) airportSec.classList.toggle("hidden", cat !== "airport");
+  if (hotelSec)   hotelSec.classList.toggle("hidden",   cat !== "hotel");
+
+  if (cat === "airport" && spot) {
+    const el = id => document.getElementById(id);
+    if (el("spotTakeoffTime"))          el("spotTakeoffTime").value          = spot.takeoffTime          || "";
+    if (el("spotLandingTime"))          el("spotLandingTime").value          = spot.landingTime          || "";
+    if (el("spotAirportCheckinTime"))   el("spotAirportCheckinTime").value   = spot.airportCheckinTime   || "";
+    if (el("spotAirportCheckinOffset")) el("spotAirportCheckinOffset").value = spot.airportCheckinOffsetMin || "";
+  }
+  if (cat === "hotel" && spot) {
+    const el = id => document.getElementById(id);
+    if (el("spotHotelCheckinTime"))  el("spotHotelCheckinTime").value  = spot.hotelCheckinTime  || "";
+    if (el("spotHotelCheckoutTime")) el("spotHotelCheckoutTime").value = spot.hotelCheckoutTime || "";
+  }
 }
 
 function addCategoryFromSpotMenu() {
@@ -741,8 +945,48 @@ function saveSpotDescription() {
   const targetIndex = state.spots.findIndex((spot) => spot.id === state.editingSpotId);
   if (targetIndex < 0) return;
 
-  const newCategory = (spotCategorySelect.value && spotCategorySelect.value !== "__add_new__")
+  // 役割（集合・解散）トグルを優先
+  const isMeetActive    = document.getElementById("spotMeetToggle")?.classList.contains("spot-role-btn--active");
+  const isDismissActive = document.getElementById("spotDismissToggle")?.classList.contains("spot-role-btn--active");
+
+  let newCategory = (spotCategorySelect.value && spotCategorySelect.value !== "__add_new__")
     ? spotCategorySelect.value : "other";
+  const newRoles = [];
+  if (isMeetActive) {
+    state.spots = state.spots.map((s, i) =>
+      i !== targetIndex && hasSpotRole(s, "meet")
+        ? { ...s, spotRoles: getSpotRoles(s).filter(role => role !== "meet"), spotRole: getSpotRoles(s).filter(role => role !== "meet")[0] || "" }
+        : s
+    );
+    newRoles.push("meet");
+  }
+  if (isDismissActive) {
+    state.spots = state.spots.map((s, i) =>
+      i !== targetIndex && hasSpotRole(s, "dismiss")
+        ? { ...s, spotRoles: getSpotRoles(s).filter(role => role !== "dismiss"), spotRole: getSpotRoles(s).filter(role => role !== "dismiss")[0] || "" }
+        : s
+    );
+    newRoles.push("dismiss");
+  }
+
+  // 営業時間（曜日ごと）
+  const businessHours = readBusinessHoursInputs();
+
+  // カテゴリ固有フィールド
+  const extraFields = {};
+  if (newCategory === "airport") {
+    const g = id => document.getElementById(id);
+    extraFields.takeoffTime          = g("spotTakeoffTime")?.value          || null;
+    extraFields.landingTime          = g("spotLandingTime")?.value          || null;
+    extraFields.airportCheckinTime   = g("spotAirportCheckinTime")?.value   || null;
+    const off = parseInt(g("spotAirportCheckinOffset")?.value);
+    extraFields.airportCheckinOffsetMin = Number.isFinite(off) && off > 0 ? off : null;
+  }
+  if (newCategory === "hotel") {
+    const g = id => document.getElementById(id);
+    extraFields.hotelCheckinTime  = g("spotHotelCheckinTime")?.value  || null;
+    extraFields.hotelCheckoutTime = g("spotHotelCheckoutTime")?.value || null;
+  }
 
   state.spots[targetIndex] = {
     ...state.spots[targetIndex],
@@ -751,6 +995,12 @@ function saveSpotDescription() {
     description: spotDescriptionInput.value.trim(),
     type: "spot",
     spotCategory: newCategory,
+    spotRole: newRoles[0] || "",
+    spotRoles: newRoles,
+    priority: parseInt(document.getElementById("spotPriorityInput")?.value) || 3,
+    defaultStayMinutes: readSpotDurationMinutes(),
+    businessHours: Object.keys(businessHours).length > 0 ? businessHours : null,
+    ...extraFields,
   };
   persistState();
   setFeedback("スポットを保存しました。", false);
@@ -838,7 +1088,8 @@ function renderMaps() {
 
 function estimateLabelSize(point) {
   const name = String(point?.name || "");
-  const w = Math.min(LABEL_MAX_W, Math.max(LABEL_MIN_W, name.length * LABEL_CHAR_W + 28));
+  const charW = window.innerWidth <= 520 ? 12 : LABEL_CHAR_W;
+  const w = Math.min(LABEL_MAX_W, Math.max(LABEL_MIN_W, name.length * charW + 22));
   return { w, h: LABEL_H };
 }
 
@@ -938,7 +1189,9 @@ function addMarkerToMap(map, point, placement = "right") {
     top: [0, -distance],
     bottom: [0, distance]
   };
-  const marker = L.marker([point.lat, point.lng], { icon: createMarkerIcon(point.type, point.spotCategory) }).addTo(map);
+  const roles = getSpotRoles(point);
+  const markerRole = roles.includes("meet") && roles.includes("dismiss") ? "meet-dismiss" : getSpotRole(point);
+  const marker = L.marker([point.lat, point.lng], { icon: createMarkerIcon(point.type, point.spotCategory, markerRole) }).addTo(map);
   marker.bindTooltip(escapeHtml(point.name), {
     permanent: true,
     direction,
@@ -1003,8 +1256,11 @@ function renderOverviewLayer(map, items, bounds) {
     // クラスター内の各スポットに小ピンを配置
     item.points.forEach((point) => {
       const isDefaultCat = DEFAULT_CATEGORIES.some(c => c.key === point.spotCategory);
-      const pinClass = point.spotCategory === "meet" ? "map-pin-meet"
-        : point.spotCategory === "dismiss" ? "map-pin-dismiss"
+      const roles = getSpotRoles(point);
+      const role = roles.includes("meet") && roles.includes("dismiss") ? "meet-dismiss" : getSpotRole(point);
+      const pinClass = role === "meet-dismiss" ? "map-pin-meet-dismiss"
+        : role === "meet" ? "map-pin-meet"
+        : role === "dismiss" ? "map-pin-dismiss"
         : isDefaultCat ? `map-pin-${point.spotCategory || "other"}` : "map-pin-custom";
       const memberIcon = L.divIcon({
         className: "",
@@ -1257,13 +1513,18 @@ function centerFromPoints(points) {
   return { lat: sum.lat / points.length, lng: sum.lng / points.length };
 }
 
-function createMarkerIcon(type, spotCategory) {
+function createMarkerIcon(type, spotCategory, spotRole = "") {
   const isDefaultCat = DEFAULT_CATEGORIES.some(c => c.key === spotCategory);
-  const pinClass = spotCategory === "meet" ? "map-pin-meet"
-    : spotCategory === "dismiss" ? "map-pin-dismiss"
+  const pinClass = spotRole === "meet-dismiss" ? "map-pin-meet-dismiss"
+    : spotRole === "meet" ? "map-pin-meet"
+    : spotRole === "dismiss" ? "map-pin-dismiss"
     : isDefaultCat ? `map-pin-${spotCategory || "other"}` : "map-pin-custom";
   let icon = "";
-  if (isDefaultCat) {
+  if (spotRole === "meet-dismiss") {
+    icon = "🤝👋";
+  } else if (spotRole) {
+    icon = SPOT_PIN_ICONS[spotRole] || "";
+  } else if (isDefaultCat) {
     icon = SPOT_PIN_ICONS[spotCategory] || "";
   } else {
     const customCat = loadCustomCategories().find(c => c.key === spotCategory);

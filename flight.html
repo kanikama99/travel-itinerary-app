@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>飛行機を見つける - Trip Pop Map</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+  <style>
+    .flight-shell { width: min(940px, calc(100% - 32px)); margin: 0 auto; padding: 40px 0 80px; display: flex; flex-direction: column; gap: 22px; }
+    .flight-eyebrow { font-size: 0.82rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-deep); font-weight: 700; margin: 0 0 4px; }
+    .flight-title { font-size: clamp(1.7rem, 4vw, 2.25rem); font-weight: 700; line-height: 1.2; margin: 0; }
+    .flight-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 20px; box-shadow: 0 5px 18px rgb(var(--shadow-base-rgb, 149,90,48) / 0.10); }
+    .flight-card-kicker { margin: 0 0 14px; font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-deep); font-weight: 700; }
+    .flight-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .flight-field { display: flex; flex-direction: column; gap: 6px; }
+    .flight-field-label { font-size: 0.86rem; font-weight: 700; color: var(--accent-deep); }
+    .flight-input { width: 100%; font: inherit; font-size: 0.94rem; color: var(--text); border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 12px; background: rgba(255,255,255,0.9); outline: none; }
+    .flight-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgb(var(--accent-rgb, 255,122,69) / 0.12); }
+    .flight-sites { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+    .flight-site-btn, .flight-save-btn { display: flex; align-items: center; justify-content: center; gap: 8px; border: 1.5px solid rgb(var(--accent-rgb, 255,122,69) / 0.24); border-radius: 12px; background: rgba(255,255,255,0.72); color: var(--text); font: inherit; font-weight: 800; padding: 12px; cursor: pointer; text-decoration: none; }
+    .flight-site-btn:hover, .flight-save-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
+    .flight-save-btn { width: 100%; margin-top: 14px; color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-light)); border: none; }
+    .flight-note { margin: 10px 0 0; font-size: 0.82rem; color: var(--muted); line-height: 1.6; }
+    .flight-registration.hidden { display: none; }
+    @media (max-width: 720px) { .flight-grid, .flight-sites { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="flight-shell">
+    <header>
+      <p class="flight-eyebrow">Flight Search</p>
+      <h1 class="flight-title">飛行機を見つける</h1>
+    </header>
+
+    <section id="flightRegistrationCard" class="flight-card flight-registration hidden">
+      <p class="flight-card-kicker">Flight Registration - 空港予定に紐づけ</p>
+      <div class="flight-grid">
+        <div class="flight-field">
+          <label class="flight-field-label" for="flightAirport">対象空港</label>
+          <input id="flightAirport" class="flight-input" type="text" />
+        </div>
+        <div class="flight-field">
+          <label class="flight-field-label" for="flightDate">搭乗日</label>
+          <input id="flightDate" class="flight-input" type="date" data-cal />
+        </div>
+        <div class="flight-field">
+          <label class="flight-field-label" for="flightTime">予定時刻</label>
+          <input id="flightTime" class="flight-input" type="time" />
+        </div>
+        <div class="flight-field">
+          <label class="flight-field-label" for="flightNumber">便名</label>
+          <input id="flightNumber" class="flight-input" type="text" placeholder="例：JL123" />
+        </div>
+        <div class="flight-field">
+          <label class="flight-field-label" for="flightPrice">1名あたり予約金額（円）</label>
+          <input id="flightPrice" class="flight-input" type="number" min="0" step="500" placeholder="例：18000" />
+        </div>
+        <div class="flight-field">
+          <label class="flight-field-label" for="flightMemo">メモ</label>
+          <input id="flightMemo" class="flight-input" type="text" placeholder="航空会社、ターミナルなど" />
+        </div>
+      </div>
+      <button id="saveFlightBtn" class="flight-save-btn" type="button">この航空券情報を保存してスケジュールに戻る</button>
+      <p id="flightSaveStatus" class="flight-note"></p>
+    </section>
+
+    <section class="flight-card">
+      <p class="flight-card-kicker">Search - 航空券サイトで探す</p>
+      <div class="flight-grid">
+        <div class="flight-field">
+          <label class="flight-field-label" for="flightFrom">出発地・空港</label>
+          <input id="flightFrom" class="flight-input" type="text" placeholder="例：関西国際空港" />
+        </div>
+        <div class="flight-field">
+          <label class="flight-field-label" for="flightTo">到着地・空港</label>
+          <input id="flightTo" class="flight-input" type="text" placeholder="例：羽田空港" />
+        </div>
+        <div class="flight-field">
+          <label class="flight-field-label" for="flightSearchDate">搭乗日</label>
+          <input id="flightSearchDate" class="flight-input" type="date" data-cal />
+        </div>
+        <div class="flight-field">
+          <label class="flight-field-label" for="flightPassengers">人数</label>
+          <input id="flightPassengers" class="flight-input" type="number" min="1" max="20" step="1" value="2" />
+        </div>
+      </div>
+      <div class="flight-sites">
+        <button class="flight-site-btn" type="button" onclick="searchGoogleFlights()">Google Flights</button>
+        <button class="flight-site-btn" type="button" onclick="searchSkyscanner()">Skyscanner</button>
+        <button class="flight-site-btn" type="button" onclick="searchTravelko()">トラベルコ</button>
+      </div>
+      <p class="flight-note">将来アフィリエイト化しやすいよう、予約サイト別の検索ボタンに分けています。提携先が決まったら各URLにアフィリエイトIDを付与できます。</p>
+    </section>
+
+    <div class="page-nav page-nav--end">
+      <a href="./schedule.html" class="page-nav-btn page-nav-btn--prev">スケジュールへ戻る</a>
+    </div>
+  </div>
+
+  <button id="hamburgerBtn" class="hamburger-btn" type="button" aria-label="メニューを開く">
+    <span class="hamburger-line"></span>
+    <span class="hamburger-line"></span>
+    <span class="hamburger-line"></span>
+  </button>
+
+  <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
+  <aside id="sideDrawer" class="side-drawer hidden" aria-hidden="true">
+    <div class="drawer-head"><p class="drawer-kicker">Menu</p></div>
+    <nav class="drawer-nav">
+      <a href="./bookmarks.html" class="drawer-nav-item"><span class="drawer-nav-icon">📒</span><span>しおりを選ぶ</span></a>
+      <a href="./spots.html" class="drawer-nav-item"><span class="drawer-nav-icon">📍</span><span>行きたい場所</span></a>
+      <a href="./schedule.html" class="drawer-nav-item"><span class="drawer-nav-icon">📅</span><span>スケジュール</span></a>
+      <a href="./flight.html" class="drawer-nav-item drawer-nav-item--active"><span class="drawer-nav-icon">✈</span><span>飛行機を見つける</span></a>
+      <a href="./tour.html" class="drawer-nav-item"><span class="drawer-nav-icon">🗺</span><span>ツアーを見つける</span></a>
+      <a href="./gourmet.html" class="drawer-nav-item"><span class="drawer-nav-icon">🍜</span><span>グルメを見つける</span></a>
+      <a href="./checklist.html" class="drawer-nav-item"><span class="drawer-nav-icon">📋</span><span>持ち物リスト</span></a>
+      <a href="./print.html" class="drawer-nav-item"><span class="drawer-nav-icon">🖨</span><span>印刷する</span></a>
+      <a href="./settings.html" class="drawer-nav-item"><span class="drawer-nav-icon">⚙</span><span>設定</span></a>
+    </nav>
+  </aside>
+
+  <script>
+    const LISTS_KEY = "spot-map-lists.v1";
+    const SCHEDULE_KEY = "spot-map-schedule.v1";
+
+    function applyTheme() {
+      const saved = localStorage.getItem("spot-map-settings.v1");
+      if (!saved) return;
+      try {
+        const s = JSON.parse(saved);
+        const themes = [
+          ["#fff3dd","#fffaf0","rgba(166,97,54,0.18)","#233038","#5f6d73","#ff7a45","#ce5428","255,122,69","149,90,48"],
+          ["#e8f4fd","#f0f8ff","rgba(54,120,166,0.18)","#1a2a3a","#4a6070","#4a9ede","#2d7ab5","74,158,222","45,100,165"],
+          ["#f0fdf4","#f7fff9","rgba(54,166,97,0.18)","#1a3323","#3a6050","#34c97a","#1fa85e","52,201,122","30,140,80"]
+        ];
+        const c = themes[Math.max(0, Math.min(themes.length - 1, s.bgTheme ?? 0))];
+        const r = document.documentElement;
+        ["--bg","--panel","--line","--text","--muted","--accent","--accent-deep","--accent-rgb","--shadow-base-rgb"].forEach((k, i) => r.style.setProperty(k, c[i]));
+        r.style.setProperty("--panel-strong", c[1]);
+      } catch {}
+    }
+
+    function getActiveListAndSchedule() {
+      const listsData = JSON.parse(localStorage.getItem(LISTS_KEY) || "{}");
+      const activeList = listsData.lists?.find(l => l.id === listsData.activeListId) || listsData.lists?.[0];
+      const all = JSON.parse(localStorage.getItem(SCHEDULE_KEY) || "{}");
+      const schedule = activeList ? (all[activeList.id] || {}) : {};
+      return { listsData, activeList, all, schedule };
+    }
+
+    function initFromParams() {
+      const params = new URLSearchParams(location.search);
+      const airport = params.get("airport") || "";
+      const date = params.get("date") || "";
+      const time = params.get("time") || "";
+      if (airport) {
+        document.getElementById("flightRegistrationCard").classList.remove("hidden");
+        document.getElementById("flightAirport").value = airport;
+        document.getElementById("flightFrom").value = airport;
+      }
+      if (date) {
+        document.getElementById("flightDate").value = date;
+        document.getElementById("flightSearchDate").value = date;
+        window.CalendarPicker?.updateDisplay(document.getElementById("flightDate"));
+        window.CalendarPicker?.updateDisplay(document.getElementById("flightSearchDate"));
+      }
+      if (time) document.getElementById("flightTime").value = time;
+    }
+
+    function searchUrl(site) {
+      const from = document.getElementById("flightFrom").value.trim();
+      const to = document.getElementById("flightTo").value.trim();
+      const date = document.getElementById("flightSearchDate").value;
+      const q = encodeURIComponent(`${from} ${to} ${date} 航空券`);
+      if (site === "google") return `https://www.google.com/travel/flights?q=${q}`;
+      if (site === "skyscanner") return `https://www.skyscanner.jp/transport/flights/?preferdirects=false&adultsv2=${encodeURIComponent(document.getElementById("flightPassengers").value || "1")}&query=${q}`;
+      return `https://www.tour.ne.jp/j_air/?keyword=${q}`;
+    }
+    function searchGoogleFlights() { location.href = searchUrl("google"); }
+    function searchSkyscanner() { location.href = searchUrl("skyscanner"); }
+    function searchTravelko() { location.href = searchUrl("travelko"); }
+
+    document.getElementById("saveFlightBtn").addEventListener("click", () => {
+      const status = document.getElementById("flightSaveStatus");
+      const airport = document.getElementById("flightAirport").value.trim();
+      const date = document.getElementById("flightDate").value;
+      if (!airport || !date) { status.textContent = "空港と搭乗日を入力してください"; return; }
+      try {
+        const params = new URLSearchParams(location.search);
+        const { activeList, all, schedule } = getActiveListAndSchedule();
+        if (!activeList) throw new Error("しおりが見つかりません");
+        if (!schedule.flights) schedule.flights = {};
+        const key = `${params.get("role") || "flight"}:${params.get("spotId") || airport}:${date}`;
+        schedule.flights[key] = {
+          role: params.get("role") || "",
+          spotId: params.get("spotId") || "",
+          airport,
+          date,
+          time: document.getElementById("flightTime").value || "",
+          flightNumber: document.getElementById("flightNumber").value.trim(),
+          pricePerPerson: parseInt(document.getElementById("flightPrice").value, 10) || 0,
+          memo: document.getElementById("flightMemo").value.trim(),
+        };
+        all[activeList.id] = schedule;
+        localStorage.setItem(SCHEDULE_KEY, JSON.stringify(all));
+        location.href = "./schedule.html";
+      } catch (e) {
+        status.textContent = `保存に失敗しました: ${e.message}`;
+      }
+    });
+
+    const hamburgerBtn = document.getElementById("hamburgerBtn");
+    const sideDrawer = document.getElementById("sideDrawer");
+    const drawerBackdrop = document.getElementById("drawerBackdrop");
+    hamburgerBtn.addEventListener("click", () => {
+      const open = !sideDrawer.classList.contains("hidden");
+      sideDrawer.classList.toggle("hidden", open);
+      drawerBackdrop.classList.toggle("hidden", open);
+      sideDrawer.setAttribute("aria-hidden", String(open));
+    });
+    drawerBackdrop.addEventListener("click", () => {
+      sideDrawer.classList.add("hidden");
+      drawerBackdrop.classList.add("hidden");
+      sideDrawer.setAttribute("aria-hidden", "true");
+    });
+
+    applyTheme();
+    initFromParams();
+  </script>
+  <script src="./calendar.js"></script>
+</body>
+</html>
