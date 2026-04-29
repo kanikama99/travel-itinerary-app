@@ -116,9 +116,59 @@
     }
     .hotel-hint-title { font-weight: 700; color: var(--accent-deep); margin-bottom: 6px; font-size: 0.88rem; }
 
+    /* 夜別登録カード */
+    .hotel-night-card {
+      background: var(--panel); border: 1.5px solid var(--accent);
+      border-radius: var(--radius-lg); padding: 22px 24px;
+      box-shadow: 0 4px 20px rgb(var(--accent-rgb, 255,122,69) / 0.14);
+    }
+    .hotel-night-date {
+      font-size: 0.96rem; font-weight: 700; color: var(--accent-deep);
+      margin-bottom: 14px;
+    }
+    .hotel-night-form { display: grid; grid-template-columns: 1fr 200px; gap: 12px; align-items: end; }
+    .hotel-geo-status {
+      font-size: 0.78rem; color: var(--muted); margin-top: 6px;
+    }
+    .hotel-save-btn {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      width: 100%; margin-top: 14px; padding: 11px 20px;
+      border: none; border-radius: 999px; font: inherit; font-size: 0.9rem; font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+      box-shadow: 0 4px 14px rgb(var(--accent-rgb, 255,122,69) / 0.3);
+      cursor: pointer;
+      transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.18s;
+    }
+    .hotel-save-btn:hover { transform: translateY(-2px); box-shadow: 0 7px 20px rgb(var(--accent-rgb, 255,122,69) / 0.4); }
+
+    /* 登録済み宿泊先リスト */
+    .hotel-registered-list { display: flex; flex-direction: column; gap: 8px; }
+    .hotel-registered-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: 12px;
+      background: rgba(255,255,255,0.55); border: 1px solid rgba(166,97,54,0.12);
+    }
+    .hotel-reg-night { font-size: 0.78rem; color: var(--muted); width: 100px; flex-shrink: 0; }
+    .hotel-reg-name  { font-size: 0.9rem; font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hotel-reg-budget { font-size: 0.8rem; color: var(--accent-deep); font-weight: 700; flex-shrink: 0; }
+    .hotel-reg-edit  {
+      background: none; border: 1px solid var(--line); border-radius: 6px;
+      padding: 3px 8px; font: inherit; font-size: 0.74rem; color: var(--muted);
+      cursor: pointer; flex-shrink: 0; transition: border-color 0.15s, color 0.15s;
+    }
+    .hotel-reg-edit:hover { border-color: var(--accent); color: var(--accent-deep); }
+    .hotel-total-budget {
+      margin-top: 12px; padding: 10px 14px;
+      background: var(--accent-soft); border-radius: 10px;
+      font-size: 0.88rem; font-weight: 700; color: var(--accent-deep);
+      text-align: right;
+    }
+
     @media (max-width: 600px) {
       .hotel-search-grid { grid-template-columns: 1fr; }
       .hotel-sites-grid { grid-template-columns: 1fr 1fr; }
+      .hotel-night-form { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -132,6 +182,31 @@
         <span id="listNameBadge">—</span>
       </div>
     </header>
+
+    <!-- 夜別登録カード（スケジュールページの宿泊先ボタンから遷移した時に表示） -->
+    <div id="nightRegistrationCard" class="hotel-night-card hidden">
+      <p class="hotel-card-kicker">Night Registration — この夜の宿泊先を登録</p>
+      <p id="nightDateLabel" class="hotel-night-date"></p>
+      <div class="hotel-night-form">
+        <div class="hotel-field">
+          <label class="hotel-field-label" for="hotelNameInput">ホテル名・宿泊先</label>
+          <input id="hotelNameInput" class="hotel-input" type="text" placeholder="例：東横イン新宿" />
+        </div>
+        <div class="hotel-field">
+          <label class="hotel-field-label" for="hotelBudgetInput">1泊の予算（円）</label>
+          <input id="hotelBudgetInput" class="hotel-input" type="number" min="0" step="500" placeholder="例：12000" />
+        </div>
+      </div>
+      <p id="hotelGeoStatus" class="hotel-geo-status"></p>
+      <button id="saveNightBtn" class="hotel-save-btn" type="button">✓ この夜の宿泊先を保存してスケジュールに戻る</button>
+    </div>
+
+    <!-- 登録済み宿泊先一覧 -->
+    <div id="registeredHotelsCard" class="hotel-search-card hidden">
+      <p class="hotel-card-kicker">Registered — 登録済み宿泊先</p>
+      <div id="registeredHotelsList" class="hotel-registered-list"></div>
+      <p id="totalBudgetLabel" class="hotel-total-budget hidden"></p>
+    </div>
 
     <div class="hotel-search-card">
       <p class="hotel-card-kicker">Search — エリアと日程を入力</p>
@@ -396,6 +471,204 @@
     function searchRakuten() {
       const area = getArea();
       window.open(`https://travel.rakuten.co.jp/search/?f_area=${encodeURIComponent(area)}`, "_blank");
+    }
+
+    // ── 夜別宿泊先登録 ──
+
+    // ジオコード結果キャッシュ（セッション内）
+    const GEO_CACHE = {};
+
+    // ホテル名 → 座標を Nominatim で取得
+    async function geocodeHotelName(name) {
+      if (!name) return null;
+      if (GEO_CACHE[name]) return GEO_CACHE[name];
+      try {
+        const p = new URLSearchParams({ q: name, format: "jsonv2", limit: "1", addressdetails: "1" });
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?${p}`, {
+          headers: { "Accept-Language": "ja,en" },
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (!data[0]) return null;
+        const result = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), display: data[0].display_name };
+        GEO_CACHE[name] = result;
+        return result;
+      } catch { return null; }
+    }
+
+    // 日付を「YYYY年M月D日（曜）」形式に
+    function fmtDate(dateStr) {
+      if (!dateStr) return "";
+      const d = new Date(dateStr + "T00:00:00");
+      const days = ["日","月","火","水","木","金","土"];
+      return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${days[d.getDay()]}）`;
+    }
+
+    // 登録済みホテル一覧を描画
+    function renderRegisteredHotels() {
+      const card    = document.getElementById("registeredHotelsCard");
+      const list    = document.getElementById("registeredHotelsList");
+      const totalEl = document.getElementById("totalBudgetLabel");
+      try {
+        const listsRaw  = localStorage.getItem(LISTS_KEY);
+        if (!listsRaw) return;
+        const listsData  = JSON.parse(listsRaw);
+        const activeList = listsData.lists?.find(l => l.id === listsData.activeListId) || listsData.lists?.[0];
+        if (!activeList) return;
+
+        const all    = JSON.parse(localStorage.getItem(SCHEDULE_KEY) || "{}");
+        const hotels = all[activeList.id]?.hotels || {};
+        const entries = Object.entries(hotels);
+        if (entries.length === 0) { card.classList.add("hidden"); return; }
+
+        // チェックイン日順でソート
+        entries.sort((a, b) => (a[1].checkin || "").localeCompare(b[1].checkin || ""));
+
+        let totalBudget = 0;
+        list.innerHTML = "";
+
+        for (const [nightId, h] of entries) {
+          totalBudget += (h.budget || 0);
+          const item = document.createElement("div");
+          item.className = "hotel-registered-item";
+          const nightLabel  = h.checkin ? fmtDate(h.checkin) : nightId;
+          const budgetLabel = h.budget ? `¥${Number(h.budget).toLocaleString()}` : "予算未設定";
+          item.innerHTML =
+            `<span class="hotel-reg-night">${escHtml(nightLabel)}</span>` +
+            `<span class="hotel-reg-name">${escHtml(h.name || "（名称未設定）")}</span>` +
+            `<span class="hotel-reg-budget">${budgetLabel}</span>` +
+            `<button class="hotel-reg-edit" type="button"` +
+              ` data-night-id="${escHtml(nightId)}"` +
+              ` data-checkin="${escHtml(h.checkin||'')}"` +
+              ` data-checkout="${escHtml(h.checkout||'')}">編集</button>`;
+          list.appendChild(item);
+        }
+
+        // 編集ボタン → 同じページに nightId 付きで遷移
+        list.querySelectorAll(".hotel-reg-edit").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const p = new URLSearchParams({ nightId: btn.dataset.nightId });
+            if (btn.dataset.checkin)  p.set("checkin",  btn.dataset.checkin);
+            if (btn.dataset.checkout) p.set("checkout", btn.dataset.checkout);
+            location.href = `./hotel.html?${p}`;
+          });
+        });
+
+        if (totalBudget > 0) {
+          totalEl.textContent = `宿泊費合計：¥${totalBudget.toLocaleString()}`;
+          totalEl.classList.remove("hidden");
+        } else {
+          totalEl.classList.add("hidden");
+        }
+        card.classList.remove("hidden");
+      } catch { card.classList.add("hidden"); }
+    }
+
+    // 宿泊先登録フォームの初期化（URLパラメータ nightId が有る時だけ動作）
+    function initNightRegistration() {
+      const params   = new URLSearchParams(location.search);
+      const nightId  = params.get("nightId");
+      const checkin  = params.get("checkin");
+      const checkout = params.get("checkout");
+      if (!nightId) return;
+
+      const card      = document.getElementById("nightRegistrationCard");
+      const dateLabel = document.getElementById("nightDateLabel");
+      card.classList.remove("hidden");
+
+      // 日付ラベル
+      let label = "";
+      if (checkin)            label += `チェックイン ${fmtDate(checkin)}`;
+      if (checkin && checkout) label += "  →  ";
+      if (checkout)           label += `チェックアウト ${fmtDate(checkout)}`;
+      dateLabel.textContent = label;
+
+      // 既存データがあれば復元
+      let currentGeo = null;
+      try {
+        const listsData  = JSON.parse(localStorage.getItem(LISTS_KEY) || "{}");
+        const activeList = listsData.lists?.find(l => l.id === listsData.activeListId) || listsData.lists?.[0];
+        if (activeList) {
+          const existing = JSON.parse(localStorage.getItem(SCHEDULE_KEY) || "{}")?.[activeList.id]?.hotels?.[nightId];
+          if (existing) {
+            document.getElementById("hotelNameInput").value   = existing.name   || "";
+            document.getElementById("hotelBudgetInput").value = existing.budget || "";
+            if (existing.lat && existing.lng) {
+              currentGeo = { lat: existing.lat, lng: existing.lng };
+              document.getElementById("hotelGeoStatus").textContent =
+                `📍 座標取得済み (${existing.lat.toFixed(4)}, ${existing.lng.toFixed(4)})`;
+            }
+          }
+        }
+      } catch {}
+
+      const nameInput = document.getElementById("hotelNameInput");
+      const geoStatus = document.getElementById("hotelGeoStatus");
+
+      // 名前入力 → デバウンスしてジオコード
+      let geoTimer = null;
+      nameInput.addEventListener("input", () => {
+        clearTimeout(geoTimer);
+        currentGeo = null;
+        geoStatus.textContent = "";
+        const name = nameInput.value.trim();
+        if (!name) return;
+        geoStatus.textContent = "📡 座標を検索中...";
+        geoTimer = setTimeout(async () => {
+          const result = await geocodeHotelName(name);
+          if (result) {
+            currentGeo = result;
+            geoStatus.textContent = `📍 座標取得: ${result.display.split(",")[0]}`;
+          } else {
+            geoStatus.textContent = "⚠ 座標が見つかりませんでした（保存は可能です）";
+          }
+        }, 600);
+      });
+
+      // 保存ボタン
+      document.getElementById("saveNightBtn").addEventListener("click", async () => {
+        const name   = nameInput.value.trim();
+        const budget = parseInt(document.getElementById("hotelBudgetInput").value) || 0;
+
+        if (!name) {
+          geoStatus.textContent = "⚠ ホテル名を入力してください";
+          nameInput.focus();
+          return;
+        }
+
+        // デバウンド中で未取得ならここで同期取得
+        if (!currentGeo) {
+          geoStatus.textContent = "📡 座標を取得中...";
+          currentGeo = await geocodeHotelName(name);
+        }
+
+        try {
+          const listsData  = JSON.parse(localStorage.getItem(LISTS_KEY) || "{}");
+          const activeList = listsData.lists?.find(l => l.id === listsData.activeListId) || listsData.lists?.[0];
+          if (!activeList) throw new Error("リストが見つかりません");
+
+          const all = JSON.parse(localStorage.getItem(SCHEDULE_KEY) || "{}");
+          if (!all[activeList.id])         all[activeList.id]         = {};
+          if (!all[activeList.id].hotels)  all[activeList.id].hotels  = {};
+
+          // data-affiliate-* 属性で将来のアフィリエイト拡張が可能な構造
+          all[activeList.id].hotels[nightId] = {
+            name,
+            lat:      currentGeo?.lat  ?? null,
+            lng:      currentGeo?.lng  ?? null,
+            budget,
+            checkin:  checkin  || null,
+            checkout: checkout || null,
+            // affiliateProvider: null,  // 例: "booking" / "jalan" / "rakuten"
+            // affiliateUrl: null,       // アフィリエイトリンクURL
+          };
+
+          localStorage.setItem(SCHEDULE_KEY, JSON.stringify(all));
+          location.href = "./schedule.html";
+        } catch (e) {
+          geoStatus.textContent = "⚠ 保存に失敗しました: " + e.message;
+        }
+      });
     }
 
     // ── ハンバーガーメニュー ──

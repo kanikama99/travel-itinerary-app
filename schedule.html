@@ -35,7 +35,7 @@
       padding: 4px 12px;
       border-radius: 999px;
       background: var(--accent-soft);
-      border: 1px solid rgba(255, 122, 69, 0.22);
+      border: 1px solid rgb(var(--accent-rgb, 255,122,69) / 0.22);
       font-size: 0.8rem;
       font-weight: 600;
       color: var(--accent-deep);
@@ -48,7 +48,7 @@
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
       padding: 20px 24px;
-      box-shadow: 0 4px 16px rgba(149, 90, 48, 0.08);
+      box-shadow: 0 4px 16px rgb(var(--shadow-base-rgb, 149,90,48) / 0.08);
     }
     .trip-settings-kicker {
       font-size: 0.78rem;
@@ -75,7 +75,7 @@
     }
     .trip-date-input:focus, .trip-time-input:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(255,122,69,0.12);
+      box-shadow: 0 0 0 3px rgb(var(--accent-rgb, 255,122,69) / 0.12);
     }
     .trip-time-input { width: 116px; flex-shrink: 0; }
     .trip-summary {
@@ -108,7 +108,7 @@
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
       overflow: hidden;
-      box-shadow: 0 6px 24px rgba(149, 90, 48, 0.10);
+      box-shadow: 0 6px 24px rgb(var(--shadow-base-rgb, 149,90,48) / 0.10);
       animation: dayIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
     @keyframes dayIn {
@@ -302,7 +302,7 @@
     .sidebar-card {
       background: var(--panel); border: 1px solid var(--line);
       border-radius: var(--radius-lg); padding: 18px 16px;
-      box-shadow: 0 4px 16px rgba(149,90,48,0.08);
+      box-shadow: 0 4px 16px rgb(var(--shadow-base-rgb, 149,90,48) / 0.08);
     }
     .sidebar-kicker {
       font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase;
@@ -435,12 +435,142 @@
     .spot-stay-default:focus { border-color: var(--accent); }
     .spot-stay-unit { font-size: 0.72rem; color: var(--muted); }
 
+    /* 統合タイムライン */
+    .unified-timeline {
+      padding: 14px 16px 8px;
+      display: flex;
+      flex-direction: column;
+    }
+    .unified-timeline.tl-drag-over {
+      background: rgb(var(--accent-rgb, 255,122,69) / 0.06);
+      outline: 2px dashed var(--accent);
+      outline-offset: -4px;
+      border-radius: 12px;
+    }
+    .tl-empty {
+      font-size: 0.82rem; color: var(--muted);
+      text-align: center; padding: 14px 0 6px; opacity: 0.7;
+    }
+    .tl-row { display: flex; }
+    .tl-left {
+      display: flex; flex-direction: column; align-items: center;
+      width: 56px; flex-shrink: 0;
+    }
+    .tl-time {
+      font-size: 0.86rem; font-weight: 700; color: var(--accent-deep);
+      white-space: nowrap; height: 24px; line-height: 24px;
+      text-align: center; width: 100%;
+    }
+    .tl-line {
+      width: 2px; flex: 1; min-height: 8px;
+      background: rgb(var(--accent-rgb, 255,122,69) / 0.2);
+    }
+    .tl-right {
+      flex: 1; min-width: 0; padding-left: 8px; padding-bottom: 10px;
+      display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+    }
+    .tl-row--transit .tl-right { padding-bottom: 0; }
+    .tl-anchor-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+    .tl-anchor-name { font-size: 0.95rem; font-weight: 600; color: var(--accent-deep); }
+    .tl-transit-label {
+      font-size: 0.83rem; color: var(--muted); font-style: italic; padding: 2px 0;
+    }
+    .tl-drag-handle {
+      color: var(--muted); opacity: 0.45; cursor: grab;
+      display: flex; align-items: center; flex-shrink: 0; padding: 1px;
+    }
+    .tl-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .tl-spot-name {
+      font-size: 0.91rem; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      flex: 1; min-width: 50px;
+    }
+    .tl-stay-input {
+      width: 48px; flex-shrink: 0;
+      font: inherit; font-size: 0.76rem; color: var(--text);
+      border: 1px solid var(--line); border-radius: 6px;
+      padding: 2px 4px; text-align: center;
+      background: rgba(255,255,255,0.7); outline: none;
+    }
+    .tl-stay-input:focus { border-color: var(--accent); }
+    .tl-stay-suffix { font-size: 0.7rem; color: var(--muted); flex-shrink: 0; }
+    .tl-note {
+      font: inherit; font-size: 0.76rem; color: var(--muted);
+      background: transparent; border: none; outline: none;
+      width: 68px; min-width: 0; flex-shrink: 1;
+    }
+    .tl-note:focus { background: rgba(255,255,255,0.8); border-radius: 6px; padding: 2px 5px; }
+    .tl-note::placeholder { color: #c0c8cc; }
+    .tl-move-btn {
+      background: none; border: none; padding: 2px 4px; border-radius: 5px;
+      color: var(--muted); cursor: pointer; flex-shrink: 0;
+      font-size: 0.66rem; line-height: 1;
+      transition: color 0.12s, background 0.12s;
+    }
+    .tl-move-btn:hover:not(:disabled) { color: var(--accent-deep); background: var(--accent-soft); }
+    .tl-move-btn:disabled { opacity: 0.2; cursor: default; }
+    .tl-remove-btn {
+      background: none; border: none; padding: 3px; border-radius: 6px;
+      color: var(--muted); cursor: pointer; flex-shrink: 0;
+      transition: color 0.15s, background 0.15s;
+    }
+    .tl-remove-btn:hover { color: var(--danger); background: rgba(181,58,72,0.08); }
+    .tl-row--spot {
+      border-radius: 10px; padding: 2px 4px 2px 0;
+      transition: background 0.15s;
+    }
+    .tl-row--spot:hover { background: rgba(255,255,255,0.4); }
+    .tl-row--spot.tl-dragging { opacity: 0.45; }
+    .tl-row--spot.tl-drop-before { border-top: 2px solid var(--accent); }
+    .tl-row--spot.tl-drop-after  { border-bottom: 2px solid var(--accent); }
+
+    /* 経路情報 */
+    .tl-transit-wrap { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px; }
+    .tl-route-segs {
+      font-size: 0.7rem; color: var(--accent-deep); font-weight: 500;
+      background: var(--accent-soft);
+      padding: 1px 6px; border-radius: 4px;
+    }
+    .tl-route-link {
+      font-size: 0.7rem; color: var(--accent-deep); text-decoration: none;
+      display: inline-flex; align-items: center; gap: 2px;
+      padding: 1px 7px; border-radius: 4px;
+      background: var(--accent-soft);
+      border: 1px solid rgb(var(--accent-rgb, 255,122,69) / 0.22);
+      white-space: nowrap; transition: background 0.15s;
+    }
+    .tl-route-link:hover { background: rgb(var(--accent-rgb, 255,122,69) / 0.2); }
+
+    /* 宿泊先ボタン */
+    .tl-hotel-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 5px 12px 5px 9px; border-radius: 10px;
+      background: rgba(255,255,255,0.55);
+      border: 1.5px solid rgb(var(--accent-rgb, 255,122,69) / 0.22);
+      color: var(--text); font: inherit; font-size: 0.88rem;
+      cursor: pointer; text-align: left; max-width: 100%;
+      transition: background 0.15s, border-color 0.15s, transform 0.15s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .tl-hotel-btn:hover { background: var(--accent-soft); border-color: var(--accent); transform: translateX(3px); }
+    .tl-hotel-name { font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px; }
+    .tl-hotel-find { color: var(--muted); flex: 1; font-size: 0.82rem; }
+    .tl-hotel-budget { font-size: 0.73rem; color: var(--accent-deep); font-weight: 700; flex-shrink: 0; background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; }
+    .tl-hotel-chevron { color: var(--muted); flex-shrink: 0; font-size: 1rem; line-height: 1; }
+
+    .tl-over-warn {
+      margin: 6px 0 4px; padding: 7px 12px;
+      font-size: 0.78rem; color: #c44;
+      background: rgba(204,68,68,0.08);
+      border: 1px solid rgba(204,68,68,0.18); border-radius: 8px;
+    }
+
     @media (max-width: 760px) {
       .schedule-shell { padding: 28px 0 80px; }
       .schedule-layout { grid-template-columns: 1fr; }
       .spots-sidebar { order: -1; }
       .unscheduled-list { max-height: 200px; }
       .entry-note { display: none; }
+      .tl-note { display: none; }
       .trip-settings-grid { grid-template-columns: 1fr; }
     }
   </style>
@@ -709,6 +839,7 @@
       if (!Array.isArray(sched.days))        sched.days             = [];
       if (!Array.isArray(sched.spotsOrder))  sched.spotsOrder       = [];
       if (!sched.defaultStayTimes)           sched.defaultStayTimes = {};
+      if (!sched.hotels)                     sched.hotels           = {};
     }
 
     function ensureDayDefaults(day) {
@@ -745,10 +876,44 @@
         if (!route?.sections) return null;
         const sections = route.sections;
         const totalSec = sections.reduce((sum, s) => sum + (s.summary?.duration ?? 0), 0);
-        const transitCount = sections.filter(s => s.type === "transit").length;
+        const transitSections = sections.filter(s => s.type === "transit");
+
+        // 移動手段ごとのセグメントラベルを生成
+        const TRANSIT_ICON = { subway: "🚇", bus: "🚌", lightRail: "🚊", rail: "🚃", ferry: "⛴" };
+        const segments = [];
+        sections.forEach(s => {
+          if (s.type === "pedestrian") {
+            const min = Math.round((s.summary?.duration ?? 0) / 60);
+            if (min > 0) segments.push(`🚶${min}分`);
+          } else if (s.type === "transit") {
+            const icon = TRANSIT_ICON[s.transport?.mode] || "🚃";
+            const name = s.transport?.name || "";
+            segments.push(`${icon}${name}`);
+          }
+        });
+
         return {
           durationMin: Math.max(1, Math.round(totalSec / 60)),
-          transfers: Math.max(0, transitCount - 1)
+          transfers: Math.max(0, transitSections.length - 1),
+          segments,
+          mode: "transit",
+        };
+      } catch { return null; }
+    }
+
+    async function fetchDrivingTime(fromLat, fromLng, toLat, toLng) {
+      try {
+        const url = `https://router.hereapi.com/v8/routes?origin=${fromLat},${fromLng}&destination=${toLat},${toLng}&transportMode=car&return=summary&apikey=${HERE_API_KEY}`;
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const data = await res.json();
+        const dur = data.routes?.[0]?.sections?.[0]?.summary?.duration;
+        if (!dur) return null;
+        return {
+          durationMin: Math.max(1, Math.round(dur / 60)),
+          transfers: 0,
+          segments: ["🚗"],
+          mode: "driving",
         };
       } catch { return null; }
     }
@@ -770,13 +935,64 @@
           }
         }
       }
+      // 集合/解散スポット（エントリ外）↔ 初日・最終日の端スポット の区間も追加
+      const globalMeet    = activeList?.spots?.find(s => s.spotCategory === "meet");
+      const globalDismiss = activeList?.spots?.find(s => s.spotCategory === "dismiss");
+
+      const firstDay = schedule.days[0];
+      if (firstDay && globalMeet?.lat && globalMeet?.lng) {
+        const firstNonMeet = firstDay.entries?.find(en => getSpotById(en.spotId)?.spotCategory !== "meet");
+        const firstSpot    = firstNonMeet ? getSpotById(firstNonMeet.spotId) : null;
+        if (firstSpot?.lat && firstSpot?.lng) {
+          const key = transitCacheKey(globalMeet.lat, globalMeet.lng, firstSpot.lat, firstSpot.lng);
+          if (!schedule.transitCache[key]) pairs.push({ key, fromLat: globalMeet.lat, fromLng: globalMeet.lng, toLat: firstSpot.lat, toLng: firstSpot.lng });
+        }
+      }
+
+      const lastDay = schedule.days[schedule.days.length - 1];
+      if (lastDay && globalDismiss?.lat && globalDismiss?.lng) {
+        const lastNonDismiss = [...(lastDay.entries || [])].reverse().find(en => getSpotById(en.spotId)?.spotCategory !== "dismiss");
+        const lastSpot       = lastNonDismiss ? getSpotById(lastNonDismiss.spotId) : null;
+        if (lastSpot?.lat && lastSpot?.lng) {
+          const key = transitCacheKey(lastSpot.lat, lastSpot.lng, globalDismiss.lat, globalDismiss.lng);
+          if (!schedule.transitCache[key]) pairs.push({ key, fromLat: lastSpot.lat, fromLng: lastSpot.lng, toLat: globalDismiss.lat, toLng: globalDismiss.lng });
+        }
+      }
+
+      // 各日の宿泊先（登録済み）↔ 当日最後・翌日最初のスポット
+      schedule.days.forEach((d, idx) => {
+        const hotel = schedule.hotels?.[d.id];
+        if (!hotel?.lat || !hotel?.lng) return;
+
+        const lastEnt = [...(d.entries || [])].reverse().find(en => getSpotById(en.spotId)?.spotCategory !== "dismiss");
+        const lastSp  = lastEnt ? getSpotById(lastEnt.spotId) : null;
+        if (lastSp?.lat && lastSp?.lng) {
+          const key = transitCacheKey(lastSp.lat, lastSp.lng, hotel.lat, hotel.lng);
+          if (!schedule.transitCache[key]) pairs.push({ key, fromLat: lastSp.lat, fromLng: lastSp.lng, toLat: hotel.lat, toLng: hotel.lng });
+        }
+
+        const nextDay  = schedule.days[idx + 1];
+        const firstEnt = nextDay?.entries?.find(en => getSpotById(en.spotId)?.spotCategory !== "meet");
+        const firstSp  = firstEnt ? getSpotById(firstEnt.spotId) : null;
+        if (firstSp?.lat && firstSp?.lng) {
+          const key = transitCacheKey(hotel.lat, hotel.lng, firstSp.lat, firstSp.lng);
+          if (!schedule.transitCache[key]) pairs.push({ key, fromLat: hotel.lat, fromLng: hotel.lng, toLat: firstSp.lat, toLng: firstSp.lng });
+        }
+      });
+
       if (pairs.length === 0) return;
       const results = await Promise.all(
-        pairs.map(p => fetchTransitTime(p.fromLat, p.fromLng, p.toLat, p.toLng).then(r => ({ key: p.key, result: r })))
+        pairs.map(async p => {
+          // 公共交通を優先。失敗時は車で代替
+          const result = await fetchTransitTime(p.fromLat, p.fromLng, p.toLat, p.toLng)
+            || await fetchDrivingTime(p.fromLat, p.fromLng, p.toLat, p.toLng)
+            || { failed: true }; // 失敗をキャッシュして再フェッチを防ぐ
+          return { key: p.key, result };
+        })
       );
       let updated = false;
       results.forEach(({ key, result }) => {
-        if (result) { schedule.transitCache[key] = result; updated = true; }
+        if (!schedule.transitCache[key]) { schedule.transitCache[key] = result; updated = true; }
       });
       if (updated) { saveSchedule(schedule); renderDays(); }
     }
@@ -791,17 +1007,46 @@
       const isFirst = dayIdx === 0;
       const isLast  = dayIdx === totalDays - 1;
 
+      // 集合/解散スポットをエントリ内から探す。なければリストから、さらに宿泊先登録データから座標を補完する
+      let meetSpot = isFirst
+        ? (() => {
+            const e = day.entries.find(en => getSpotById(en.spotId)?.spotCategory === "meet");
+            return e
+              ? getSpotById(e.spotId)
+              : (activeList?.spots?.find(s => s.spotCategory === "meet") || null);
+          })()
+        : null;
+      // 非初日: 前の夜の宿泊先が登録済みならその座標を出発点に使う
+      if (!meetSpot && !isFirst) {
+        const h = schedule.hotels?.[schedule.days[dayIdx - 1]?.id];
+        if (h?.lat && h?.lng) meetSpot = h;
+      }
+
+      let dismissSpot = isLast
+        ? (() => {
+            const e = day.entries.find(en => getSpotById(en.spotId)?.spotCategory === "dismiss");
+            return e
+              ? getSpotById(e.spotId)
+              : (activeList?.spots?.find(s => s.spotCategory === "dismiss") || null);
+          })()
+        : null;
+      // 非最終日: 当夜の宿泊先が登録済みならその座標を終着点に使う
+      if (!dismissSpot && !isLast) {
+        const h = schedule.hotels?.[day.id];
+        if (h?.lat && h?.lng) dismissSpot = h;
+      }
+
       let startTime, endTime, meetName, dismissName;
       if (isFirst) {
         startTime  = schedule.tripMeetTime    || "09:00";
-        meetName   = schedule.tripMeetPlace   || "集合場所";
+        meetName   = meetSpot?.name || schedule.tripMeetPlace || "集合場所";
       } else {
         startTime  = "09:00";
         meetName   = "宿泊先";
       }
       if (isLast) {
         endTime     = schedule.tripDismissTime  || "18:00";
-        dismissName = schedule.tripDismissPlace || "解散場所";
+        dismissName = dismissSpot?.name || schedule.tripDismissPlace || "解散場所";
       } else {
         endTime     = "21:00";
         dismissName = "宿泊先";
@@ -810,21 +1055,33 @@
       let t      = timeToMinutes(startTime);
       const endT = timeToMinutes(endTime);
 
-      steps.push({ type: "meet", name: meetName, time: t });
-      let prevSpot = null;
+      steps.push({
+        type: "meet", name: meetName, time: t,
+        // 非初日の「宿泊先」行をホテルボタンとしてレンダリングするための情報
+        hotelNightDayId: !isFirst ? (schedule.days[dayIdx - 1]?.id ?? null) : null,
+        hotelCheckin:    !isFirst ? (schedule.days[dayIdx - 1]?.date ?? null) : null,
+        hotelCheckout:   !isFirst ? (day.date ?? null) : null,
+      });
+      let prevSpot = meetSpot || null;
 
       for (let i = 0; i < day.entries.length; i++) {
         const entry  = day.entries[i];
         const spot   = getSpotById(entry.spotId);
         if (!spot) continue;
 
+        // 集合場所（初日）はアンカーと同一なのでスポットとしては追加しない
+        if (isFirst && spot.spotCategory === "meet") { prevSpot = spot; continue; }
+        // 解散場所（最終日）も同様（最後の移動先として後で使う）
+        if (isLast && spot.spotCategory === "dismiss") continue;
+
         // キャッシュから移動時間を取得（なければ目安値）
+        const hasCoords = !!(prevSpot?.lat && prevSpot?.lng && spot.lat && spot.lng);
         let travelDuration = travel;
         let travelInfo     = null;
-        if (prevSpot?.lat && prevSpot?.lng && spot.lat && spot.lng) {
+        if (hasCoords) {
           const ckey = transitCacheKey(prevSpot.lat, prevSpot.lng, spot.lat, spot.lng);
           travelInfo = schedule.transitCache?.[ckey] || null;
-          if (travelInfo) travelDuration = travelInfo.durationMin;
+          if (travelInfo && !travelInfo.failed && travelInfo.durationMin) travelDuration = travelInfo.durationMin;
         }
 
         const stay    = stays[entry.spotId] || 60;
@@ -833,27 +1090,48 @@
         if (arriveT >= endT) {
           for (let j = i; j < day.entries.length; j++) {
             const s = getSpotById(day.entries[j].spotId);
-            if (s) skipped.push(s.name);
+            // 集合/解散アンカーはスキップ済みなので「収まらなかった」リストに入れない
+            if (s && !(isFirst && s.spotCategory === "meet") && !(isLast && s.spotCategory === "dismiss")) {
+              skipped.push(s.name);
+            }
           }
           break;
         }
 
-        steps.push({ type: "travel", duration: travelDuration, travelInfo });
-        steps.push({ type: "spot", name: spot.name, time: arriveT, duration: stay, color: spot.spotCategory?.color || null });
+        steps.push({ type: "travel", duration: travelDuration, travelInfo, fromSpot: prevSpot, toSpot: spot, noCoords: !hasCoords });
+        steps.push({ type: "spot", name: spot.name, time: arriveT, duration: stay, color: getSpotCatColor(spot.spotCategory), spotId: spot.id });
         t = arriveT + stay;
         prevSpot = spot;
 
         if (t >= endT) {
           for (let j = i + 1; j < day.entries.length; j++) {
             const s = getSpotById(day.entries[j].spotId);
-            if (s) skipped.push(s.name);
+            if (s && !(isFirst && s.spotCategory === "meet") && !(isLast && s.spotCategory === "dismiss")) {
+              skipped.push(s.name);
+            }
           }
           break;
         }
       }
 
-      steps.push({ type: "travel", duration: travel, travelInfo: null });
-      steps.push({ type: "dismiss", name: dismissName, time: t + travel });
+      // 最終移動：解散場所スポットの座標があれば実ルーティングを適用
+      const finalHasCoords = !!(prevSpot?.lat && prevSpot?.lng && dismissSpot?.lat && dismissSpot?.lng);
+      let finalTravelInfo = null;
+      let finalTravelDuration = travel;
+      if (finalHasCoords) {
+        const ckey = transitCacheKey(prevSpot.lat, prevSpot.lng, dismissSpot.lat, dismissSpot.lng);
+        finalTravelInfo = schedule.transitCache?.[ckey] || null;
+        if (finalTravelInfo && !finalTravelInfo.failed && finalTravelInfo.durationMin) {
+          finalTravelDuration = finalTravelInfo.durationMin;
+        }
+      }
+      steps.push({ type: "travel", duration: finalTravelDuration, travelInfo: finalTravelInfo, fromSpot: prevSpot, toSpot: dismissSpot, noCoords: !finalHasCoords });
+      steps.push({
+        type: "dismiss", name: dismissName, time: t + finalTravelDuration,
+        hotelNightDayId: !isLast ? (day.id ?? null) : null,
+        hotelCheckin:    !isLast ? (day.date ?? null) : null,
+        hotelCheckout:   !isLast ? (schedule.days[dayIdx + 1]?.date ?? null) : null,
+      });
 
       return { steps, skipped };
     }
@@ -1103,6 +1381,333 @@
       schedule.days.forEach((day, idx) => renderDayCard(area, day, idx));
     }
 
+    function renderUnifiedTimeline(day, dayIdx, totalDays) {
+      ensureDayDefaults(day);
+      const wrap = document.createElement("div");
+      wrap.className = "unified-timeline";
+
+      // コンテナへのドロップ（空の日程にスポットを追加）
+      wrap.addEventListener("dragover", e => {
+        if (!dragState) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        wrap.classList.add("tl-drag-over");
+      });
+      wrap.addEventListener("dragleave", e => {
+        if (!wrap.contains(e.relatedTarget)) wrap.classList.remove("tl-drag-over");
+      });
+      wrap.addEventListener("drop", e => {
+        e.preventDefault();
+        wrap.classList.remove("tl-drag-over");
+        // スポット行が stopPropagation しているので、ここに届くのはスポット行以外への落下
+        const spotId = dragState?.spotId || e.dataTransfer.getData("text/plain");
+        if (!spotId) return;
+        if (day.entries.some(en => en.spotId === spotId)) { dragState = null; return; }
+        const spot = getSpotById(spotId);
+        if (!spot) { dragState = null; return; }
+        if (dragState?.fromDayId) {
+          const srcDay = schedule.days.find(d => d.id === dragState.fromDayId);
+          if (srcDay) srcDay.entries = srcDay.entries.filter(en => en.spotId !== spotId);
+        }
+        dragState = null;
+        day.entries.push({ id: makeId(), spotId: spot.id, time: "", note: "" });
+        if (!day.stayTimes) day.stayTimes = {};
+        day.stayTimes[spot.id] = (schedule.defaultStayTimes?.[spot.id]) ?? getDefaultStayTime(spot.spotCategory);
+        saveSchedule(schedule);
+        renderAll();
+      });
+
+      if (day.entries.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "tl-empty";
+        empty.textContent = "右のスポットをクリック or ドラッグして追加できます";
+        wrap.appendChild(empty);
+        return wrap;
+      }
+
+      const { steps, skipped } = generatePlan(day, dayIdx, totalDays);
+
+      steps.forEach((step, sIdx) => {
+        const isLast = sIdx === steps.length - 1;
+        const row = document.createElement("div");
+
+        if (step.type === "meet" || step.type === "dismiss") {
+          row.className = "tl-row tl-row--anchor";
+          const leftEl = document.createElement("div");
+          leftEl.className = "tl-left";
+          leftEl.innerHTML = `<span class="tl-time">${minutesToTime(step.time)}</span>${!isLast ? '<div class="tl-line"></div>' : ''}`;
+          const rightEl = document.createElement("div");
+          rightEl.className = "tl-right";
+
+          if (step.hotelNightDayId) {
+            // 宿泊先 → クリッカブルなホテルボタン
+            const hotel = schedule.hotels?.[step.hotelNightDayId];
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "tl-hotel-btn";
+            btn.title = "クリックしてホテルを探す・登録する";
+
+            const iconSpan = document.createElement("span");
+            iconSpan.textContent = "🏨";
+            btn.appendChild(iconSpan);
+
+            if (hotel?.name) {
+              const nameSpan = document.createElement("span");
+              nameSpan.className = "tl-hotel-name";
+              nameSpan.textContent = hotel.name;
+              btn.appendChild(nameSpan);
+              if (hotel.budget) {
+                const budgetSpan = document.createElement("span");
+                budgetSpan.className = "tl-hotel-budget";
+                budgetSpan.textContent = `¥${Number(hotel.budget).toLocaleString()}`;
+                btn.appendChild(budgetSpan);
+              }
+            } else {
+              const findSpan = document.createElement("span");
+              findSpan.className = "tl-hotel-find";
+              findSpan.textContent = "宿泊先を探す・登録する";
+              btn.appendChild(findSpan);
+            }
+
+            const chevron = document.createElement("span");
+            chevron.className = "tl-hotel-chevron";
+            chevron.textContent = "›";
+            btn.appendChild(chevron);
+
+            const p = new URLSearchParams({ nightId: step.hotelNightDayId });
+            if (step.hotelCheckin)  p.set("checkin",  step.hotelCheckin);
+            if (step.hotelCheckout) p.set("checkout", step.hotelCheckout);
+            btn.addEventListener("click", () => { location.href = `./hotel.html?${p}`; });
+            rightEl.appendChild(btn);
+          } else {
+            // 集合/解散場所（通常アンカー）
+            const dotColor = step.type === "meet" ? "var(--accent-teal, #70d6c5)" : "var(--accent-pink, #ff8fb1)";
+            rightEl.innerHTML = `<span class="tl-anchor-dot" style="background:${dotColor}"></span><span class="tl-anchor-name">${escHtml(step.name)}</span>`;
+          }
+
+          row.appendChild(leftEl);
+          row.appendChild(rightEl);
+
+        } else if (step.type === "travel") {
+          row.className = "tl-row tl-row--transit";
+          const leftEl = document.createElement("div");
+          leftEl.className = "tl-left";
+          leftEl.innerHTML = '<div class="tl-line"></div>';
+          const rightEl = document.createElement("div");
+          rightEl.className = "tl-right";
+
+          const wrapEl = document.createElement("div");
+          wrapEl.className = "tl-transit-wrap";
+
+          const info = step.travelInfo;
+          const summarySpan = document.createElement("span");
+          summarySpan.className = "tl-transit-label";
+
+          if (info && !info.failed) {
+            // 経路取得成功
+            if (info.mode === "driving") {
+              summarySpan.textContent = `🚗 約${step.duration}分`;
+            } else {
+              const xfers = info.transfers === 0 ? "乗り換えなし" : `${info.transfers}回乗り換え`;
+              summarySpan.textContent = `🚃 約${step.duration}分（${xfers}）`;
+            }
+            wrapEl.appendChild(summarySpan);
+            // セグメント（🚶3分 → 🚇銀座線 → 🚶2分）
+            if (info.segments?.length > 0) {
+              const segsSpan = document.createElement("span");
+              segsSpan.className = "tl-route-segs";
+              segsSpan.textContent = info.segments.join(" → ");
+              wrapEl.appendChild(segsSpan);
+            }
+          } else if (info?.failed) {
+            // HERE API が返答したが経路なし（対応エリア外など）
+            summarySpan.textContent = `⚠ 経路を取得できませんでした（公共交通・車ともに対象外の可能性）`;
+            summarySpan.style.color = "var(--muted)";
+            wrapEl.appendChild(summarySpan);
+          } else if (step.noCoords) {
+            // 座標情報が欠けているため API 呼び出し不可
+            summarySpan.textContent = `📍 座標情報がないため経路を取得できません`;
+            summarySpan.style.color = "var(--muted)";
+            wrapEl.appendChild(summarySpan);
+          } else {
+            // キャッシュなし＝バックグラウンドで取得中
+            summarySpan.textContent = `⏳ 経路取得中...`;
+            summarySpan.style.color = "var(--muted)";
+            wrapEl.appendChild(summarySpan);
+          }
+
+          // Google Maps 経路リンク（両スポットに座標がある場合）
+          if (step.fromSpot?.lat && step.toSpot?.lat) {
+            const gmLink = document.createElement("a");
+            gmLink.href = `https://www.google.com/maps/dir/?api=1&origin=${step.fromSpot.lat},${step.fromSpot.lng}&destination=${step.toSpot.lat},${step.toSpot.lng}&travelmode=transit`;
+            gmLink.target = "_blank";
+            gmLink.rel = "noopener noreferrer";
+            gmLink.className = "tl-route-link";
+            gmLink.textContent = "🗺 経路";
+            wrapEl.appendChild(gmLink);
+          }
+
+          rightEl.appendChild(wrapEl);
+          row.appendChild(leftEl);
+          row.appendChild(rightEl);
+
+        } else if (step.type === "spot") {
+          const entry = day.entries.find(en => en.spotId === step.spotId);
+          if (!entry) return;
+          const eIdx = day.entries.indexOf(entry);
+          const stayMin = (day.stayTimes && day.stayTimes[entry.spotId]) || 60;
+
+          row.className = "tl-row tl-row--spot";
+          row.dataset.spotId = step.spotId;
+
+          const leftEl = document.createElement("div");
+          leftEl.className = "tl-left";
+          leftEl.innerHTML = `<span class="tl-time">${minutesToTime(step.time)}</span>${!isLast ? '<div class="tl-line"></div>' : ''}`;
+
+          const rightEl = document.createElement("div");
+          rightEl.className = "tl-right";
+
+          const handle = document.createElement("span");
+          handle.className = "tl-drag-handle";
+          handle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="14" viewBox="0 0 10 14" fill="currentColor" aria-hidden="true"><circle cx="3" cy="2" r="1.2"/><circle cx="7" cy="2" r="1.2"/><circle cx="3" cy="7" r="1.2"/><circle cx="7" cy="7" r="1.2"/><circle cx="3" cy="12" r="1.2"/><circle cx="7" cy="12" r="1.2"/></svg>`;
+
+          const dot = document.createElement("span");
+          dot.className = "tl-dot";
+          dot.style.background = step.color || "var(--accent)";
+
+          const nameEl = document.createElement("span");
+          nameEl.className = "tl-spot-name";
+          nameEl.textContent = step.name;
+
+          const stayInput = document.createElement("input");
+          stayInput.className = "tl-stay-input";
+          stayInput.type = "number"; stayInput.min = "5"; stayInput.max = "480"; stayInput.step = "5";
+          stayInput.value = stayMin; stayInput.title = "滞在時間（分）";
+
+          const staySuffix = document.createElement("span");
+          staySuffix.className = "tl-stay-suffix";
+          staySuffix.textContent = "分";
+
+          const noteInput = document.createElement("input");
+          noteInput.className = "tl-note"; noteInput.type = "text";
+          noteInput.value = entry.note || ""; noteInput.placeholder = "メモ...";
+
+          const upBtn = document.createElement("button");
+          upBtn.className = "tl-move-btn"; upBtn.type = "button";
+          upBtn.title = "上に移動"; upBtn.textContent = "▲"; upBtn.disabled = eIdx === 0;
+
+          const downBtn = document.createElement("button");
+          downBtn.className = "tl-move-btn"; downBtn.type = "button";
+          downBtn.title = "下に移動"; downBtn.textContent = "▼";
+          downBtn.disabled = eIdx === day.entries.length - 1;
+
+          const removeBtn = document.createElement("button");
+          removeBtn.className = "tl-remove-btn"; removeBtn.type = "button"; removeBtn.title = "外す";
+          removeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+
+          rightEl.appendChild(handle);
+          rightEl.appendChild(dot);
+          rightEl.appendChild(nameEl);
+          rightEl.appendChild(stayInput);
+          rightEl.appendChild(staySuffix);
+          rightEl.appendChild(noteInput);
+          rightEl.appendChild(upBtn);
+          rightEl.appendChild(downBtn);
+          rightEl.appendChild(removeBtn);
+          row.appendChild(leftEl);
+          row.appendChild(rightEl);
+
+          stayInput.addEventListener("click", e => e.stopPropagation());
+          stayInput.addEventListener("change", e => {
+            e.stopPropagation();
+            if (!day.stayTimes) day.stayTimes = {};
+            day.stayTimes[entry.spotId] = Math.max(5, parseInt(e.target.value) || 60);
+            saveSchedule(schedule);
+            renderDays();
+          });
+          noteInput.addEventListener("click", e => e.stopPropagation());
+          noteInput.addEventListener("change", e => { entry.note = e.target.value; saveSchedule(schedule); });
+          upBtn.addEventListener("click", e => {
+            e.stopPropagation();
+            const i = day.entries.indexOf(entry);
+            if (i > 0) [day.entries[i-1], day.entries[i]] = [day.entries[i], day.entries[i-1]];
+            saveSchedule(schedule); renderAll();
+          });
+          downBtn.addEventListener("click", e => {
+            e.stopPropagation();
+            const i = day.entries.indexOf(entry);
+            if (i < day.entries.length - 1) [day.entries[i], day.entries[i+1]] = [day.entries[i+1], day.entries[i]];
+            saveSchedule(schedule); renderAll();
+          });
+          removeBtn.addEventListener("click", e => {
+            e.stopPropagation();
+            day.entries = day.entries.filter(en => en.id !== entry.id);
+            saveSchedule(schedule); renderAll();
+          });
+
+          // ドラッグ（並び替え・日程間移動）
+          row.draggable = true;
+          row.addEventListener("dragstart", e => {
+            dragState = { spotId: step.spotId, fromDayId: day.id };
+            e.dataTransfer.setData("text/plain", step.spotId);
+            e.dataTransfer.effectAllowed = "move";
+            setTimeout(() => row.classList.add("tl-dragging"), 0);
+          });
+          row.addEventListener("dragend", () => { row.classList.remove("tl-dragging"); dragState = null; });
+
+          row.addEventListener("dragover", e => {
+            if (!dragState) return;
+            e.preventDefault(); e.stopPropagation();
+            e.dataTransfer.dropEffect = "move";
+            const before = e.clientY < row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2;
+            row.classList.toggle("tl-drop-before", before);
+            row.classList.toggle("tl-drop-after", !before);
+          });
+          row.addEventListener("dragleave", e => {
+            if (!row.contains(e.relatedTarget)) row.classList.remove("tl-drop-before", "tl-drop-after");
+          });
+          row.addEventListener("drop", e => {
+            e.preventDefault(); e.stopPropagation();
+            const dropBefore = row.classList.contains("tl-drop-before");
+            row.classList.remove("tl-drop-before", "tl-drop-after");
+            const spotId = dragState?.spotId || e.dataTransfer.getData("text/plain");
+            if (!spotId || spotId === step.spotId) { dragState = null; return; }
+            if (dragState?.fromDayId && dragState.fromDayId !== day.id) {
+              const srcDay = schedule.days.find(d => d.id === dragState.fromDayId);
+              if (srcDay) srcDay.entries = srcDay.entries.filter(en => en.spotId !== spotId);
+            }
+            const existingEntry = day.entries.find(en => en.spotId === spotId);
+            if (existingEntry) {
+              day.entries = day.entries.filter(en => en.spotId !== spotId);
+              const tIdx = day.entries.findIndex(en => en.spotId === step.spotId);
+              day.entries.splice(dropBefore ? tIdx : tIdx + 1, 0, existingEntry);
+            } else {
+              const spot = getSpotById(spotId);
+              if (!spot) { dragState = null; return; }
+              const newEntry = { id: makeId(), spotId, time: "", note: "" };
+              if (!day.stayTimes) day.stayTimes = {};
+              day.stayTimes[spotId] = (schedule.defaultStayTimes?.[spotId]) ?? getDefaultStayTime(spot.spotCategory);
+              const tIdx = day.entries.findIndex(en => en.spotId === step.spotId);
+              day.entries.splice(dropBefore ? tIdx : tIdx + 1, 0, newEntry);
+            }
+            dragState = null;
+            saveSchedule(schedule); renderAll();
+          });
+        }
+
+        wrap.appendChild(row);
+      });
+
+      if (skipped.length > 0) {
+        const warn = document.createElement("p");
+        warn.className = "tl-over-warn";
+        warn.textContent = `⚠ 時間内に収まらなかったスポット: ${skipped.join("、")}`;
+        wrap.appendChild(warn);
+      }
+
+      return wrap;
+    }
+
     function renderDayCard(container, day, idx) {
       ensureDayDefaults(day);
 
@@ -1137,114 +1742,11 @@
       travelRow.querySelector(".travel-min-input").addEventListener("change", e => {
         day.travelMinutes = Math.max(0, parseInt(e.target.value) || 20);
         saveSchedule(schedule);
+        renderDays();
       });
       card.appendChild(travelRow);
 
-      // ── スポットエントリー ──
-      const entriesEl = document.createElement("div");
-      entriesEl.className = "day-entries";
-
-      entriesEl.addEventListener("dragover", e => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = "move";
-        entriesEl.classList.add("drag-over");
-      });
-      entriesEl.addEventListener("dragleave", e => {
-        if (!entriesEl.contains(e.relatedTarget)) entriesEl.classList.remove("drag-over");
-      });
-      entriesEl.addEventListener("drop", e => {
-        e.preventDefault();
-        entriesEl.classList.remove("drag-over");
-        const spotId = dragState?.spotId || e.dataTransfer.getData("text/plain");
-        if (!spotId) return;
-        if (day.entries.some(en => en.spotId === spotId)) { dragState = null; return; }
-        const spot = getSpotById(spotId);
-        if (!spot) { dragState = null; return; }
-        if (dragState?.fromDayId) {
-          const srcDay = schedule.days.find(d => d.id === dragState.fromDayId);
-          if (srcDay) srcDay.entries = srcDay.entries.filter(en => en.spotId !== spotId);
-        }
-        dragState = null;
-        day.entries.push({ id: makeId(), spotId: spot.id, time: "", note: "" });
-        if (!day.stayTimes) day.stayTimes = {};
-        day.stayTimes[spot.id] = (schedule.defaultStayTimes?.[spot.id]) ?? getDefaultStayTime(spot.spotCategory);
-        saveSchedule(schedule);
-        renderAll();
-      });
-
-      if (day.entries.length === 0) {
-        entriesEl.innerHTML = '<p class="day-empty-hint">右のスポットをクリック or ドラッグして追加できます</p>';
-      } else {
-        day.entries.forEach((entry, eIdx) => {
-          const spot = getSpotById(entry.spotId);
-          if (!spot) return;
-          const stayMin = (day.stayTimes && day.stayTimes[entry.spotId]) || 60;
-
-          const item = document.createElement("div");
-          item.className = "entry-item";
-          item.innerHTML = `
-            <span class="entry-priority">${eIdx + 1}</span>
-            <span class="entry-dot" style="background:${escHtml(spot.spotCategory?.color || "var(--accent)")}"></span>
-            <span class="entry-name">${escHtml(spot.name)}</span>
-            <input class="entry-stay" type="number" min="5" max="480" step="5" value="${stayMin}" title="滞在時間（分）" />
-            <span class="entry-stay-suffix">分</span>
-            <input class="entry-note" type="text" value="${escHtml(entry.note || "")}" placeholder="メモ..." />
-            <button class="entry-move-btn" data-dir="up" type="button" title="優先度を上げる"${eIdx === 0 ? " disabled" : ""}>▲</button>
-            <button class="entry-move-btn" data-dir="down" type="button" title="優先度を下げる"${eIdx === day.entries.length - 1 ? " disabled" : ""}>▼</button>
-            <button class="entry-remove-btn" type="button" title="外す">
-              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          `;
-
-          item.querySelector(".entry-stay").addEventListener("change", e => {
-            if (!day.stayTimes) day.stayTimes = {};
-            day.stayTimes[entry.spotId] = Math.max(5, parseInt(e.target.value) || 60);
-            saveSchedule(schedule);
-          });
-          item.querySelector(".entry-note").addEventListener("change", e => {
-            entry.note = e.target.value;
-            saveSchedule(schedule);
-          });
-          item.querySelectorAll(".entry-move-btn").forEach(btn => {
-            btn.addEventListener("click", () => {
-              const dir = btn.dataset.dir;
-              const i   = day.entries.indexOf(entry);
-              if (dir === "up" && i > 0) {
-                [day.entries[i - 1], day.entries[i]] = [day.entries[i], day.entries[i - 1]];
-              } else if (dir === "down" && i < day.entries.length - 1) {
-                [day.entries[i], day.entries[i + 1]] = [day.entries[i + 1], day.entries[i]];
-              }
-              saveSchedule(schedule);
-              renderAll();
-            });
-          });
-          item.querySelector(".entry-remove-btn").addEventListener("click", () => {
-            day.entries = day.entries.filter(en => en.id !== entry.id);
-            saveSchedule(schedule);
-            renderAll();
-          });
-
-          item.draggable = true;
-          item.addEventListener("dragstart", e => {
-            dragState = { spotId: spot.id, fromDayId: day.id };
-            e.dataTransfer.setData("text/plain", spot.id);
-            e.dataTransfer.effectAllowed = "move";
-            setTimeout(() => item.classList.add("dragging"), 0);
-          });
-          item.addEventListener("dragend", () => { item.classList.remove("dragging"); dragState = null; });
-
-          entriesEl.appendChild(item);
-        });
-      }
-
-      card.appendChild(entriesEl);
-
-      // スポットがあれば自動でプランを生成
-      if (day.entries.length > 0) {
-        const planData = generatePlan(day, idx, schedule.days.length);
-        card.appendChild(buildPlanResultEl(planData));
-      }
-
+      card.appendChild(renderUnifiedTimeline(day, idx, schedule.days.length));
       container.appendChild(card);
     }
 
