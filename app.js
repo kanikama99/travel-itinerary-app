@@ -4,8 +4,8 @@ const RELATIVE_CLUSTER_THRESHOLD = 0.08;
 const MAP_W = 640;
 const MAP_H = 420;
 const MAP_PAD = 30;
-const LABEL_W = 180;
-const LABEL_H = 22;
+const LABEL_W = 220;
+const LABEL_H = 32;
 const LABEL_GAP = 16;
 const LABEL_DIRS = ["right", "left", "top", "bottom"];
 const DETAIL_PADDING_RATIO = 0.35;
@@ -60,11 +60,11 @@ const BG_THEME_CONFIGS = {
 };
 
 const THEME_COLOR_MAP = {
-  warm:     { accent: "#ff7a45", accentDeep: "#ce5428", accentLight: "#ff9a52", accentSoft: "rgba(255,122,69,0.12)",   line: "rgba(166,97,54,0.2)",    panel: "rgba(255,252,245,0.88)", shadow: "0 24px 50px rgba(149,90,48,0.16)"   },
-  sky:      { accent: "#3b8fd4", accentDeep: "#1a6aad", accentLight: "#60aee8", accentSoft: "rgba(59,143,212,0.12)",   line: "rgba(59,120,200,0.22)",  panel: "rgba(240,248,255,0.88)", shadow: "0 24px 50px rgba(30,90,160,0.14)"   },
-  mint:     { accent: "#2da868", accentDeep: "#1a7a48", accentLight: "#52c485", accentSoft: "rgba(45,168,104,0.12)",   line: "rgba(45,150,90,0.22)",   panel: "rgba(240,255,248,0.88)", shadow: "0 24px 50px rgba(30,110,60,0.14)"   },
-  lavender: { accent: "#8b64cc", accentDeep: "#6a45a8", accentLight: "#a884e0", accentSoft: "rgba(139,100,204,0.12)",  line: "rgba(120,80,200,0.22)",  panel: "rgba(248,244,255,0.88)", shadow: "0 24px 50px rgba(90,60,150,0.14)"   },
-  gray:     { accent: "#7a8a98", accentDeep: "#5a6a78", accentLight: "#96a6b4", accentSoft: "rgba(122,138,152,0.12)",  line: "rgba(100,120,140,0.22)", panel: "rgba(245,247,250,0.88)", shadow: "0 24px 50px rgba(60,80,100,0.14)"   },
+  warm:     { accent: "#ff7a45", accentDeep: "#ce5428", accentLight: "#ff9a52", accentSoft: "rgba(255,122,69,0.12)",   line: "rgba(166,97,54,0.2)",    panel: "rgba(255,252,245,0.88)", shadow: "0 24px 50px rgba(149,90,48,0.16)",   accentRgb: "255,122,69",  shadowBaseRgb: "149,90,48"  },
+  sky:      { accent: "#3b8fd4", accentDeep: "#1a6aad", accentLight: "#60aee8", accentSoft: "rgba(59,143,212,0.12)",   line: "rgba(59,120,200,0.22)",  panel: "rgba(240,248,255,0.88)", shadow: "0 24px 50px rgba(30,90,160,0.14)",   accentRgb: "59,143,212",  shadowBaseRgb: "30,90,160"  },
+  mint:     { accent: "#2da868", accentDeep: "#1a7a48", accentLight: "#52c485", accentSoft: "rgba(45,168,104,0.12)",   line: "rgba(45,150,90,0.22)",   panel: "rgba(240,255,248,0.88)", shadow: "0 24px 50px rgba(30,110,60,0.14)",   accentRgb: "45,168,104",  shadowBaseRgb: "30,110,60"  },
+  lavender: { accent: "#8b64cc", accentDeep: "#6a45a8", accentLight: "#a884e0", accentSoft: "rgba(139,100,204,0.12)",  line: "rgba(120,80,200,0.22)",  panel: "rgba(248,244,255,0.88)", shadow: "0 24px 50px rgba(90,60,150,0.14)",   accentRgb: "139,100,204", shadowBaseRgb: "90,60,150"  },
+  gray:     { accent: "#7a8a98", accentDeep: "#5a6a78", accentLight: "#96a6b4", accentSoft: "rgba(122,138,152,0.12)",  line: "rgba(100,120,140,0.22)", panel: "rgba(245,247,250,0.88)", shadow: "0 24px 50px rgba(60,80,100,0.14)",   accentRgb: "122,138,152", shadowBaseRgb: "60,80,100"  },
 };
 
 function loadAppSettings() {
@@ -85,8 +85,10 @@ function applyBgTheme(themeKey) {
   root.style.setProperty("--accent-light", colors.accentLight);
   root.style.setProperty("--accent-soft",  colors.accentSoft);
   root.style.setProperty("--line",         colors.line);
-  root.style.setProperty("--panel",        colors.panel);
-  root.style.setProperty("--shadow",       colors.shadow);
+  root.style.setProperty("--panel",           colors.panel);
+  root.style.setProperty("--shadow",          colors.shadow);
+  root.style.setProperty("--accent-rgb",      colors.accentRgb);
+  root.style.setProperty("--shadow-base-rgb", colors.shadowBaseRgb);
 }
 
 const CATEGORIES_KEY = "spot-map-categories.v1";

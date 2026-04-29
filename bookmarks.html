@@ -433,7 +433,7 @@
       if (!data) return;
       data.activeListId = listId;
       localStorage.setItem(LISTS_KEY, JSON.stringify(data));
-      location.href = "./index.html";
+      location.href = "./spots.html";
     }
 
     // ユニークIDを生成する
@@ -594,7 +594,7 @@
       data.lists.push(newList);
       data.activeListId = newList.id;
       localStorage.setItem(LISTS_KEY, JSON.stringify(data));
-      location.href = "./index.html";
+      location.href = "./spots.html";
     });
 
     // Enterキーでも作成できる

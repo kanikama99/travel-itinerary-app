@@ -18,7 +18,7 @@
       gap: 24px;
     }
     .hotel-eyebrow {
-      font-size: 0.75rem;
+      font-size: 0.82rem;
       letter-spacing: 0.16em;
       text-transform: uppercase;
       color: var(--accent-deep);
@@ -49,7 +49,7 @@
       box-shadow: 0 4px 16px rgba(149, 90, 48, 0.08);
     }
     .hotel-card-kicker {
-      font-size: 0.7rem;
+      font-size: 0.78rem;
       letter-spacing: 0.14em;
       text-transform: uppercase;
       color: var(--accent-deep);
@@ -63,9 +63,9 @@
       margin-bottom: 16px;
     }
     .hotel-field { display: flex; flex-direction: column; gap: 5px; }
-    .hotel-field-label { font-size: 0.74rem; font-weight: 700; color: var(--muted); }
+    .hotel-field-label { font-size: 0.82rem; font-weight: 700; color: var(--muted); }
     .hotel-input {
-      font: inherit; font-size: 0.88rem; color: var(--text);
+      font: inherit; font-size: 0.94rem; color: var(--text);
       border: 1.5px solid var(--line); border-radius: 10px;
       padding: 9px 12px; background: rgba(255,255,255,0.85);
       outline: none; width: 100%;
@@ -85,7 +85,7 @@
       background: rgba(255,255,255,0.6);
       border: 1.5px solid rgba(166,97,54,0.14);
       border-radius: 14px;
-      font: inherit; font-size: 0.88rem; font-weight: 700;
+      font: inherit; font-size: 0.92rem; font-weight: 700;
       color: var(--text); cursor: pointer; text-align: left;
       transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s cubic-bezier(0.34,1.56,0.64,1);
     }
@@ -101,8 +101,8 @@
       font-size: 18px; flex-shrink: 0;
       background: var(--accent-soft);
     }
-    .hotel-site-name { font-size: 0.84rem; font-weight: 700; }
-    .hotel-site-desc { font-size: 0.7rem; color: var(--muted); font-weight: 400; }
+    .hotel-site-name { font-size: 0.9rem; font-weight: 700; }
+    .hotel-site-desc { font-size: 0.78rem; color: var(--muted); font-weight: 400; }
 
     /* ヒントカード */
     .hotel-hint-card {
@@ -114,7 +114,7 @@
       color: var(--text);
       line-height: 1.6;
     }
-    .hotel-hint-title { font-weight: 700; color: var(--accent-deep); margin-bottom: 6px; font-size: 0.82rem; }
+    .hotel-hint-title { font-weight: 700; color: var(--accent-deep); margin-bottom: 6px; font-size: 0.88rem; }
 
     @media (max-width: 600px) {
       .hotel-search-grid { grid-template-columns: 1fr; }
@@ -142,11 +142,11 @@
         </div>
         <div class="hotel-field">
           <label class="hotel-field-label" for="checkin">チェックイン</label>
-          <input id="checkin" class="hotel-input" type="date" />
+          <input id="checkin" class="hotel-input" type="date" data-cal />
         </div>
         <div class="hotel-field">
           <label class="hotel-field-label" for="checkout">チェックアウト</label>
-          <input id="checkout" class="hotel-input" type="date" />
+          <input id="checkout" class="hotel-input" type="date" data-cal />
         </div>
       </div>
       <div class="hotel-sites-grid">
@@ -222,9 +222,9 @@
         <span class="drawer-nav-icon">📒</span>
         <span>しおりを選ぶ</span>
       </a>
-      <a href="./index.html" class="drawer-nav-item">
+      <a href="./spots.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">📍</span>
-        <span>行きたい場所！</span>
+        <span>行きたい場所</span>
       </a>
       <a href="./schedule.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">📅</span>
@@ -255,22 +255,24 @@
           gray:     "radial-gradient(circle at 8% 10%, rgba(200,210,220,.45), transparent 22%), radial-gradient(circle at 92% 14%, rgba(180,190,200,.28), transparent 20%), radial-gradient(circle at 80% 80%, rgba(190,200,210,.22), transparent 18%), linear-gradient(180deg,#f2f4f6 0%,#e4e8ec 100%)",
         };
         const CS = {
-          warm:     ["#ff7a45","#ce5428","#ff9a52","rgba(255,122,69,0.12)","rgba(166,97,54,0.2)","rgba(255,252,245,0.88)","0 24px 50px rgba(149,90,48,0.16)"],
-          sky:      ["#3b8fd4","#1a6aad","#60aee8","rgba(59,143,212,0.12)","rgba(59,120,200,0.22)","rgba(240,248,255,0.88)","0 24px 50px rgba(30,90,160,0.14)"],
-          mint:     ["#2da868","#1a7a48","#52c485","rgba(45,168,104,0.12)","rgba(45,150,90,0.22)","rgba(240,255,248,0.88)","0 24px 50px rgba(30,110,60,0.14)"],
-          lavender: ["#8b64cc","#6a45a8","#a884e0","rgba(139,100,204,0.12)","rgba(120,80,200,0.22)","rgba(248,244,255,0.88)","0 24px 50px rgba(90,60,150,0.14)"],
-          gray:     ["#7a8a98","#5a6a78","#96a6b4","rgba(122,138,152,0.12)","rgba(100,120,140,0.22)","rgba(245,247,250,0.88)","0 24px 50px rgba(60,80,100,0.14)"],
+          warm:     ["#ff7a45","#ce5428","#ff9a52","rgba(255,122,69,0.12)","rgba(166,97,54,0.2)","rgba(255,252,245,0.88)","0 24px 50px rgba(149,90,48,0.16)","255,122,69","149,90,48"],
+          sky:      ["#3b8fd4","#1a6aad","#60aee8","rgba(59,143,212,0.12)","rgba(59,120,200,0.22)","rgba(240,248,255,0.88)","0 24px 50px rgba(30,90,160,0.14)","59,143,212","30,90,160"],
+          mint:     ["#2da868","#1a7a48","#52c485","rgba(45,168,104,0.12)","rgba(45,150,90,0.22)","rgba(240,255,248,0.88)","0 24px 50px rgba(30,110,60,0.14)","45,168,104","30,110,60"],
+          lavender: ["#8b64cc","#6a45a8","#a884e0","rgba(139,100,204,0.12)","rgba(120,80,200,0.22)","rgba(248,244,255,0.88)","0 24px 50px rgba(90,60,150,0.14)","139,100,204","90,60,150"],
+          gray:     ["#7a8a98","#5a6a78","#96a6b4","rgba(122,138,152,0.12)","rgba(100,120,140,0.22)","rgba(245,247,250,0.88)","0 24px 50px rgba(60,80,100,0.14)","122,138,152","60,80,100"],
         };
         document.body.style.background = BGS[k] || BGS.warm;
         const c = CS[k] || CS.warm;
         const r = document.documentElement;
-        r.style.setProperty("--accent",       c[0]);
-        r.style.setProperty("--accent-deep",  c[1]);
-        r.style.setProperty("--accent-light", c[2]);
-        r.style.setProperty("--accent-soft",  c[3]);
-        r.style.setProperty("--line",         c[4]);
-        r.style.setProperty("--panel",        c[5]);
-        r.style.setProperty("--shadow",       c[6]);
+        r.style.setProperty("--accent",          c[0]);
+        r.style.setProperty("--accent-deep",      c[1]);
+        r.style.setProperty("--accent-light",     c[2]);
+        r.style.setProperty("--accent-soft",      c[3]);
+        r.style.setProperty("--line",             c[4]);
+        r.style.setProperty("--panel",            c[5]);
+        r.style.setProperty("--shadow",           c[6]);
+        r.style.setProperty("--accent-rgb",       c[7]);
+        r.style.setProperty("--shadow-base-rgb",  c[8]);
       } catch {}
     })();
 
@@ -296,8 +298,16 @@
               const all = JSON.parse(schedRaw);
               const sched = all[activeList.id];
               if (sched) {
-                if (sched.tripMeetDate)    document.getElementById("checkin").value  = sched.tripMeetDate;
-                if (sched.tripDismissDate) document.getElementById("checkout").value = sched.tripDismissDate;
+                if (sched.tripMeetDate) {
+                  const el = document.getElementById("checkin");
+                  el.value = sched.tripMeetDate;
+                  window.CalendarPicker?.updateDisplay(el);
+                }
+                if (sched.tripDismissDate) {
+                  const el = document.getElementById("checkout");
+                  el.value = sched.tripDismissDate;
+                  window.CalendarPicker?.updateDisplay(el);
+                }
                 if (sched.tripMeetPlace)   document.getElementById("hotelArea").value = sched.tripMeetPlace;
               }
             }
@@ -407,5 +417,6 @@
     init();
     suggestHotelFromSpots();
   </script>
+  <script src="./calendar.js"></script>
 </body>
 </html>
