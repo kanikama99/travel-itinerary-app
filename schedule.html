@@ -253,32 +253,32 @@
       background: rgba(255,249,240,0.65);
     }
     .plan-result-title {
-      font-size: 0.7rem; letter-spacing: 0.13em; text-transform: uppercase;
+      font-size: 0.82rem; letter-spacing: 0.13em; text-transform: uppercase;
       color: var(--accent-deep); font-weight: 700; margin-bottom: 14px;
     }
     .plan-timeline { display: flex; flex-direction: column; }
     .plan-step { display: flex; }
     .plan-step-left {
       display: flex; flex-direction: column; align-items: center;
-      width: 58px; flex-shrink: 0;
+      width: 64px; flex-shrink: 0;
     }
     .plan-step-time {
-      font-size: 0.78rem; font-weight: 700; color: var(--accent-deep);
-      white-space: nowrap; height: 22px; line-height: 22px;
+      font-size: 0.92rem; font-weight: 700; color: var(--accent-deep);
+      white-space: nowrap; height: 24px; line-height: 24px;
     }
     .plan-step-line {
       width: 2px; flex: 1; min-height: 10px;
       background: rgba(255,122,69,0.22);
     }
-    .plan-step-right { flex: 1; min-width: 0; padding-left: 10px; padding-bottom: 12px; }
-    .plan-step-head { display: flex; align-items: center; gap: 7px; min-height: 22px; }
-    .plan-step-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-    .plan-step-name { font-size: 0.88rem; font-weight: 700; color: var(--text); }
+    .plan-step-right { flex: 1; min-width: 0; padding-left: 10px; padding-bottom: 14px; }
+    .plan-step-head { display: flex; align-items: center; gap: 8px; min-height: 24px; }
+    .plan-step-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+    .plan-step-name { font-size: 1.0rem; font-weight: 700; color: var(--text); }
     .plan-step--meet .plan-step-name,
     .plan-step--dismiss .plan-step-name { font-weight: 600; color: var(--accent-deep); }
-    .plan-step-duration { font-size: 0.74rem; color: var(--muted); margin-top: 3px; padding-left: 17px; }
+    .plan-step-duration { font-size: 0.86rem; color: var(--muted); margin-top: 3px; padding-left: 19px; }
     .plan-step--travel .plan-step-right { padding-bottom: 0; }
-    .plan-travel-label { font-size: 0.74rem; color: var(--muted); font-style: italic; padding: 3px 0; }
+    .plan-travel-label { font-size: 0.86rem; color: var(--muted); font-style: italic; padding: 3px 0; }
     .plan-over-warn {
       margin-top: 10px; padding: 8px 12px;
       font-size: 0.78rem; color: #c44;
@@ -323,6 +323,11 @@
     .spot-chip:hover { background: var(--accent-soft); border-color: var(--accent); transform: translateX(3px); }
     .spot-chip-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .spot-chip-empty { font-size: 0.82rem; color: var(--muted); padding: 10px 0; text-align: center; }
+
+    .sidebar-drag-hint {
+      font-size: 0.76rem; color: var(--muted);
+      margin: -6px 0 10px; line-height: 1.45;
+    }
 
     .spot-chip-wrap {
       display: flex; align-items: center; gap: 4px;
@@ -496,6 +501,7 @@
       <aside class="spots-sidebar">
         <div class="sidebar-card">
           <p class="sidebar-kicker">Spots — クリックで日程に追加</p>
+          <p class="sidebar-drag-hint">↕ ドラッグ&amp;ドロップで日程間の移動や SPOTS へ戻すこともできます</p>
           <div id="unscheduledList" class="unscheduled-list"></div>
           <button id="autoPlaceBtn" class="auto-place-btn" type="button">✨ 自動配置</button>
         </div>
@@ -721,9 +727,58 @@
       return spot.name || "";
     }
 
-    function buildTransitUrl(from, to) {
-      if (!from || !to) return null;
-      return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(from)}&destination=${encodeURIComponent(to)}&travelmode=transit`;
+    // ── HERE Transit API ──────────────────────────────────────────
+
+    const HERE_API_KEY = "y7NJ8mod9XAB3hxh5H7iJUMVkTSKz9OClBoYCjk5_cg";
+
+    function transitCacheKey(lat1, lng1, lat2, lng2) {
+      return `${lat1},${lng1}|${lat2},${lng2}`;
+    }
+
+    async function fetchTransitTime(fromLat, fromLng, toLat, toLng) {
+      try {
+        const url = `https://transit.router.hereapi.com/v8/routes?origin=${fromLat},${fromLng}&destination=${toLat},${toLng}&return=summary&apikey=${HERE_API_KEY}`;
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const data = await res.json();
+        const route = data.routes?.[0];
+        if (!route?.sections) return null;
+        const sections = route.sections;
+        const totalSec = sections.reduce((sum, s) => sum + (s.summary?.duration ?? 0), 0);
+        const transitCount = sections.filter(s => s.type === "transit").length;
+        return {
+          durationMin: Math.max(1, Math.round(totalSec / 60)),
+          transfers: Math.max(0, transitCount - 1)
+        };
+      } catch { return null; }
+    }
+
+    async function scheduleTransitFetches() {
+      if (!schedule?.days) return;
+      if (!schedule.transitCache) schedule.transitCache = {};
+      const pairs = [];
+      for (const day of schedule.days) {
+        const entries = day.entries || [];
+        for (let i = 0; i < entries.length - 1; i++) {
+          const a = getSpotById(entries[i].spotId);
+          const b = getSpotById(entries[i + 1].spotId);
+          if (a?.lat && a?.lng && b?.lat && b?.lng) {
+            const key = transitCacheKey(a.lat, a.lng, b.lat, b.lng);
+            if (!schedule.transitCache[key]) {
+              pairs.push({ key, fromLat: a.lat, fromLng: a.lng, toLat: b.lat, toLng: b.lng });
+            }
+          }
+        }
+      }
+      if (pairs.length === 0) return;
+      const results = await Promise.all(
+        pairs.map(p => fetchTransitTime(p.fromLat, p.fromLng, p.toLat, p.toLng).then(r => ({ key: p.key, result: r })))
+      );
+      let updated = false;
+      results.forEach(({ key, result }) => {
+        if (result) { schedule.transitCache[key] = result; updated = true; }
+      });
+      if (updated) { saveSchedule(schedule); renderDays(); }
     }
 
     function generatePlan(day, dayIdx, totalDays) {
@@ -756,16 +811,24 @@
       const endT = timeToMinutes(endTime);
 
       steps.push({ type: "meet", name: meetName, time: t });
-      let prevLocation = isFirst ? (schedule.tripMeetPlace || meetName) : meetName;
+      let prevSpot = null;
 
       for (let i = 0; i < day.entries.length; i++) {
         const entry  = day.entries[i];
         const spot   = getSpotById(entry.spotId);
         if (!spot) continue;
 
+        // キャッシュから移動時間を取得（なければ目安値）
+        let travelDuration = travel;
+        let travelInfo     = null;
+        if (prevSpot?.lat && prevSpot?.lng && spot.lat && spot.lng) {
+          const ckey = transitCacheKey(prevSpot.lat, prevSpot.lng, spot.lat, spot.lng);
+          travelInfo = schedule.transitCache?.[ckey] || null;
+          if (travelInfo) travelDuration = travelInfo.durationMin;
+        }
+
         const stay    = stays[entry.spotId] || 60;
-        const arriveT = t + travel;
-        const spotLoc = getSpotLocation(spot);
+        const arriveT = t + travelDuration;
 
         if (arriveT >= endT) {
           for (let j = i; j < day.entries.length; j++) {
@@ -775,10 +838,10 @@
           break;
         }
 
-        steps.push({ type: "travel", duration: travel, transitUrl: buildTransitUrl(prevLocation, spotLoc) });
+        steps.push({ type: "travel", duration: travelDuration, travelInfo });
         steps.push({ type: "spot", name: spot.name, time: arriveT, duration: stay, color: spot.spotCategory?.color || null });
         t = arriveT + stay;
-        prevLocation = spotLoc;
+        prevSpot = spot;
 
         if (t >= endT) {
           for (let j = i + 1; j < day.entries.length; j++) {
@@ -789,8 +852,7 @@
         }
       }
 
-      const dismissLoc = isLast ? (schedule.tripDismissPlace || dismissName) : dismissName;
-      steps.push({ type: "travel", duration: travel, transitUrl: buildTransitUrl(prevLocation, dismissLoc) });
+      steps.push({ type: "travel", duration: travel, travelInfo: null });
       steps.push({ type: "dismiss", name: dismissName, time: t + travel });
 
       return { steps, skipped };
@@ -807,12 +869,18 @@
         const isLast = (i === steps.length - 1);
 
         if (step.type === "travel") {
+          let travelLabel;
+          if (step.travelInfo) {
+            const xfers = step.travelInfo.transfers === 0 ? "乗り換えなし" : `${step.travelInfo.transfers}回乗り換え`;
+            travelLabel = `→ 🚃 約${step.duration}分（${xfers}）`;
+          } else {
+            travelLabel = `→ 移動 約${step.duration}分（目安）`;
+          }
           html += `
             <div class="plan-step plan-step--travel">
               <div class="plan-step-left"><div class="plan-step-line"></div></div>
               <div class="plan-step-right">
-                <p class="plan-travel-label">→ 移動 約${step.duration}分</p>
-                ${step.transitUrl ? `<a href="${escHtml(step.transitUrl)}" target="_blank" rel="noopener noreferrer" class="transit-link">🚃 電車・バスで経路を検索</a>` : ""}
+                <p class="plan-travel-label">${travelLabel}</p>
               </div>
             </div>`;
         } else {
@@ -1183,6 +1251,7 @@
     function renderAll() {
       renderDays();
       renderUnscheduled();
+      scheduleTransitFetches();
     }
 
     // ── 日付ピッカー ──────────────────────────────────────────────
