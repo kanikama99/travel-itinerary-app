@@ -124,6 +124,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
           </button>
         </div>
+        <p class="spot-menu-guidance">スポット名をクリックすると、カテゴリ・集合/解散・滞在時間・営業時間・予算などを設定できます。</p>
         <div id="spotList" class="spot-list empty-state">まだスポットが登録されていません。</div>
       </section>
 
@@ -155,7 +156,10 @@
     <p class="spot-menu-kicker">スポットメニュー</p>
     <div class="spot-menu-head">
       <h3 id="spotMenuTitle">—</h3>
-      <button id="spotMenuClose" class="ghost-button" type="button">閉じる</button>
+      <div class="spot-menu-head-actions">
+        <button id="spotDescriptionSave" class="primary-button" type="button">保存</button>
+        <button id="spotMenuClose" class="ghost-button" type="button">閉じる</button>
+      </div>
     </div>
 
     <!-- 役割設定（集合・解散場所） -->
@@ -207,10 +211,14 @@
 
     <!-- 営業時間（曜日ごと） -->
     <div class="spot-menu-label spot-hours-section">
-      <p class="spot-menu-sublabel spot-hours-title">営業時間（任意・曜日ごと）</p>
-      <p class="spot-menu-note">使う曜日だけチェックして、バーの両端をドラッグしてください。</p>
+      <p class="spot-menu-sublabel spot-hours-title">営業時間（任意）</p>
+      <p class="spot-menu-note">通常は全曜日共通で設定できます。曜日ごとに違う場合だけ曜日別に切り替えてください。</p>
+      <div class="spot-hours-bulk-actions">
+        <label class="spot-hours-bulk-label"><input id="spotHoursToggleAllChk" type="checkbox" /> 曜日を一括切り替え</label>
+        <label class="spot-hours-weekly-toggle"><input id="spotHoursWeeklyMode" type="checkbox" /> 曜日別に設定</label>
+      </div>
       <table class="spot-hours-table">
-        <tr><td class="spot-hours-day"><label><input type="checkbox" class="spot-hours-enabled" data-day="sun" /> 日</label></td><td><div class="spot-hours-range" data-day="sun"><div class="spot-hours-slider"><div class="spot-hours-track"></div><div class="spot-hours-fill"></div><input type="range" min="0" max="1440" step="30" value="600" data-part="open" class="spot-hours-range-input" aria-label="日曜の開始時刻" /><input type="range" min="0" max="1440" step="30" value="1080" data-part="close" class="spot-hours-range-input" aria-label="日曜の終了時刻" /></div><span class="spot-hours-value">10:00〜18:00</span></div></td></tr>
+        <tr><td class="spot-hours-day"><label><input type="checkbox" class="spot-hours-enabled" data-day="sun" /> <span class="spot-hours-common-label">全日共通</span><span class="spot-hours-weekly-label">日</span></label></td><td><div class="spot-hours-range" data-day="sun"><div class="spot-hours-slider"><div class="spot-hours-track"></div><div class="spot-hours-fill"></div><input type="range" min="0" max="1440" step="30" value="600" data-part="open" class="spot-hours-range-input" aria-label="日曜の開始時刻" /><input type="range" min="0" max="1440" step="30" value="1080" data-part="close" class="spot-hours-range-input" aria-label="日曜の終了時刻" /></div><span class="spot-hours-value">10:00〜18:00</span></div></td></tr>
         <tr><td class="spot-hours-day"><label><input type="checkbox" class="spot-hours-enabled" data-day="mon" /> 月</label></td><td><div class="spot-hours-range" data-day="mon"><div class="spot-hours-slider"><div class="spot-hours-track"></div><div class="spot-hours-fill"></div><input type="range" min="0" max="1440" step="30" value="600" data-part="open" class="spot-hours-range-input" aria-label="月曜の開始時刻" /><input type="range" min="0" max="1440" step="30" value="1080" data-part="close" class="spot-hours-range-input" aria-label="月曜の終了時刻" /></div><span class="spot-hours-value">10:00〜18:00</span></div></td></tr>
         <tr><td class="spot-hours-day"><label><input type="checkbox" class="spot-hours-enabled" data-day="tue" /> 火</label></td><td><div class="spot-hours-range" data-day="tue"><div class="spot-hours-slider"><div class="spot-hours-track"></div><div class="spot-hours-fill"></div><input type="range" min="0" max="1440" step="30" value="600" data-part="open" class="spot-hours-range-input" aria-label="火曜の開始時刻" /><input type="range" min="0" max="1440" step="30" value="1080" data-part="close" class="spot-hours-range-input" aria-label="火曜の終了時刻" /></div><span class="spot-hours-value">10:00〜18:00</span></div></td></tr>
         <tr><td class="spot-hours-day"><label><input type="checkbox" class="spot-hours-enabled" data-day="wed" /> 水</label></td><td><div class="spot-hours-range" data-day="wed"><div class="spot-hours-slider"><div class="spot-hours-track"></div><div class="spot-hours-fill"></div><input type="range" min="0" max="1440" step="30" value="600" data-part="open" class="spot-hours-range-input" aria-label="水曜の開始時刻" /><input type="range" min="0" max="1440" step="30" value="1080" data-part="close" class="spot-hours-range-input" aria-label="水曜の終了時刻" /></div><span class="spot-hours-value">10:00〜18:00</span></div></td></tr>
@@ -262,7 +270,6 @@
       <textarea id="spotDescriptionInput" rows="4" placeholder="見どころ、集合メモ、持ち物など"></textarea>
     </label>
     <div class="spot-menu-actions">
-      <button id="spotDescriptionSave" class="primary-button" type="button">保存</button>
       <button id="spotDeleteButton" class="ghost-button danger icon-btn" type="button" title="このスポットを削除">
         <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
       </button>
@@ -369,5 +376,8 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="./app.js"></script>
+  <script src="./theme.js"></script>
 </body>
 </html>
+
+

@@ -165,6 +165,17 @@ button {
   gap: 14px;
 }
 
+.spot-menu-guidance {
+  margin: 6px 0 12px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: rgb(var(--accent-rgb, 255,122,69) / 0.10);
+  border: 1px solid rgb(var(--accent-rgb, 255,122,69) / 0.20);
+  color: var(--accent-deep);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
 .unified-input-field {
   min-width: 0;
 }
@@ -240,15 +251,15 @@ textarea:focus {
 }
 
 #categoryCustomizeBtn {
-  background: rgba(255, 255, 255, 0.86);
-  color: var(--accent-deep);
-  border-color: rgba(35, 48, 56, 0.18);
-  box-shadow: 0 4px 12px rgb(var(--shadow-base-rgb) / 0.12);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 6px 16px rgb(var(--shadow-base-rgb) / 0.22);
 }
 
 #categoryCustomizeBtn:hover {
-  background: #fff;
-  border-color: var(--accent);
+  background: linear-gradient(135deg, var(--accent-deep) 0%, var(--accent) 100%);
+  border-color: transparent;
 }
 
 .form-actions {
@@ -779,6 +790,8 @@ textarea:focus {
   top: 50%;
   left: 50%;
   width: min(520px, calc(100% - 24px));
+  max-height: min(86vh, 820px);
+  overflow-y: auto;
   transform: translate(-50%, -50%);
   z-index: 31;
   padding: 20px;
@@ -786,6 +799,15 @@ textarea:focus {
   background: linear-gradient(180deg, #fffdf7 0%, #fff3dd 100%);
   border: 1px solid rgba(166, 97, 54, 0.18);
   box-shadow: 0 24px 50px rgba(35, 48, 56, 0.18);
+}
+
+.spot-menu::-webkit-scrollbar {
+  width: 8px;
+}
+
+.spot-menu::-webkit-scrollbar-thumb {
+  background: rgb(var(--accent-rgb, 255,122,69) / 0.28);
+  border-radius: 999px;
 }
 
 .spot-menu-head {
@@ -996,14 +1018,19 @@ textarea:focus {
 
 .spot-role-btn {
   flex: 1;
-  padding: 8px 10px;
+  padding: 4px 8px;
   border-radius: var(--radius-md);
-  border: 2px solid var(--line);
+  border: 1.5px solid var(--line);
   background: transparent;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--muted);
   transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+/* 非曜日別モードでは全日共通チェックボックスを非表示 */
+.spot-hours-table:not(.is-weekly) .spot-hours-enabled {
+  display: none;
 }
 
 .spot-role-btn[data-role="meet"]:hover,
@@ -1064,9 +1091,66 @@ textarea:focus {
 
 .spot-hours-range {
   display: grid;
-  grid-template-columns: minmax(150px, 1fr) auto;
+  grid-template-columns: minmax(150px, 1fr) auto auto;
   align-items: center;
   gap: 12px;
+}
+
+.spot-hours-bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 8px 0 4px;
+}
+
+.spot-hours-weekly-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.spot-hours-table:not(.is-weekly) tr:not(:first-child) {
+  display: none;
+}
+
+.spot-hours-weekly-label {
+  display: none;
+}
+
+.spot-hours-table.is-weekly .spot-hours-common-label {
+  display: none;
+}
+
+.spot-hours-table.is-weekly .spot-hours-weekly-label {
+  display: inline;
+}
+
+.spot-menu-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.spot-hours-split-btn {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.72);
+  color: var(--accent-deep);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 800;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.spot-hours-split-btn.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
 }
 
 .spot-hours-range:not(.spot-hours-range--enabled) {
@@ -1309,7 +1393,8 @@ textarea:focus {
   width: 20px;
   height: 2px;
   border-radius: 2px;
-  background: var(--text);
+  background: #233038;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.22);
 }
 
 /* Side drawer */

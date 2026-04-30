@@ -144,6 +144,24 @@ calStyleGroup.querySelectorAll("input[name=calStyle]").forEach(radio => {
   });
 });
 
+// ── Google Maps API key ───────────────────────────────────────────────────────
+
+const googleMapsKeyInput = document.getElementById("googleMapsKeyInput");
+const googleMapsKeySave  = document.getElementById("googleMapsKeySave");
+const googleMapsKeySavedMsg = document.getElementById("googleMapsKeySavedMsg");
+
+if (googleMapsKeyInput) {
+  googleMapsKeyInput.value = settings.googleMapsApiKey || "";
+  googleMapsKeySave?.addEventListener("click", () => {
+    settings.googleMapsApiKey = googleMapsKeyInput.value.trim();
+    saveSettings(settings);
+    if (googleMapsKeySavedMsg) {
+      googleMapsKeySavedMsg.style.display = "block";
+      setTimeout(() => { googleMapsKeySavedMsg.style.display = "none"; }, 2000);
+    }
+  });
+}
+
 // ── BG theme swatches ─────────────────────────────────────────────────────────
 
 BG_THEMES.forEach((theme) => {

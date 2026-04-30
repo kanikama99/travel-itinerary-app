@@ -1,157 +1,29 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>印刷する — Trip Pop Map</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+  <title>印刷する - Trip Pop Map</title>
   <link rel="stylesheet" href="./styles.css" />
   <style>
-    .stub-shell {
-      width: min(760px, calc(100% - 32px));
-      margin: 0 auto;
-      padding: 40px 0 80px;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
-    .stub-eyebrow {
-      font-size: 0.82rem;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: var(--accent-deep);
-      font-weight: 700;
-      margin: 0 0 4px;
-    }
-    .stub-title { font-size: clamp(1.5rem, 4vw, 2rem); font-weight: 700; line-height: 1.2; margin: 0 0 8px; }
-    .stub-coming-soon {
-      padding: 48px 32px;
-      text-align: center;
-      background: var(--panel);
-      border-radius: var(--radius-xl);
-      border: 1px solid var(--line);
-      color: var(--muted);
-      font-size: 1.1rem;
-    }
-    .stub-coming-soon .stub-icon { font-size: 3rem; display: block; margin-bottom: 12px; }
+    .print-shell{width:min(1100px,calc(100% - 32px));margin:0 auto;padding:36px 0 80px;display:grid;gap:18px}.print-toolbar{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}.btn{border:1.5px solid var(--line);border-radius:999px;background:rgba(255,255,255,.72);color:var(--accent-deep);font:inherit;font-weight:900;padding:10px 16px;cursor:pointer}.primary{border:none;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent-light))}.book{background:#fff;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.12);overflow:hidden}.cover{min-height:360px;padding:48px;background:linear-gradient(135deg,var(--bg),var(--panel));display:grid;align-content:center;gap:14px}.cover h1{font-size:44px;margin:0;color:var(--accent-deep)}.page{padding:34px 42px;border-top:1px solid #eee}.page h2{color:var(--accent-deep);margin:0 0 14px}.row{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #eee}.time{width:64px;color:var(--accent-deep);font-weight:900}.muted{color:var(--muted)}@media print{body{background:#fff}.print-toolbar,.hamburger-btn,.drawer-backdrop,.side-drawer{display:none!important}.print-shell{width:100%;padding:0}.book{box-shadow:none;border-radius:0}.page{break-inside:avoid}.cover{break-after:page}}
   </style>
 </head>
 <body>
-  <div class="stub-shell">
-    <header>
-      <p class="stub-eyebrow">Print</p>
-      <h1 class="stub-title">🖨 印刷する</h1>
-    </header>
-
-    <div class="stub-coming-soon">
-      <span class="stub-icon">🖨</span>
-      <p>印刷機能は準備中です。<br>もうしばらくお待ちください。</p>
-    </div>
-  </div>
-
-  <button id="hamburgerBtn" class="hamburger-btn" type="button" aria-label="メニューを開く">
-    <span class="hamburger-line"></span>
-    <span class="hamburger-line"></span>
-    <span class="hamburger-line"></span>
-  </button>
-
+  <main class="print-shell">
+    <header><p class="panel-kicker">Print</p><h1>印刷する</h1></header>
+    <section class="print-toolbar"><button class="btn primary" onclick="window.print()">PDF/印刷を開く</button><button class="btn" onclick="render()">プレビュー更新</button><span class="muted">ブラウザの印刷画面で「PDFに保存」を選ぶ想定の試作です。</span></section>
+    <section id="book" class="book"></section>
+  </main>
+  <button id="hamburgerBtn" class="hamburger-btn" type="button" aria-label="メニューを開く"><span class="hamburger-line"></span><span class="hamburger-line"></span><span class="hamburger-line"></span></button>
   <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
-  <aside id="sideDrawer" class="side-drawer hidden" aria-hidden="true">
-    <div class="drawer-head">
-      <p class="drawer-kicker">Menu</p>
-    </div>
-    <nav class="drawer-nav">
-      <a href="./bookmarks.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">📒</span>
-        <span>しおりを選ぶ</span>
-      </a>
-      <a href="./spots.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">📍</span>
-        <span>行きたい場所</span>
-      </a>
-      <a href="./schedule.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">📅</span>
-        <span>スケジュール</span>
-      </a>
-      <a href="./hotel.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">🏨</span>
-        <span>ホテルを見つける</span>
-      </a>
-      <a href="./flight.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">✈</span>
-        <span>飛行機を見つける</span>
-      </a>
-      <a href="./tour.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">🗺</span>
-        <span>ツアーを見つける</span>
-      </a>
-      <a href="./gourmet.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">🍜</span>
-        <span>グルメを見つける</span>
-      </a>
-      <a href="./checklist.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">📋</span>
-        <span>持ち物リスト</span>
-      </a>
-      <a href="./print.html" class="drawer-nav-item drawer-nav-item--active">
-        <span class="drawer-nav-icon">🖨</span>
-        <span>印刷する</span>
-      </a>
-      <a href="./settings.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">⚙</span>
-        <span>設定</span>
-      </a>
-    </nav>
-  </aside>
-
+  <aside id="sideDrawer" class="side-drawer hidden" aria-hidden="true"><div class="drawer-head"><p class="drawer-kicker">Menu</p></div><nav class="drawer-nav"><a href="./bookmarks.html" class="drawer-nav-item"><span class="drawer-nav-icon">📒</span><span>しおりを選ぶ</span></a><a href="./spots.html" class="drawer-nav-item"><span class="drawer-nav-icon">📍</span><span>行きたい場所</span></a><a href="./schedule.html" class="drawer-nav-item"><span class="drawer-nav-icon">📅</span><span>スケジュール</span></a><a href="./flight.html" class="drawer-nav-item"><span class="drawer-nav-icon">✈</span><span>飛行機を見つける</span></a><a href="./tour.html" class="drawer-nav-item"><span class="drawer-nav-icon">🗺</span><span>ツアーを見つける</span></a><a href="./gourmet.html" class="drawer-nav-item"><span class="drawer-nav-icon">🍜</span><span>グルメを見つける</span></a><a href="./checklist.html" class="drawer-nav-item"><span class="drawer-nav-icon">📋</span><span>持ち物リスト</span></a><a href="./print.html" class="drawer-nav-item drawer-nav-item--active"><span class="drawer-nav-icon">🖨</span><span>印刷する</span></a><a href="./settings.html" class="drawer-nav-item"><span class="drawer-nav-icon">⚙</span><span>設定</span></a></nav></aside>
   <script>
-    const hamburgerBtn = document.getElementById("hamburgerBtn");
-    const sideDrawer = document.getElementById("sideDrawer");
-    const drawerBackdrop = document.getElementById("drawerBackdrop");
-    hamburgerBtn.addEventListener("click", () => {
-      const open = !sideDrawer.classList.contains("hidden");
-      sideDrawer.classList.toggle("hidden", open);
-      drawerBackdrop.classList.toggle("hidden", open);
-      sideDrawer.setAttribute("aria-hidden", String(open));
-    });
-    drawerBackdrop.addEventListener("click", () => {
-      sideDrawer.classList.add("hidden");
-      drawerBackdrop.classList.add("hidden");
-      sideDrawer.setAttribute("aria-hidden", "true");
-    });
-
-    (function () {
-      const saved = localStorage.getItem("spot-map-settings.v1");
-      if (!saved) return;
-      try {
-        const s = JSON.parse(saved);
-        const themes = [
-          ["#fff3dd","#fffaf0","rgba(166,97,54,0.18)","#233038","#5f6d73","#ff7a45","#ce5428","255,122,69","149,90,48"],
-          ["#e8f4fd","#f0f8ff","rgba(54,120,166,0.18)","#1a2a3a","#4a6070","#4a9ede","#2d7ab5","74,158,222","45,100,165"],
-          ["#f0fdf4","#f7fff9","rgba(54,166,97,0.18)","#1a3323","#3a6050","#34c97a","#1fa85e","52,201,122","30,140,80"],
-          ["#fdf0f8","#fff7fd","rgba(166,54,140,0.18)","#2a1a2a","#5f3a5a","#d44ab0","#a83285","212,74,176","140,50,120"],
-          ["#fff8f0","#fffaf5","rgba(200,120,40,0.18)","#2a1800","#6a4a20","#e08020","#b05a10","224,128,32","160,80,20"],
-          ["#f5f0ff","#faf7ff","rgba(120,80,200,0.18)","#180a2a","#4a3a6a","#8060d0","#6040a8","128,96,208","80,60,150"],
-          ["#fff0f0","#fff7f7","rgba(166,54,54,0.18)","#2a0a0a","#6a3a3a","#e05050","#b03030","224,80,80","160,40,40"],
-          ["#f0fff8","#f5fffb","rgba(40,160,120,0.18)","#001a12","#1a4a3a","#28c890","#10a870","40,200,144","20,140,90"]
-        ];
-        const idx = s.bgTheme ?? 0;
-        const c = themes[Math.max(0, Math.min(themes.length - 1, idx))];
-        const r = document.documentElement;
-        r.style.setProperty("--bg", c[0]);
-        r.style.setProperty("--panel", c[1]);
-        r.style.setProperty("--panel-strong", c[1]);
-        r.style.setProperty("--line", c[2]);
-        r.style.setProperty("--text", c[3]);
-        r.style.setProperty("--muted", c[4]);
-        r.style.setProperty("--accent", c[5]);
-        r.style.setProperty("--accent-deep", c[6]);
-        r.style.setProperty("--accent-rgb", c[7]);
-        r.style.setProperty("--shadow-base-rgb", c[8]);
-      } catch (e) {}
-    })();
+    const LISTS_KEY="spot-map-lists.v1",SCHEDULE_KEY="spot-map-schedule.v1",SETTINGS_KEY="spot-map-settings.v1";function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}function theme(){try{const s=JSON.parse(localStorage.getItem(SETTINGS_KEY)||"{}");const t=[["#fff3dd","#fffaf0","rgba(166,97,54,0.18)","#233038","#5f6d73","#ff7a45","#ce5428","255,122,69","149,90,48"],["#e8f4fd","#f0f8ff","rgba(54,120,166,0.18)","#1a2a3a","#4a6070","#4a9ede","#2d7ab5","74,158,222","45,100,165"],["#f0fdf4","#f7fff9","rgba(54,166,97,0.18)","#1a3323","#3a6050","#34c97a","#1fa85e","52,201,122","30,140,80"],["#fdf0f8","#fff7fd","rgba(166,54,140,0.18)","#2a1a2a","#5f3a5a","#d44ab0","#a83285","212,74,176","140,50,120"],["#fff8f0","#fffaf5","rgba(200,120,40,0.18)","#2a1800","#6a4a20","#e08020","#b05a10","224,128,32","160,80,20"],["#f5f0ff","#faf7ff","rgba(120,80,200,0.18)","#180a2a","#4a3a6a","#8060d0","#6040a8","128,96,208","80,60,150"],["#fff0f0","#fff7f7","rgba(166,54,54,0.18)","#2a0a0a","#6a3a3a","#e05050","#b03030","224,80,80","160,40,40"],["#f0fff8","#f5fffb","rgba(40,160,120,0.18)","#001a12","#1a4a3a","#28c890","#10a870","40,200,144","20,140,90"]][s.bgTheme??0];["--bg","--panel","--line","--text","--muted","--accent","--accent-deep","--accent-rgb","--shadow-base-rgb"].forEach((k,i)=>document.documentElement.style.setProperty(k,t[i]));document.documentElement.style.setProperty("--panel-strong",t[1]);}catch{}}
+    function data(){const lists=JSON.parse(localStorage.getItem(LISTS_KEY)||"{}");const list=lists.lists?.find(l=>l.id===lists.activeListId)||lists.lists?.[0]||{name:"旅のしおり",spots:[]};const sched=JSON.parse(localStorage.getItem(SCHEDULE_KEY)||"{}")[list.id]||{};return{list,sched}}function render(){const{list,sched}=data();let html=`<section class="cover"><p class="panel-kicker">Trip Pop Map</p><h1>${esc(list.name||"旅のしおり")}</h1><p class="muted">${esc(sched.tripMeetDate||"")} - ${esc(sched.tripDismissDate||"")}</p></section>`;html+=`<section class="page"><h2>行きたい場所</h2>${(list.spots||[]).map((s,i)=>`<div class="row"><strong>${i+1}</strong><span>${esc(s.name)}</span><span class="muted">${esc(s.description||"")}</span></div>`).join("")||"<p class='muted'>未登録</p>"}</section>`;(sched.days||[]).forEach((d,i)=>{html+=`<section class="page"><h2>${i+1}日目 ${esc(d.date||"")}</h2>${(d.entries||[]).map(en=>{const sp=(list.spots||[]).find(s=>s.id===en.spotId);return`<div class="row"><span class="time">${esc(en.time||"")}</span><span>${esc(sp?.name||"スポット")}</span><span class="muted">${esc(en.note||"")}</span></div>`}).join("")||"<p class='muted'>予定なし</p>"}</section>`});document.getElementById("book").innerHTML=html}const hb=document.getElementById("hamburgerBtn"),sd=document.getElementById("sideDrawer"),db=document.getElementById("drawerBackdrop");hb.onclick=()=>{const o=!sd.classList.contains("hidden");sd.classList.toggle("hidden",o);db.classList.toggle("hidden",o)};db.onclick=()=>{sd.classList.add("hidden");db.classList.add("hidden")};theme();render();
   </script>
+  <script src="./theme.js"></script>
 </body>
 </html>
+
+

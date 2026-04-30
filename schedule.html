@@ -198,6 +198,19 @@
       font-weight: 600; margin-top: 5px; display: block;
       letter-spacing: 0.03em;
     }
+    .day-weather {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 7px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.68);
+      border: 1px solid rgb(var(--accent-rgb,255,122,69) / 0.20);
+      color: var(--accent-deep);
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
     .day-delete-btn {
       background: none; border: none; padding: 6px;
       border-radius: 8px; color: var(--muted);
@@ -594,6 +607,28 @@
       white-space: nowrap; height: 24px; line-height: 24px;
       text-align: center; width: 100%;
     }
+    .spot-edit-menu-btn {
+      grid-column: 1;
+      grid-row: 3;
+      justify-self: start;
+      border: 1px solid rgb(var(--accent-rgb, 255,122,69) / 0.24);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.68);
+      color: var(--accent-deep);
+      font: inherit;
+      font-size: 0.76rem;
+      font-weight: 800;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+    .spot-edit-menu-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
+    .tl-end-time {
+      margin-top: -3px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--muted);
+      white-space: nowrap;
+    }
     .tl-line {
       width: 2px; flex: 1; min-height: 8px;
       background: rgb(var(--accent-rgb, 255,122,69) / 0.2);
@@ -676,6 +711,10 @@
       background: var(--accent-soft);
       padding: 1px 6px; border-radius: 4px;
     }
+    .tl-route-segs--estimated {
+      color: var(--muted);
+      background: rgba(35, 48, 56, 0.06);
+    }
     .tl-route-link {
       font-size: 0.7rem; color: var(--accent-deep); text-decoration: none;
       display: inline-flex; align-items: center; gap: 2px;
@@ -709,10 +748,11 @@
     }
 
     .tl-over-warn {
-      margin: 6px 0 4px; padding: 7px 12px;
-      font-size: 0.78rem; color: #c44;
-      background: rgba(204,68,68,0.08);
-      border: 1px solid rgba(204,68,68,0.18); border-radius: 8px;
+      margin: 10px 0 6px; padding: 10px 13px;
+      font-size: 0.9rem; color: #b3212d;
+      font-weight: 900;
+      background: rgba(204,68,68,0.12);
+      border: 2px solid rgba(204,68,68,0.28); border-radius: 10px;
     }
 
     @media (max-width: 760px) {
@@ -787,8 +827,8 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
         行きたい場所に戻る
       </a>
-      <a href="./hotel.html" class="page-nav-btn page-nav-btn--next">
-        ホテルを見つけるへ
+      <a href="./gourmet.html" class="page-nav-btn page-nav-btn--next">
+        グルメを見つけるへ
         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
       </a>
     </div>
@@ -947,7 +987,7 @@
     };
     const CAT_STAY = {
       meet: 0, dismiss: 0, airport: 45, station: 20,
-      restaurant: 60, tourist: 90, hotel: 30, shopping: 60, other: 60
+      restaurant: 60, tourist: 60, hotel: 30, shopping: 60, other: 60
     };
 
     function getSpotCatEmoji(key) { return CAT_EMOJI[key] || "📍"; }
@@ -1084,18 +1124,22 @@
       renderUnscheduled();
     }
 
+    function dateToYMD(d) {
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
     function ensureScheduleDefaults(sched) {
       if (sched.tripMeetTime     === undefined) sched.tripMeetTime     = "09:00";
       if (sched.tripDismissTime  === undefined) sched.tripDismissTime  = "18:00";
       if (sched.tripMeetDate     === undefined) {
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
-        sched.tripMeetDate = tomorrow.toISOString().split("T")[0];
+        sched.tripMeetDate = dateToYMD(tomorrow);
       }
       if (!sched.tripDismissDate) {
         const dismiss = new Date(`${sched.tripMeetDate}T00:00:00`);
         dismiss.setDate(dismiss.getDate() + 1);
-        sched.tripDismissDate = dismiss.toISOString().split("T")[0];
+        sched.tripDismissDate = dateToYMD(dismiss);
       }
       if (sched.tripMeetPlace    === undefined) sched.tripMeetPlace    = "";
       if (sched.tripDismissPlace === undefined) sched.tripDismissPlace = "";
@@ -1127,7 +1171,7 @@
       if (dismissDT <= meetDT) {
         const advanced = new Date(meetDT);
         advanced.setDate(advanced.getDate() + 1);
-        schedule.tripDismissDate = advanced.toISOString().split("T")[0];
+        schedule.tripDismissDate = dateToYMD(advanced);
         const el = document.getElementById("tripDismissDate");
         if (el) { el.value = schedule.tripDismissDate; window.CalendarPicker?.updateDisplay(el); }
         saveSchedule(schedule);
@@ -1145,6 +1189,66 @@
       return spot.name || "";
     }
 
+    function isDateTooFarForWeather(dateStr) {
+      if (!dateStr) return true;
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const target = new Date(dateStr + "T00:00:00");
+      return isNaN(target) || (target - today) / 86400000 > 16;
+    }
+
+    function getWeatherEmoji(precip) {
+      if (precip >= 70) return "🌧";
+      if (precip >= 50) return "🌦";
+      if (precip >= 30) return "⛅";
+      if (precip >= 10) return "🌤";
+      return "☀️";
+    }
+
+    function getWeatherLabel(date) {
+      if (!date) return "";
+      if (isDateTooFarForWeather(date)) return "天気情報がまだ公開されていません";
+      const item = schedule?.weatherCache?.[date];
+      if (item?.error) return "天気: 取得失敗";
+      if (!item) return "天気: 取得中…";
+      const emoji = getWeatherEmoji(item.precip);
+      return `${emoji} ${Math.round(item.tempMax)}°/${Math.round(item.tempMin)}° 降水${Math.round(item.precip)}%`;
+    }
+
+    function getWeatherPoint() {
+      const spots = activeList?.spots || [];
+      return spots.find(s => Number.isFinite(Number(s.lat)) && Number.isFinite(Number(s.lng))) || null;
+    }
+
+    async function fetchWeatherForecast() {
+      if (!schedule?.days?.length) return;
+      const point = getWeatherPoint();
+      if (!point) return;
+      if (!schedule.weatherCache) schedule.weatherCache = {};
+      const missing = schedule.days.map(d => d.date).filter(Boolean)
+        .filter(date => !schedule.weatherCache[date] && !isDateTooFarForWeather(date));
+      if (missing.length === 0) return;
+      try {
+        const start = missing[0];
+        const end = missing[missing.length - 1];
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${point.lat}&longitude=${point.lng}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo&start_date=${start}&end_date=${end}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`weather HTTP ${res.status}`);
+        const json = await res.json();
+        (json.daily?.time || []).forEach((date, i) => {
+          schedule.weatherCache[date] = {
+            tempMax: json.daily.temperature_2m_max?.[i] ?? 0,
+            tempMin: json.daily.temperature_2m_min?.[i] ?? 0,
+            precip: json.daily.precipitation_probability_max?.[i] ?? 0,
+          };
+        });
+        saveSchedule(schedule);
+        renderDays();
+      } catch (e) {
+        missing.forEach(date => { schedule.weatherCache[date] = { error: e?.message || "weather failed" }; });
+        saveSchedule(schedule);
+      }
+    }
+
     function parseTimeRange(value) {
       const text = String(value || "").trim();
       const m = text.match(/^(\d{1,2}):(\d{2})\s*[-〜~]\s*(\d{1,2}):(\d{2})$/);
@@ -1153,6 +1257,13 @@
       const close = Math.min(24 * 60, Math.max(0, Number(m[3]) * 60 + Number(m[4])));
       if (close <= open) return null;
       return { open, close };
+    }
+
+    function parseTimeRanges(value) {
+      return String(value || "")
+        .split(",")
+        .map(part => parseTimeRange(part))
+        .filter(Boolean);
     }
 
     function getDayKey(dateStr) {
@@ -1165,7 +1276,7 @@
       const spot = getSpotById(spotId);
       const dayKey = getDayKey(day?.date);
       const menuHours = dayKey ? spot?.businessHours?.[dayKey] : "";
-      return parseTimeRange(menuHours || schedule?.spotHours?.[spotId]);
+      return parseTimeRanges(menuHours || schedule?.spotHours?.[spotId]);
     }
 
     function getDayWindow(dayIdx, totalDays, day) {
@@ -1179,24 +1290,27 @@
 
     function canPlaceWithinHours(day, dayIdx, totalDays, spot) {
       const hours = getSpotHoursRange(spot.id, day);
-      if (!hours) return true;
+      if (!hours?.length) return true;
       const stay = (schedule.defaultStayTimes?.[spot.id]) ?? getSpotStayDefault(spot);
       const dayWindow = getDayWindow(dayIdx, totalDays, day);
-      const start = Math.max(dayWindow.start, hours.open);
-      const end = Math.min(dayWindow.end, hours.close);
-      return start + stay <= end;
+      return hours.some(range => {
+        const start = Math.max(dayWindow.start, range.open);
+        const end = Math.min(dayWindow.end, range.close);
+        return start + stay <= end;
+      });
     }
 
     function isVisitOutsideHours(spotId, arriveT, stay, day = null) {
       if (!day) day = schedule?.days?.find(d => (d.entries || []).some(en => en.spotId === spotId));
       const hours = getSpotHoursRange(spotId, day);
-      if (!hours) return false;
-      return arriveT < hours.open || arriveT + stay > hours.close;
+      if (!hours?.length) return false;
+      return !hours.some(range => arriveT >= range.open && arriveT + stay <= range.close);
     }
 
-    // ── HERE Transit API ──────────────────────────────────────────
-
-    const HERE_API_KEY = "y7NJ8mod9XAB3hxh5H7iJUMVkTSKz9OClBoYCjk5_cg";
+    // ── Google Maps Transit API ──────────────────────────────────────────
+    // 設定画面で Google Maps API キーを入力すると実際の経路・所要時間を取得できます。
+    // Google Cloud Console で「Maps JavaScript API」と「Directions API」を有効にしてください。
+    // 月$200相当まで無料（個人利用なら実質無制限）。未設定時は距離推定にフォールバックします。
 
     function getTravelMode() {
       return schedule?.travelMode === "driving" ? "driving" : "transit";
@@ -1206,59 +1320,131 @@
       return `${mode}|${lat1},${lng1}|${lat2},${lng2}`;
     }
 
+    function estimateRouteFallback(fromLat, fromLng, toLat, toLng, mode = getTravelMode(), reason = "") {
+      const rad = Math.PI / 180;
+      const lat1 = Number(fromLat) * rad;
+      const lat2 = Number(toLat) * rad;
+      const dLat = (Number(toLat) - Number(fromLat)) * rad;
+      const dLng = (Number(toLng) - Number(fromLng)) * rad;
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+      const km = 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const durationMin = mode === "driving"
+        ? Math.max(8, Math.round((km / 34) * 60 + 8))
+        : Math.max(6, Math.round((km / 28) * 60 + 12));
+      return {
+        durationMin,
+        transfers: null,
+        segments: mode === "driving"
+          ? ["推定所要時間です。詳細な道路ルートは地図で確認してください"]
+          : ["推定所要時間です。乗り換え路線は地図で確認してください"],
+        mode,
+        estimated: true,
+        error: reason,
+      };
+    }
+
+    // Google Maps JS API の遅延ロード
+    const _gmapsKey = (() => {
+      try { return JSON.parse(localStorage.getItem("spot-map-settings.v1") || "{}").googleMapsApiKey || ""; }
+      catch { return ""; }
+    })();
+    let _gmapsState = "idle";
+    const _gmapsWaiters = [];
+
+    function ensureGoogleMapsReady() {
+      return new Promise((resolve, reject) => {
+        if (!_gmapsKey) { reject(new Error("no-key")); return; }
+        if (_gmapsState === "ready") { resolve(); return; }
+        if (_gmapsState === "error") { reject(new Error("gmaps-error")); return; }
+        _gmapsWaiters.push({ resolve, reject });
+        if (_gmapsState === "idle") {
+          _gmapsState = "loading";
+          window._gmapsInitCb = () => {
+            _gmapsState = "ready";
+            _gmapsWaiters.splice(0).forEach(w => w.resolve());
+          };
+          const s = document.createElement("script");
+          s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(_gmapsKey)}&callback=_gmapsInitCb`;
+          s.onerror = () => {
+            _gmapsState = "error";
+            _gmapsWaiters.splice(0).forEach(w => w.reject(new Error("gmaps-load-failed")));
+          };
+          document.head.appendChild(s);
+        }
+      });
+    }
+
+    const TRANSIT_VEHICLE_ICON = {
+      SUBWAY: "🚇", BUS: "🚌", TRAM: "🚊", RAIL: "🚃", FERRY: "⛴",
+      COMMUTER_TRAIN: "🚃", HEAVY_RAIL: "🚃", HIGH_SPEED_TRAIN: "🚄",
+    };
+
     async function fetchTransitTime(fromLat, fromLng, toLat, toLng) {
       try {
-        const url = `https://transit.router.hereapi.com/v8/routes?origin=${fromLat},${fromLng}&destination=${toLat},${toLng}&return=summary&apikey=${HERE_API_KEY}`;
-        const res = await fetch(url);
-        if (!res.ok) return { failed: true, mode: "transit", error: `transit HTTP ${res.status}` };
-        const data = await res.json();
-        const route = data.routes?.[0];
-        if (!route?.sections) return { failed: true, mode: "transit", error: "公共交通ルートなし" };
-        const sections = route.sections;
-        const totalSec = sections.reduce((sum, s) => sum + (s.summary?.duration ?? 0), 0);
-        const transitSections = sections.filter(s => s.type === "transit");
-
-        // 移動手段ごとのセグメントラベルを生成
-        const TRANSIT_ICON = { subway: "🚇", bus: "🚌", lightRail: "🚊", rail: "🚃", ferry: "⛴" };
-        const segments = [];
-        sections.forEach(s => {
-          if (s.type === "pedestrian") {
-            const min = Math.round((s.summary?.duration ?? 0) / 60);
-            if (min > 0) segments.push(`🚶${min}分`);
-          } else if (s.type === "transit") {
-            const icon = TRANSIT_ICON[s.transport?.mode] || "🚃";
-            const name = s.transport?.name || "";
-            segments.push(`${icon}${name}`);
-          }
+        await ensureGoogleMapsReady();
+        return await new Promise(resolve => {
+          new google.maps.DirectionsService().route({
+            origin: { lat: Number(fromLat), lng: Number(fromLng) },
+            destination: { lat: Number(toLat), lng: Number(toLng) },
+            travelMode: google.maps.TravelMode.TRANSIT,
+          }, (result, status) => {
+            if (status !== "OK" || !result?.routes?.[0]?.legs?.[0]) {
+              resolve(estimateRouteFallback(fromLat, fromLng, toLat, toLng, "transit", `GMaps: ${status}`));
+              return;
+            }
+            const leg = result.routes[0].legs[0];
+            const durationMin = Math.max(1, Math.round(leg.duration.value / 60));
+            const segments = [];
+            let transfers = 0;
+            let hadTransit = false;
+            for (const step of (leg.steps || [])) {
+              if (step.travel_mode === "WALKING") {
+                const min = Math.round(step.duration.value / 60);
+                if (min > 0) segments.push(`🚶${min}分`);
+              } else if (step.travel_mode === "TRANSIT") {
+                if (hadTransit) transfers++;
+                hadTransit = true;
+                const icon = TRANSIT_VEHICLE_ICON[step.transit?.line?.vehicle?.type] || "🚃";
+                const name = step.transit?.line?.short_name || step.transit?.line?.name || "公共交通";
+                segments.push(`${icon}${name}`);
+              }
+            }
+            resolve({ durationMin, transfers, segments, mode: "transit" });
+          });
         });
-
-        return {
-          durationMin: Math.max(1, Math.round(totalSec / 60)),
-          transfers: Math.max(0, transitSections.length - 1),
-          segments,
-          mode: "transit",
-        };
       } catch (e) {
-        return { failed: true, mode: "transit", error: e?.message || "公共交通API通信エラー" };
+        const reason = e?.message === "no-key"
+          ? "Google Maps APIキー未設定（設定画面で入力）"
+          : e?.message || "APIエラー";
+        return estimateRouteFallback(fromLat, fromLng, toLat, toLng, "transit", reason);
       }
     }
 
     async function fetchDrivingTime(fromLat, fromLng, toLat, toLng) {
       try {
-        const url = `https://router.hereapi.com/v8/routes?origin=${fromLat},${fromLng}&destination=${toLat},${toLng}&transportMode=car&return=summary&apikey=${HERE_API_KEY}`;
-        const res = await fetch(url);
-        if (!res.ok) return { failed: true, mode: "driving", error: `driving HTTP ${res.status}` };
-        const data = await res.json();
-        const dur = data.routes?.[0]?.sections?.[0]?.summary?.duration;
-        if (!dur) return { failed: true, mode: "driving", error: "車ルートなし" };
-        return {
-          durationMin: Math.max(1, Math.round(dur / 60)),
-          transfers: 0,
-          segments: ["🚗"],
-          mode: "driving",
-        };
+        await ensureGoogleMapsReady();
+        return await new Promise(resolve => {
+          new google.maps.DirectionsService().route({
+            origin: { lat: Number(fromLat), lng: Number(fromLng) },
+            destination: { lat: Number(toLat), lng: Number(toLng) },
+            travelMode: google.maps.TravelMode.DRIVING,
+          }, (result, status) => {
+            if (status !== "OK" || !result?.routes?.[0]?.legs?.[0]) {
+              resolve(estimateRouteFallback(fromLat, fromLng, toLat, toLng, "driving", `GMaps: ${status}`));
+              return;
+            }
+            const leg = result.routes[0].legs[0];
+            resolve({
+              durationMin: Math.max(1, Math.round(leg.duration.value / 60)),
+              transfers: 0, segments: ["🚗"], mode: "driving",
+            });
+          });
+        });
       } catch (e) {
-        return { failed: true, mode: "driving", error: e?.message || "車API通信エラー" };
+        const reason = e?.message === "no-key"
+          ? "Google Maps APIキー未設定（設定画面で入力）"
+          : e?.message || "APIエラー";
+        return estimateRouteFallback(fromLat, fromLng, toLat, toLng, "driving", reason);
       }
     }
 
@@ -1348,12 +1534,13 @@
       if (updated) { saveSchedule(schedule); renderDays(); }
     }
 
-    function generatePlan(day, dayIdx, totalDays) {
+    function generatePlan(day, dayIdx, totalDays, options = {}) {
       ensureDayDefaults(day);
       const travel  = day.travelMinutes;
       const stays   = day.stayTimes;
       const steps   = [];
       const skipped = [];
+      const strictCapacity = options.strictCapacity === true;
 
       const isFirst = dayIdx === 0;
       const isLast  = dayIdx === totalDays - 1;
@@ -1439,7 +1626,7 @@
         const stay    = stays[entry.spotId] || 60;
         const arriveT = t + travelDuration;
 
-        if (arriveT >= endT) {
+        if (arriveT >= endT && strictCapacity) {
           for (let j = i; j < day.entries.length; j++) {
             const s = getSpotById(day.entries[j].spotId);
             // 集合/解散アンカーはスキップ済みなので「収まらなかった」リストに入れない
@@ -1459,12 +1646,13 @@
           color: getSpotCatColor(spot.spotCategory),
           spotId: spot.id,
           budget: spot.budget || 0,
-          outsideHours: isVisitOutsideHours(spot.id, arriveT, stay, day)
+          outsideHours: isVisitOutsideHours(spot.id, arriveT, stay, day),
+          overflow: arriveT >= endT || arriveT + stay > endT
         });
         t = arriveT + stay;
         prevSpot = spot;
 
-        if (t >= endT) {
+        if (t >= endT && strictCapacity) {
           for (let j = i + 1; j < day.entries.length; j++) {
             const s = getSpotById(day.entries[j].spotId);
             if (s && !(isFirst && isMeetSpot(s)) && !(isLast && isDismissSpot(s))) {
@@ -1511,8 +1699,12 @@
         if (step.type === "travel") {
           let travelLabel;
           if (step.travelInfo && !step.travelInfo.failed) {
-            const xfers = step.travelInfo.transfers === 0 ? "乗り換えなし" : `${step.travelInfo.transfers}回乗り換え`;
-            travelLabel = `→ 🚃 約${step.duration}分（${xfers}）`;
+            if (step.travelInfo.estimated) {
+              travelLabel = `→ 🚃 約${step.duration}分（推定・詳細は地図で確認）`;
+            } else {
+              const xfers = step.travelInfo.transfers === 0 ? "乗り換えなし" : `${step.travelInfo.transfers}回乗り換え`;
+              travelLabel = `→ 🚃 約${step.duration}分（${xfers}）`;
+            }
           } else if (step.travelInfo?.failed) {
             travelLabel = `→ ⚠ 経路取得失敗${step.travelInfo.error ? `（${escHtml(step.travelInfo.error)}）` : ""}`;
           } else {
@@ -1586,14 +1778,14 @@
       for (let i = 0; i < numDays; i++) {
         const d = new Date(start);
         d.setDate(d.getDate() + i);
-        const dateStr = d.toISOString().split("T")[0];
+        const dateStr = dateToYMD(d);
 
         const byDate  = existing.find(ex => ex.date === dateStr);
         const byIndex = existing[i] && !existing[i].date ? existing[i] : null;
         const found   = byDate || byIndex;
         if (found) {
           found.date  = dateStr;
-          if (!found.label) found.label = `${i + 1}日目`;
+          if (!found.label || /^\d+日目$/.test(found.label)) found.label = `${i + 1}日目`;
           newDays.push(found);
         } else {
           newDays.push({ id: makeId(), label: `${i + 1}日目`, date: dateStr, travelMinutes: 20, stayTimes: {}, entries: [] });
@@ -1602,12 +1794,50 @@
 
       const changed = newDays.length !== existing.length ||
         newDays.some((d, i) => d.id !== existing[i]?.id || d.date !== existing[i]?.date);
+      schedule.days = newDays;
       if (changed) {
-        schedule.days = newDays;
         saveSchedule(schedule);
       }
       updateTripSummary();
       renderAll();
+    }
+
+    function ensureDaysFromTripDates() {
+      const meetDate    = schedule?.tripMeetDate;
+      const dismissDate = schedule?.tripDismissDate;
+      if (!meetDate || !dismissDate) return false;
+
+      const start = new Date(meetDate + "T00:00:00");
+      const end   = new Date(dismissDate + "T00:00:00");
+      if (isNaN(start) || isNaN(end) || start > end) return false;
+
+      const numDays = Math.round((end - start) / 86400000) + 1;
+      if (!Array.isArray(schedule.days)) schedule.days = [];
+      if (schedule.days.length === numDays && schedule.days.every((day, idx) => {
+        const d = new Date(start);
+        d.setDate(d.getDate() + idx);
+        return day?.date === dateToYMD(d);
+      })) return false;
+
+      const existing = [...schedule.days];
+      schedule.days = Array.from({ length: numDays }, (_, idx) => {
+        const d = new Date(start);
+        d.setDate(d.getDate() + idx);
+        const date = dateToYMD(d);
+        const found = existing.find(day => day.date === date) || existing[idx] || {};
+        return {
+          id: found.id || makeId(),
+          label: (found.label && !/^\d+日目$/.test(found.label)) ? found.label : `${idx + 1}日目`,
+          date,
+          travelMinutes: found.travelMinutes || 20,
+          stayTimes: found.stayTimes || {},
+          entries: Array.isArray(found.entries) ? found.entries : [],
+          startTime: found.startTime,
+          endTime: found.endTime,
+        };
+      });
+      saveSchedule(schedule);
+      return true;
     }
 
     // 旅程サマリー（◯泊◯日）を更新する
@@ -1671,10 +1901,11 @@
       );
       const returnAllBtn = document.getElementById("returnAllSpotsBtn");
       if (returnAllBtn) returnAllBtn.disabled = scheduledIds.size === 0;
-      const unscheduled = getOrderedSpots().filter(s => !scheduledIds.has(s.id));
+      const unscheduled = getOrderedSpots().filter(s => !scheduledIds.has(s.id) && !isMeetSpot(s) && !isDismissSpot(s));
 
+      const schedulableSpots = spots.filter(s => !isMeetSpot(s) && !isDismissSpot(s));
       if (unscheduled.length === 0) {
-        el.innerHTML = spots.length === 0
+        el.innerHTML = schedulableSpots.length === 0
           ? '<p class="spot-chip-empty">「行きたい場所」でスポットを追加してください</p>'
           : '<p class="spot-chip-empty">すべてのスポットがスケジュール済みです ✓</p>';
         return;
@@ -1705,61 +1936,26 @@
         });
         btn.addEventListener("dragend", () => { btn.classList.remove("dragging"); dragState = null; });
 
-        // 滞在時間デフォルト入力
-        const stayWrap = document.createElement("div");
-        stayWrap.className = "spot-stay-wrap";
-        const stayLabel = document.createElement("span");
-        stayLabel.className = "spot-stay-label";
-        stayLabel.textContent = "滞在";
-        const stayValue = (schedule.defaultStayTimes?.[spot.id]) ?? getSpotStayDefault(spot);
-        const stayParts = splitDuration(stayValue);
-        const stayHourInput = document.createElement("input");
-        stayHourInput.type = "number";
-        stayHourInput.min = "0";
-        stayHourInput.max = "12";
-        stayHourInput.step = "1";
-        stayHourInput.className = "spot-stay-default spot-stay-hours";
-        stayHourInput.title = "滞在時間（時間）";
-        stayHourInput.value = stayParts.hours;
-        const stayHourUnit = document.createElement("span");
-        stayHourUnit.className = "spot-stay-unit";
-        stayHourUnit.textContent = "時間";
-        const stayInput = document.createElement("input");
-        stayInput.type = "number";
-        stayInput.min = "0";
-        stayInput.max = "55";
-        stayInput.step = "5";
-        stayInput.className = "spot-stay-default";
-        stayInput.title = "デフォルト滞在時間（分）";
-        stayInput.value = stayParts.minutes;
-        const saveStay = e => {
-          e?.stopPropagation?.();
-          if (!schedule.defaultStayTimes) schedule.defaultStayTimes = {};
-          schedule.defaultStayTimes[spot.id] = combineDuration(stayHourInput.value, stayInput.value, stayValue);
-          saveSchedule(schedule);
-        };
-        stayHourInput.addEventListener("click", e => e.stopPropagation());
-        stayHourInput.addEventListener("change", saveStay);
-        stayInput.addEventListener("click", e => e.stopPropagation());
-        stayInput.addEventListener("change", saveStay);
-        const stayUnit = document.createElement("span");
-        stayUnit.className = "spot-stay-unit";
-        stayUnit.textContent = "分";
-        stayWrap.appendChild(stayLabel);
-        stayWrap.appendChild(stayHourInput);
-        stayWrap.appendChild(stayHourUnit);
-        stayWrap.appendChild(stayInput);
-        stayWrap.appendChild(stayUnit);
+        // スポット名クリックでスポットメニューへ
+        const nameSpan = btn.querySelector(".spot-chip-name");
+        if (nameSpan) {
+          nameSpan.style.textDecoration = "underline dotted";
+          nameSpan.style.cursor = "pointer";
+          nameSpan.title = "スポットメニューを開く";
+          nameSpan.addEventListener("click", e => {
+            e.stopPropagation();
+            window.open(`./spots.html?editSpot=${encodeURIComponent(spot.id)}`, "_blank");
+          });
+        }
 
         wrap.appendChild(btn);
-        wrap.appendChild(stayWrap);
         el.appendChild(wrap);
       });
     }
-
     function renderDays() {
       const area = document.getElementById("daysArea");
       area.innerHTML = "";
+      ensureDaysFromTripDates();
 
       if (schedule.days.length === 0) {
         area.innerHTML = `
@@ -1928,15 +2124,25 @@
             if (info.mode === "driving") {
               summarySpan.textContent = `🚗 約${step.duration}分`;
             } else {
-              const xfers = info.transfers === 0 ? "乗り換えなし" : `${info.transfers}回乗り換え`;
-              summarySpan.textContent = `🚃 約${step.duration}分（${xfers}）`;
+              if (info.estimated) {
+                summarySpan.textContent = `🚃 約${step.duration}分（推定）`;
+              } else {
+                const xfers = info.transfers === 0 ? "乗り換えなし" : `${info.transfers}回乗り換え`;
+                summarySpan.textContent = `🚃 約${step.duration}分（${xfers}）`;
+              }
             }
             wrapEl.appendChild(summarySpan);
             // セグメント（🚶3分 → 🚇銀座線 → 🚶2分）
-            if (info.segments?.length > 0) {
+            const routeSegments = info.estimated
+              ? (info.mode === "driving"
+                ? ["推定所要時間です。詳細な道路ルートは地図で確認してください"]
+                : ["推定所要時間です。乗り換え路線は地図で確認してください"])
+              : (info.segments || []);
+            if (routeSegments.length > 0) {
               const segsSpan = document.createElement("span");
               segsSpan.className = "tl-route-segs";
-              segsSpan.textContent = info.segments.join(" → ");
+              if (info.estimated) segsSpan.classList.add("tl-route-segs--estimated");
+              segsSpan.textContent = routeSegments.join(" → ");
               wrapEl.appendChild(segsSpan);
             }
           } else if (info?.failed) {
@@ -1982,7 +2188,8 @@
 
           const leftEl = document.createElement("div");
           leftEl.className = "tl-left";
-          leftEl.innerHTML = `<span class="tl-time">${minutesToTime(step.time)}</span>${!isLast ? '<div class="tl-line"></div>' : ''}`;
+          const endTimeStr = minutesToTime(step.time + step.duration);
+          leftEl.innerHTML = `<span class="tl-time">${minutesToTime(step.time)}</span>${!isLast ? `<div class="tl-line"></div><span class="tl-end-time">${endTimeStr}</span>` : ""}`;
 
           const rightEl = document.createElement("div");
           rightEl.className = "tl-right";
@@ -1998,6 +2205,8 @@
           const nameEl = document.createElement("span");
           nameEl.className = "tl-spot-name";
           nameEl.textContent = step.name;
+          nameEl.style.cursor = "pointer";
+          nameEl.title = "スポットメニューを開く";
 
           const budgetEl = document.createElement("span");
           budgetEl.className = "tl-spot-budget";
@@ -2007,25 +2216,9 @@
           hoursWarnEl.className = "tl-hours-warn";
           hoursWarnEl.textContent = "営業時間外";
 
-          const stayParts = splitDuration(stayMin);
-          const stayHourInput = document.createElement("input");
-          stayHourInput.className = "tl-stay-input tl-stay-hours";
-          stayHourInput.type = "number"; stayHourInput.min = "0"; stayHourInput.max = "12"; stayHourInput.step = "1";
-          stayHourInput.value = stayParts.hours; stayHourInput.title = "滞在時間（時間）";
-          const stayHourSuffix = document.createElement("span");
-          stayHourSuffix.className = "tl-stay-suffix";
-          stayHourSuffix.textContent = "時間";
-
-          const stayInput = document.createElement("input");
-          stayInput.className = "tl-stay-input";
-          stayInput.type = "number"; stayInput.min = "0"; stayInput.max = "55"; stayInput.step = "5";
-          stayInput.value = stayMin; stayInput.title = "滞在時間（分）";
-
-          const staySuffix = document.createElement("span");
-          stayInput.value = stayParts.minutes;
-          stayInput.title = "滞在時間（分）";
-          staySuffix.className = "tl-stay-suffix";
-          staySuffix.textContent = "分";
+          const overflowWarnEl = document.createElement("span");
+          overflowWarnEl.className = "tl-hours-warn";
+          overflowWarnEl.textContent = "時間外";
 
           const noteInput = document.createElement("input");
           noteInput.className = "tl-note"; noteInput.type = "text";
@@ -2049,10 +2242,7 @@
           rightEl.appendChild(nameEl);
           if (step.budget) rightEl.appendChild(budgetEl);
           if (step.outsideHours) rightEl.appendChild(hoursWarnEl);
-          rightEl.appendChild(stayHourInput);
-          rightEl.appendChild(stayHourSuffix);
-          rightEl.appendChild(stayInput);
-          rightEl.appendChild(staySuffix);
+          if (step.overflow) rightEl.appendChild(overflowWarnEl);
           rightEl.appendChild(noteInput);
           rightEl.appendChild(upBtn);
           rightEl.appendChild(downBtn);
@@ -2060,19 +2250,12 @@
           row.appendChild(leftEl);
           row.appendChild(rightEl);
 
-          const saveStayTime = e => {
-            e.stopPropagation();
-            if (!day.stayTimes) day.stayTimes = {};
-            day.stayTimes[entry.spotId] = combineDuration(stayHourInput.value, stayInput.value, stayMin);
-            saveSchedule(schedule);
-            renderDays();
-          };
-          stayHourInput.addEventListener("click", e => e.stopPropagation());
-          stayHourInput.addEventListener("change", saveStayTime);
-          stayInput.addEventListener("click", e => e.stopPropagation());
-          stayInput.addEventListener("change", saveStayTime);
           noteInput.addEventListener("click", e => e.stopPropagation());
           noteInput.addEventListener("change", e => { entry.note = e.target.value; saveSchedule(schedule); });
+          nameEl.addEventListener("click", e => {
+            e.stopPropagation();
+            window.open(`./spots.html?editSpot=${encodeURIComponent(step.spotId)}`, "_blank");
+          });
           upBtn.addEventListener("click", e => {
             e.stopPropagation();
             const i = day.entries.indexOf(entry);
@@ -2169,6 +2352,7 @@
         <div class="day-header-info">
           <input class="day-label-input" type="text" value="${escHtml(day.label)}" placeholder="ラベル（例：1日目）" />
           ${day.date ? `<span class="day-date-display">${formatDate(day.date)}</span>` : ""}
+          <span class="day-weather">${escHtml(getWeatherLabel(day.date))}</span>
         </div>
       `;
       header.querySelector(".day-label-input").addEventListener("change", e => {
@@ -2243,6 +2427,7 @@
       renderDays();
       renderUnscheduled();
       scheduleTransitFetches();
+      fetchWeatherForecast();
     }
 
     // ── 日付ピッカー ──────────────────────────────────────────────
@@ -2266,7 +2451,7 @@
         btn.addEventListener("click", () => {
           day.entries.push({ id: makeId(), spotId: pendingSpot.id, time: "", note: "" });
           if (!day.stayTimes) day.stayTimes = {};
-          day.stayTimes[pendingSpot.id] = (schedule.defaultStayTimes?.[pendingSpot.id]) ?? getDefaultStayTime(pendingSpot.spotCategory);
+          day.stayTimes[pendingSpot.id] = (schedule.defaultStayTimes?.[pendingSpot.id]) ?? getSpotStayDefault(pendingSpot);
           saveSchedule(schedule);
           renderAll();
           closeDayPicker();
@@ -2375,12 +2560,22 @@
     }
 
     document.getElementById("autoPlaceBtn").addEventListener("click", () => {
+      ensureDaysFromTripDates();
       if (schedule.days.length === 0) {
         alert("先に集合日と解散日を設定してください。");
         return;
       }
-      const scheduledIds = new Set(schedule.days.flatMap(d => (d.entries || []).map(e => e.spotId)));
-      const unscheduled  = getOrderedSpots().filter(s => !scheduledIds.has(s.id));
+      const allSpots = getOrderedSpots();
+      const activeSpotIds = new Set(allSpots.map(s => s.id));
+      const scheduledIds = new Set(schedule.days.flatMap(d => (d.entries || []).map(e => e.spotId)).filter(id => activeSpotIds.has(id)));
+      let unscheduled  = allSpots.filter(s => !scheduledIds.has(s.id));
+      if (unscheduled.length === 0 && allSpots.length > 0) {
+        schedule.days.forEach(day => {
+          day.entries = [];
+          day.stayTimes = {};
+        });
+        unscheduled = allSpots;
+      }
       if (unscheduled.length === 0) {
         alert("配置できるスポットがありません。");
         return;
@@ -2405,7 +2600,7 @@
         day.stayTimes[spot.id] = (schedule.defaultStayTimes?.[spot.id]) ?? getSpotStayDefault(spot);
       });
       schedule.days.forEach((day, idx) => {
-        const plan = generatePlan(day, idx, schedule.days.length);
+        const plan = generatePlan(day, idx, schedule.days.length, { strictCapacity: true });
         if (!plan.skipped.length) return;
         const skippedNames = new Set(plan.skipped);
         day.entries = (day.entries || []).filter(en => !skippedNames.has(getSpotById(en.spotId)?.name));
@@ -2520,6 +2715,9 @@
     syncDaysToDateRange();
     renderAll();
   </script>
+  <script src="./theme.js"></script>
 </body>
 </html>
+
+
 

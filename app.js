@@ -102,7 +102,7 @@ const DEFAULT_CATEGORIES = [
   { key: "dismiss",    emoji: "👋", name: "解散場所", label: "👋 解散場所", cssClass: "category-dismiss",    isDefault: true },
   { key: "airport",    emoji: "✈",  name: "空港",     label: "✈ 空港",     cssClass: "category-airport",    isDefault: true },
   { key: "station",    emoji: "🚉", name: "駅",       label: "🚉 駅",       cssClass: "category-station",    isDefault: true },
-  { key: "restaurant", emoji: "🍽", name: "飲食",     label: "🍽 飲食",     cssClass: "category-restaurant", isDefault: true },
+  { key: "restaurant", emoji: "🍽", name: "グルメ",   label: "🍽 グルメ",   cssClass: "category-restaurant", isDefault: true },
   { key: "tourist",    emoji: "⛩",  name: "観光",     label: "⛩ 観光",     cssClass: "category-tourist",    isDefault: true },
   { key: "hotel",      emoji: "🏨", name: "ホテル",   label: "🏨 ホテル",   cssClass: "category-hotel",      isDefault: true },
   { key: "other",      emoji: "📍", name: "その他",   label: "📍 その他",   cssClass: "category-other",      isDefault: true },
@@ -234,6 +234,9 @@ const spotCategorySelect = document.getElementById("spotCategorySelect");
 const spotCategoryAddForm = document.getElementById("spotCategoryAddForm");
 const spotCategoryNewName = document.getElementById("spotCategoryNewName");
 const spotCategoryNewAddBtn = document.getElementById("spotCategoryNewAddBtn");
+const spotHoursToggleAllBtn = document.getElementById("spotHoursToggleAllChk");
+const spotHoursWeeklyMode = document.getElementById("spotHoursWeeklyMode");
+const DAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
 hamburgerBtn.addEventListener("click", () => {
   sideDrawer.classList.contains("hidden") ? openDrawer() : closeDrawer();
@@ -291,6 +294,13 @@ spotCategorySelect.addEventListener("change", () => {
   } else {
     spotCategoryAddForm.classList.add("hidden");
     updateSpotCategoryFields(spotCategorySelect.value, null);
+    const stayParts = splitSpotDuration(defaultStayMinutesForCategory(spotCategorySelect.value));
+    const stayHoursInput = document.getElementById("spotStayHoursInput");
+    const stayMinutesInput = document.getElementById("spotStayMinutesInput");
+    if (stayHoursInput && stayMinutesInput) {
+      stayHoursInput.value = stayParts.hours;
+      stayMinutesInput.value = stayParts.minutes;
+    }
   }
 });
 
@@ -299,21 +309,7 @@ spotCategoryNewName.addEventListener("keydown", (e) => {
   if (e.key === "Enter") addCategoryFromSpotMenu();
 });
 
-document.querySelectorAll(".spot-hours-enabled").forEach(input => {
-  input.addEventListener("change", () => {
-    const row = document.querySelector(`.spot-hours-range[data-day="${input.dataset.day}"]`);
-    if (!row) return;
-    row.classList.toggle("spot-hours-range--enabled", input.checked);
-    updateBusinessHoursRange(row);
-  });
-});
-
-document.querySelectorAll(".spot-hours-range-input").forEach(input => {
-  input.addEventListener("input", () => {
-    const row = input.closest(".spot-hours-range");
-    if (row) updateBusinessHoursRange(row);
-  });
-});
+setupBusinessHoursControls();
 
 if (areaSuggestToggle) areaSuggestToggle.addEventListener("click", toggleAreaSuggestPanel);
 if (areaSuggestSearchBtn) areaSuggestSearchBtn.addEventListener("click", handleAreaSuggest);
@@ -331,7 +327,11 @@ document.addEventListener("click", (e) => {
 });
 
 applyBgTheme(loadAppSettings().bgTheme);
-requestAnimationFrame(render); // DOMレイアウト確定後にマップを初期化
+requestAnimationFrame(() => {
+  render(); // DOMレイアウト確定後にマップを初期化
+  const editSpotId = new URLSearchParams(location.search).get("editSpot");
+  if (editSpotId) setTimeout(() => openSpotMenu(editSpotId), 80);
+});
 
 function loadAppState() {
   const d = ensureListsData();
@@ -681,7 +681,8 @@ function hasSpotRole(spot, role) {
 function defaultStayMinutesForCategory(category) {
   if (category === "airport") return 45;
   if (category === "station") return 20;
-  return 90;
+  if (category === "restaurant" || category === "tourist") return 60;
+  return 60;
 }
 
 function splitSpotDuration(value) {
@@ -832,33 +833,217 @@ function updateBusinessHoursRange(row) {
   if (valueEl) valueEl.textContent = enabled ? `${formatMinutesAsTime(open)}〜${formatMinutesAsTime(close)}` : "使用しない";
 }
 
+function createBusinessHoursExtraRange(day) {
+  const div = document.createElement("div");
+  div.className = "spot-hours-range spot-hours-range--extra";
+  div.dataset.day = day;
+  div.dataset.slot = "2";
+  div.innerHTML = `
+    <div class="spot-hours-slider">
+      <div class="spot-hours-track"></div>
+      <div class="spot-hours-fill"></div>
+      <input type="range" min="0" max="1440" step="30" value="960" data-part="open" class="spot-hours-range-input" aria-label="追加営業時間の開始時刻" />
+      <input type="range" min="0" max="1440" step="30" value="1260" data-part="close" class="spot-hours-range-input" aria-label="追加営業時間の終了時刻" />
+    </div>
+    <span class="spot-hours-value">16:00〜21:00</span>
+  `;
+  div.querySelectorAll(".spot-hours-range-input").forEach(input => {
+    input.addEventListener("input", () => updateBusinessHoursRange(div));
+  });
+  return div;
+}
+
+function getOrCreateExtraHoursRange(day) {
+  let extra = document.querySelector(`.spot-hours-range--extra[data-day="${day}"]`);
+  if (extra) return extra;
+  const primary = document.querySelector(`.spot-hours-range[data-day="${day}"]:not(.spot-hours-range--extra)`);
+  if (!primary) return null;
+  extra = createBusinessHoursExtraRange(day);
+  primary.parentElement.appendChild(extra);
+  return extra;
+}
+
+function setExtraHoursVisible(day, visible) {
+  const primary = document.querySelector(`.spot-hours-range[data-day="${day}"]:not(.spot-hours-range--extra)`);
+  const btn = primary?.querySelector(".spot-hours-split-btn");
+  const extra = visible ? getOrCreateExtraHoursRange(day) : document.querySelector(`.spot-hours-range--extra[data-day="${day}"]`);
+  if (extra) {
+    extra.classList.toggle("hidden", !visible);
+    extra.classList.toggle("spot-hours-range--enabled", visible);
+    updateBusinessHoursRange(extra);
+  }
+  btn?.classList.toggle("active", visible);
+  btn?.setAttribute("aria-pressed", visible ? "true" : "false");
+}
+
+function updateHoursBulkVisibility() {
+  const isWeekly = !!spotHoursWeeklyMode?.checked;
+  const wrap = spotHoursToggleAllBtn?.closest("label");
+  if (wrap) wrap.style.visibility = isWeekly ? "" : "hidden";
+}
+
+function setupBusinessHoursControls() {
+  spotHoursWeeklyMode?.addEventListener("change", () => {
+    const isWeekly = spotHoursWeeklyMode.checked;
+    document.querySelector(".spot-hours-table")?.classList.toggle("is-weekly", isWeekly);
+    updateHoursBulkVisibility();
+    if (!isWeekly) {
+      const sun = readPrimaryHoursRange("sun");
+      // 非曜日別モードでは常に有効扱い
+      DAYS.forEach(day => applyHoursToDay(day, true, sun.open, sun.close));
+    }
+  });
+  document.querySelectorAll(".spot-hours-range:not(.spot-hours-range--extra)").forEach(row => {
+    if (!row.querySelector(".spot-hours-split-btn")) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "spot-hours-split-btn";
+      btn.textContent = "分割";
+      btn.setAttribute("aria-pressed", "false");
+      btn.addEventListener("click", () => {
+        const day = row.dataset.day;
+        const extra = document.querySelector(`.spot-hours-range--extra[data-day="${day}"]`);
+        setExtraHoursVisible(day, !extra || extra.classList.contains("hidden"));
+      });
+      row.appendChild(btn);
+    }
+  });
+  document.querySelectorAll(".spot-hours-enabled").forEach(input => {
+    input.addEventListener("change", () => {
+      document.querySelectorAll(`.spot-hours-range[data-day="${input.dataset.day}"]`).forEach(row => {
+        row.classList.toggle("spot-hours-range--enabled", input.checked && !row.classList.contains("hidden"));
+        updateBusinessHoursRange(row);
+      });
+    });
+  });
+  document.querySelectorAll(".spot-hours-range-input").forEach(input => {
+    input.addEventListener("input", () => {
+      const row = input.closest(".spot-hours-range");
+      if (row) updateBusinessHoursRange(row);
+    });
+  });
+  spotHoursToggleAllBtn?.addEventListener("change", () => {
+    const shouldEnable = spotHoursToggleAllBtn.checked;
+    document.querySelectorAll(".spot-hours-enabled").forEach(input => {
+      input.checked = shouldEnable;
+      input.dispatchEvent(new Event("change"));
+      if (!shouldEnable) setExtraHoursVisible(input.dataset.day, false);
+    });
+    updateHoursBulkButton();
+  });
+  updateHoursBulkVisibility();
+}
+
+function readPrimaryHoursRange(day) {
+  const enabled = document.querySelector(`.spot-hours-enabled[data-day="${day}"]`)?.checked;
+  const row = document.querySelector(`.spot-hours-range[data-day="${day}"]:not(.spot-hours-range--extra)`);
+  return {
+    enabled,
+    open: row?.querySelector('[data-part="open"]')?.value ?? 600,
+    close: row?.querySelector('[data-part="close"]')?.value ?? 1080,
+  };
+}
+
+function applyHoursToDay(day, enabled, open, close) {
+  const input = document.querySelector(`.spot-hours-enabled[data-day="${day}"]`);
+  const row = document.querySelector(`.spot-hours-range[data-day="${day}"]:not(.spot-hours-range--extra)`);
+  if (input) input.checked = !!enabled;
+  if (row) {
+    const openInput = row.querySelector('[data-part="open"]');
+    const closeInput = row.querySelector('[data-part="close"]');
+    if (openInput) openInput.value = open;
+    if (closeInput) closeInput.value = close;
+    row.classList.toggle("spot-hours-range--enabled", !!enabled);
+    updateBusinessHoursRange(row);
+  }
+  setExtraHoursVisible(day, false);
+}
+
+function updateHoursBulkButton() {
+  if (!spotHoursToggleAllBtn) return;
+  const enabledInputs = [...document.querySelectorAll(".spot-hours-enabled")];
+  const allEnabled = enabledInputs.length > 0 && enabledInputs.every(input => input.checked);
+  spotHoursToggleAllBtn.checked = allEnabled;
+}
+
 function fillBusinessHoursInputs(hours) {
   document.querySelectorAll(".spot-hours-range").forEach(row => {
+    if (row.classList.contains("spot-hours-range--extra")) row.remove();
+  });
+  document.querySelectorAll(".spot-hours-range:not(.spot-hours-range--extra)").forEach(row => {
     const day = row.dataset.day;
     const enabledInput = document.querySelector(`.spot-hours-enabled[data-day="${day}"]`);
     const openInput = row.querySelector('[data-part="open"]');
     const closeInput = row.querySelector('[data-part="close"]');
-    const range = splitBusinessHoursRange(hours?.[day]);
+    const ranges = String(hours?.[day] || "").split(",").map(v => splitBusinessHoursRange(v)).filter(r => r.open && r.close);
+    const range = ranges[0] || { open: "", close: "" };
     const enabled = !!(range.open && range.close);
     if (enabledInput) enabledInput.checked = enabled;
     row.classList.toggle("spot-hours-range--enabled", enabled);
     if (openInput) openInput.value = timeToBusinessMinutes(range.open, 600);
     if (closeInput) closeInput.value = timeToBusinessMinutes(range.close, 1080);
     updateBusinessHoursRange(row);
+    if (ranges[1]) {
+      const extra = getOrCreateExtraHoursRange(day);
+      extra.querySelector('[data-part="open"]').value = timeToBusinessMinutes(ranges[1].open, 960);
+      extra.querySelector('[data-part="close"]').value = timeToBusinessMinutes(ranges[1].close, 1260);
+      setExtraHoursVisible(day, true);
+    } else {
+      setExtraHoursVisible(day, false);
+    }
   });
+  const values = DAYS.map(day => hours?.[day] || "");
+  const first = values[0] || "";
+  const isWeekly = values.some(value => value !== first);
+  if (spotHoursWeeklyMode) spotHoursWeeklyMode.checked = isWeekly;
+  document.querySelector(".spot-hours-table")?.classList.toggle("is-weekly", isWeekly);
+
+  // 非曜日別モードでは全日共通チェックボックスを常に有効にする
+  if (!isWeekly) {
+    const sunInput = document.querySelector('.spot-hours-enabled[data-day="sun"]');
+    const sunRow   = document.querySelector('.spot-hours-range[data-day="sun"]:not(.spot-hours-range--extra)');
+    if (sunInput && !sunInput.checked) {
+      sunInput.checked = true;
+      sunRow?.classList.add("spot-hours-range--enabled");
+      if (sunRow) updateBusinessHoursRange(sunRow);
+    }
+  }
+
+  updateHoursBulkButton();
+  updateHoursBulkVisibility();
 }
 
 function readBusinessHoursInputs() {
   const businessHours = {};
+  if (!spotHoursWeeklyMode?.checked) {
+    const sun = readPrimaryHoursRange("sun");
+    // 非曜日別モードでは常に有効扱い（チェックボックスなし）
+    const open = formatMinutesAsTime(sun.open);
+    const close = formatMinutesAsTime(sun.close);
+    const ranges = [`${open}-${close}`];
+    const extra = document.querySelector('.spot-hours-range--extra[data-day="sun"]:not(.hidden)');
+    if (extra) {
+      const extraOpen = formatMinutesAsTime(extra.querySelector('[data-part="open"]')?.value);
+      const extraClose = formatMinutesAsTime(extra.querySelector('[data-part="close"]')?.value);
+      if (extraOpen && extraClose) ranges.push(`${extraOpen}-${extraClose}`);
+    }
+    DAYS.forEach(day => {
+      businessHours[day] = ranges.join(",");
+    });
+    return businessHours;
+  }
   document.querySelectorAll(".spot-hours-range").forEach(row => {
     const day = row.dataset.day;
     const enabled = document.querySelector(`.spot-hours-enabled[data-day="${day}"]`)?.checked;
     if (!enabled) return;
+    if (row.classList.contains("hidden")) return;
     const openInput = row.querySelector('[data-part="open"]');
     const closeInput = row.querySelector('[data-part="close"]');
     const open = formatMinutesAsTime(openInput?.value);
     const close = formatMinutesAsTime(closeInput?.value);
-    if (day && open && close) businessHours[day] = `${open}-${close}`;
+    if (day && open && close) {
+      businessHours[day] = businessHours[day] ? `${businessHours[day]},${open}-${close}` : `${open}-${close}`;
+    }
   });
   return businessHours;
 }
@@ -2242,3 +2427,4 @@ function deleteListEntry(id) {
   render();
   renderListModal();
 }
+

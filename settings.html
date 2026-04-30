@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
@@ -74,6 +74,28 @@
       </div>
     </section>
 
+    <section class="panel settings-section">
+      <div class="panel-head">
+        <div>
+          <p class="panel-kicker">Transit API</p>
+          <h2>交通経路API（Google Maps）</h2>
+        </div>
+      </div>
+      <p class="settings-desc" style="margin-bottom:10px">スケジュール画面の移動時間・乗り換え情報を正確に取得します。<br>
+        Google Cloud Console で「Maps JavaScript API」と「Directions API」を有効にしてAPIキーを取得してください（月$200相当まで無料、個人利用なら実質無制限）。</p>
+      <div class="settings-row">
+        <label class="settings-label" for="googleMapsKeyInput">
+          Google Maps API キー
+          <span class="settings-desc">設定するとスケジュール画面の移動時間が正確になります。未設定時は距離推定を使います。</span>
+        </label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+          <input id="googleMapsKeyInput" type="password" placeholder="AIzaSy..." class="settings-number-input" style="flex:1;min-width:180px;font-size:0.9rem" autocomplete="off" />
+          <button id="googleMapsKeySave" class="primary-button" type="button">保存</button>
+        </div>
+      </div>
+      <p id="googleMapsKeySavedMsg" class="settings-desc" style="margin-top:6px;color:var(--accent-deep);display:none">✓ 保存しました</p>
+    </section>
+
     <div class="settings-back-row">
       <a href="./index.html" class="btn btn-outline">← トップ画面へ戻る</a>
     </div>
@@ -135,5 +157,8 @@
   </aside>
 
   <script src="./settings.js"></script>
+  <script src="./theme.js"></script>
 </body>
 </html>
+
+

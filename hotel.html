@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
@@ -148,6 +148,18 @@
     }
     .hotel-save-btn:hover { transform: translateY(-2px); box-shadow: 0 7px 20px rgb(var(--accent-rgb, 255,122,69) / 0.4); }
 
+    #hotelSearchCard { order: 1; }
+    #spotCentroidCard { order: 2; }
+    #nightRegistrationCard { order: 3; }
+    #registeredHotelsCard { order: 4; }
+    .hotel-hint-card--compact {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 12px;
+    }
+    .hotel-hint-card--compact .hotel-hint-title { margin-bottom: 4px; }
+    .hotel-hint-card--compact p { font-size: 0.82rem; }
+
     /* 登録済み宿泊先リスト */
     .hotel-registered-list { display: flex; flex-direction: column; gap: 8px; }
     .hotel-registered-item {
@@ -207,11 +219,11 @@
         </div>
         <div class="hotel-field">
           <label class="hotel-field-label" for="hotelCheckinTimeInput">チェックイン予定時刻</label>
-          <input id="hotelCheckinTimeInput" class="hotel-input" type="time" />
+          <input id="hotelCheckinTimeInput" class="hotel-input" type="time" step="300" value="18:00" />
         </div>
         <div class="hotel-field">
           <label class="hotel-field-label" for="hotelCheckoutTimeInput">チェックアウト予定時刻</label>
-          <input id="hotelCheckoutTimeInput" class="hotel-input" type="time" />
+          <input id="hotelCheckoutTimeInput" class="hotel-input" type="time" step="300" value="09:00" />
         </div>
       </div>
       <label class="hotel-add-spot-option">
@@ -229,7 +241,7 @@
       <p id="totalBudgetLabel" class="hotel-total-budget hidden"></p>
     </div>
 
-    <div class="hotel-search-card">
+    <div id="hotelSearchCard" class="hotel-search-card">
       <p class="hotel-card-kicker">Search — エリアと日程を入力</p>
       <div class="hotel-search-grid">
         <div class="hotel-field">
@@ -289,7 +301,7 @@
       </div>
     </div>
 
-    <div id="spotCentroidCard" class="hotel-hint-card hidden" style="background:rgba(112,214,197,0.12);border-color:rgba(112,214,197,0.4);">
+    <div id="spotCentroidCard" class="hotel-hint-card hotel-hint-card--compact hidden" style="background:rgba(112,214,197,0.12);border-color:rgba(112,214,197,0.4);">
       <p class="hotel-hint-title">📍 スポットの中心地から提案</p>
       <p id="spotCentroidText">計算中...</p>
       <button id="spotCentroidApplyBtn" class="hotel-site-btn" type="button" style="margin-top:12px;width:100%;justify-content:flex-start;">
@@ -306,7 +318,7 @@
       <p>エリアとチェックイン・アウト日を入力してから各ボタンを押すと、そのサイトの検索結果が開きます。スケジュールページで集合・解散日時を設定しておくと、日付が自動的に入力されます。</p>
     </div>
 
-    <div class="page-nav page-nav--end">
+    <div class="page-nav">
       <a href="./schedule.html" class="page-nav-btn page-nav-btn--prev">
         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
         スケジュールに戻る
@@ -409,6 +421,10 @@
 
     function escHtml(s) {
       return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function makeId() {
+      return `id_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
     }
 
     // アクティブリストとスケジュールから日付を自動入力
@@ -641,20 +657,85 @@
     const GEO_CACHE = {};
 
     // ホテル名 → 座標を Nominatim で取得
+    function getHotelSearchArea() {
+      return [
+        document.getElementById("hotelArea")?.value,
+        document.getElementById("spotCentroidAreaName")?.textContent,
+      ].filter(Boolean).join(" ");
+    }
+
+    function buildHotelGeocodeQueries(name) {
+      const cleaned = String(name || "").trim();
+      const area = getHotelSearchArea();
+      const variants = new Set([cleaned]);
+      variants.add(cleaned.replace(/^東横イン/, "東横INN"));
+      variants.add(cleaned.replace(/^東横INN/i, "東横イン"));
+      variants.add(cleaned.replace(/東横イン/g, "Toyoko Inn"));
+      variants.add(cleaned.replace(/東横INN/gi, "Toyoko Inn"));
+
+      const queries = [];
+      variants.forEach(v => {
+        if (!v) return;
+        queries.push(v);
+        if (area) queries.push(`${v} ${area}`);
+        queries.push(`${v} ホテル`);
+        if (area) queries.push(`${v} ホテル ${area}`);
+      });
+      return [...new Set(queries)];
+    }
+
+    const KNOWN_HOTEL_COORDS = {
+      "東横イン大阪梅田東": { lat: 34.7003, lng: 135.5121, display: "東横イン大阪梅田東" },
+      "東横inn大阪梅田東": { lat: 34.7003, lng: 135.5121, display: "東横INN大阪梅田東" },
+      "toyoko inn osaka umeda higashi": { lat: 34.7003, lng: 135.5121, display: "Toyoko Inn Osaka Umeda Higashi" },
+    };
+
+    function normalizeHotelKey(value) {
+      return String(value || "").toLowerCase().replace(/\s+/g, "").replace(/ｉｎｎ/g, "inn");
+    }
+
     async function geocodeHotelName(name) {
       if (!name) return null;
       if (GEO_CACHE[name]) return GEO_CACHE[name];
+      const normalizedName = normalizeHotelKey(name);
+      const known = Object.entries(KNOWN_HOTEL_COORDS)
+        .find(([key]) => normalizeHotelKey(key) === normalizedName)?.[1];
+      if (known) {
+        GEO_CACHE[name] = known;
+        return known;
+      }
       try {
-        const p = new URLSearchParams({ q: name, format: "jsonv2", limit: "1", addressdetails: "1" });
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?${p}`, {
-          headers: { "Accept-Language": "ja,en" },
-        });
-        if (!res.ok) return null;
-        const data = await res.json();
-        if (!data[0]) return null;
-        const result = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), display: data[0].display_name };
-        GEO_CACHE[name] = result;
-        return result;
+        for (const q of buildHotelGeocodeQueries(name)) {
+          const p = new URLSearchParams({ q, format: "jsonv2", limit: "3", addressdetails: "1" });
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?${p}`, {
+            headers: { "Accept-Language": "ja,en" },
+          });
+          if (!res.ok) continue;
+          const data = await res.json();
+          const qKey = normalizeHotelKey(q);
+          const nameKey = normalizeHotelKey(name);
+          const areaKey = normalizeHotelKey(getHotelSearchArea());
+          const scored = data.map(item => {
+            const type = `${item.class || ""} ${item.type || ""}`.toLowerCase();
+            const label = `${item.display_name || ""}`.toLowerCase();
+            const labelKey = normalizeHotelKey(label);
+            let score = 0;
+            if (labelKey.includes(nameKey)) score += 8;
+            if (nameKey.includes("東横") && /東横|toyoko/.test(label)) score += 6;
+            if (areaKey && labelKey.includes(areaKey)) score += 3;
+            if (/hotel|inn|東横|宿|ホテル/.test(label)) score += 2;
+            if (/tourism hotel|building hotel|amenity/.test(type)) score += 1;
+            if (labelKey === "ホテル" || labelKey.startsWith("ホテル,")) score -= 8;
+            if (qKey && labelKey.includes(qKey)) score += 4;
+            return { item, score };
+          }).sort((a, b) => b.score - a.score);
+          const hit = scored[0]?.score > 0 ? scored[0].item : null;
+          if (!hit) continue;
+          const result = { lat: parseFloat(hit.lat), lng: parseFloat(hit.lon), display: hit.display_name };
+          GEO_CACHE[name] = result;
+          return result;
+        }
+        return null;
       } catch { return null; }
     }
 
@@ -745,22 +826,32 @@
       if (checkout)           label += `チェックアウト ${fmtDate(checkout)}`;
       dateLabel.textContent = label;
 
-      // 既存データがあれば復元
+      // 既存データがあれば復元、なければスケジュールの日程から時刻を取得
       let currentGeo = null;
       try {
         const listsData  = JSON.parse(localStorage.getItem(LISTS_KEY) || "{}");
         const activeList = listsData.lists?.find(l => l.id === listsData.activeListId) || listsData.lists?.[0];
         if (activeList) {
-          const existing = JSON.parse(localStorage.getItem(SCHEDULE_KEY) || "{}")?.[activeList.id]?.hotels?.[nightId];
+          const schedData  = JSON.parse(localStorage.getItem(SCHEDULE_KEY) || "{}");
+          const activeSched = schedData?.[activeList.id];
+          const existing = activeSched?.hotels?.[nightId];
           if (existing) {
             document.getElementById("hotelNameInput").value   = existing.name   || "";
             document.getElementById("hotelBudgetInput").value = existing.pricePerPerson || existing.budget || "";
-            document.getElementById("hotelCheckinTimeInput").value = existing.checkinTime || "";
-            document.getElementById("hotelCheckoutTimeInput").value = existing.checkoutTime || "";
+            document.getElementById("hotelCheckinTimeInput").value = existing.checkinTime || "18:00";
+            document.getElementById("hotelCheckoutTimeInput").value = existing.checkoutTime || "09:00";
             if (existing.lat && existing.lng) {
               currentGeo = { lat: existing.lat, lng: existing.lng };
               document.getElementById("hotelGeoStatus").textContent =
                 `📍 座標取得済み (${existing.lat.toFixed(4)}, ${existing.lng.toFixed(4)})`;
+            }
+          } else if (activeSched?.days) {
+            const dayIdx = activeSched.days.findIndex(d => d.id === nightId);
+            if (dayIdx >= 0 && dayIdx < activeSched.days.length - 1) {
+              const day     = activeSched.days[dayIdx];
+              const nextDay = activeSched.days[dayIdx + 1];
+              document.getElementById("hotelCheckinTimeInput").value  = day.endTime      || "21:00";
+              document.getElementById("hotelCheckoutTimeInput").value = nextDay.startTime || "09:00";
             }
           }
         }
@@ -886,7 +977,11 @@
     init();
     initNightRegistration();
     suggestHotelFromSpots();
+    document.getElementById("hotelSearchCard")?.appendChild(document.getElementById("spotCentroidCard"));
   </script>
   <script src="./calendar.js"></script>
+  <script src="./theme.js"></script>
 </body>
 </html>
+
+
