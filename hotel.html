@@ -127,7 +127,7 @@
       margin-bottom: 14px;
     }
     .hotel-night-form { display: grid; grid-template-columns: 1fr 200px; gap: 12px; align-items: end; }
-    .hotel-night-form--booking { grid-template-columns: 1fr 160px 130px 130px; }
+    .hotel-night-form--booking { grid-template-columns: 1fr 150px 140px 130px 130px; }
     .hotel-add-spot-option {
       display: inline-flex; align-items: center; gap: 8px;
       margin-top: 10px; font-size: 0.84rem; color: var(--text);
@@ -216,6 +216,10 @@
         <div class="hotel-field">
           <label class="hotel-field-label" for="hotelBudgetInput">1名あたり予約金額（円）</label>
           <input id="hotelBudgetInput" class="hotel-input" type="number" min="0" step="500" placeholder="例：12000" />
+        </div>
+        <div class="hotel-field">
+          <label class="hotel-field-label" for="hotelCheckoutDateInput">チェックアウト日</label>
+          <input id="hotelCheckoutDateInput" class="hotel-input" type="date" data-cal />
         </div>
         <div class="hotel-field">
           <label class="hotel-field-label" for="hotelCheckinTimeInput">チェックイン予定時刻</label>
@@ -353,10 +357,6 @@
       <a href="./hotel.html" class="drawer-nav-item drawer-nav-item--active">
         <span class="drawer-nav-icon">🏨</span>
         <span>ホテルを見つける</span>
-      </a>
-      <a href="./flight.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">✈</span>
-        <span>飛行機を見つける</span>
       </a>
       <a href="./tour.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">🗺</span>
@@ -825,19 +825,24 @@
       if (checkin && checkout) label += "  →  ";
       if (checkout)           label += `チェックアウト ${fmtDate(checkout)}`;
       dateLabel.textContent = label;
+      const checkoutDateInput = document.getElementById("hotelCheckoutDateInput");
+      if (checkoutDateInput) checkoutDateInput.value = checkout || "";
 
       // 既存データがあれば復元、なければスケジュールの日程から時刻を取得
       let currentGeo = null;
+      let activeSchedForNights = null;
       try {
         const listsData  = JSON.parse(localStorage.getItem(LISTS_KEY) || "{}");
         const activeList = listsData.lists?.find(l => l.id === listsData.activeListId) || listsData.lists?.[0];
         if (activeList) {
           const schedData  = JSON.parse(localStorage.getItem(SCHEDULE_KEY) || "{}");
           const activeSched = schedData?.[activeList.id];
+          activeSchedForNights = activeSched;
           const existing = activeSched?.hotels?.[nightId];
           if (existing) {
             document.getElementById("hotelNameInput").value   = existing.name   || "";
             document.getElementById("hotelBudgetInput").value = existing.pricePerPerson || existing.budget || "";
+            if (existing.checkout && checkoutDateInput) checkoutDateInput.value = existing.checkout;
             document.getElementById("hotelCheckinTimeInput").value = existing.checkinTime || "18:00";
             document.getElementById("hotelCheckoutTimeInput").value = existing.checkoutTime || "09:00";
             if (existing.lat && existing.lng) {
@@ -856,6 +861,17 @@
           }
         }
       } catch {}
+
+      function refreshNightDateLabel() {
+        const out = checkoutDateInput?.value || checkout || "";
+        let nextLabel = "";
+        if (checkin) nextLabel += `チェックイン ${fmtDate(checkin)}`;
+        if (checkin && out) nextLabel += "  →  ";
+        if (out) nextLabel += `チェックアウト ${fmtDate(out)}`;
+        dateLabel.textContent = nextLabel;
+      }
+      checkoutDateInput?.addEventListener("change", refreshNightDateLabel);
+      refreshNightDateLabel();
 
       const nameInput = document.getElementById("hotelNameInput");
       const geoStatus = document.getElementById("hotelGeoStatus");
@@ -884,6 +900,7 @@
       document.getElementById("saveNightBtn").addEventListener("click", async () => {
         const name   = nameInput.value.trim();
         const pricePerPerson = parseInt(document.getElementById("hotelBudgetInput").value) || 0;
+        const selectedCheckout = document.getElementById("hotelCheckoutDateInput")?.value || checkout || "";
         const checkinTime = document.getElementById("hotelCheckinTimeInput").value || "";
         const checkoutTime = document.getElementById("hotelCheckoutTimeInput").value || "";
         const addAsSpot = document.getElementById("hotelAddSpotInput")?.checked !== false;
@@ -908,21 +925,45 @@
           const all = JSON.parse(localStorage.getItem(SCHEDULE_KEY) || "{}");
           if (!all[activeList.id])         all[activeList.id]         = {};
           if (!all[activeList.id].hotels)  all[activeList.id].hotels  = {};
+          const activeSched = all[activeList.id];
+          const days = Array.isArray(activeSched.days) ? activeSched.days : [];
+          const dayIdx = days.findIndex(d => d.id === nightId);
+          const maxNights = dayIdx >= 0 ? Math.max(1, days.length - dayIdx - 1) : 1;
+          let requestedNights = 1;
+          if (checkin && selectedCheckout) {
+            const start = new Date(`${checkin}T00:00:00`);
+            const end = new Date(`${selectedCheckout}T00:00:00`);
+            const diff = Math.round((end - start) / 86400000);
+            requestedNights = diff > 0 ? diff : 1;
+          }
+          const nights = Math.min(requestedNights, maxNights);
 
           // data-affiliate-* 属性で将来のアフィリエイト拡張が可能な構造
-          all[activeList.id].hotels[nightId] = {
+          const hotelData = {
             name,
             lat:      currentGeo?.lat  ?? null,
             lng:      currentGeo?.lng  ?? null,
             budget: pricePerPerson,
             pricePerPerson,
+            nights,
             checkinTime,
             checkoutTime,
             checkin:  checkin  || null,
-            checkout: checkout || null,
+            checkout: selectedCheckout || checkout || null,
             // affiliateProvider: null,  // 例: "booking" / "jalan" / "rakuten"
             // affiliateUrl: null,       // アフィリエイトリンクURL
           };
+          for (let offset = 0; offset < nights; offset++) {
+            const targetDay = dayIdx >= 0 ? days[dayIdx + offset] : null;
+            const targetNightId = targetDay?.id || nightId;
+            const targetCheckout = days[dayIdx + offset + 1]?.date || checkout || null;
+            all[activeList.id].hotels[targetNightId] = {
+              ...hotelData,
+              sourceNightId: nightId,
+              checkin: targetDay?.date || checkin || null,
+              checkout: offset === nights - 1 ? (selectedCheckout || targetCheckout) : targetCheckout,
+            };
+          }
 
           if (addAsSpot) {
             if (!Array.isArray(activeList.spots)) activeList.spots = [];
@@ -940,6 +981,7 @@
               lng: currentGeo?.lng ?? activeList.spots[existingSpotIndex]?.lng ?? null,
               hotelCheckinTime: checkinTime || null,
               hotelCheckoutTime: checkoutTime || null,
+              hotelNights: nights,
               sourceType: "hotel",
               sourceNightId: nightId
             };
@@ -983,5 +1025,6 @@
   <script src="./theme.js"></script>
 </body>
 </html>
+
 
 

@@ -34,61 +34,64 @@ const BG_THEMES = [
 ];
 
 const THEME_COLOR_MAP = {
-  warm:     { accent: "#ff7a45", accentDeep: "#ce5428", accentLight: "#ff9a52", accentSoft: "rgba(255,122,69,0.12)",   line: "rgba(166,97,54,0.2)",    panel: "rgba(255,252,245,0.88)", shadow: "0 24px 50px rgba(149,90,48,0.16)",   accentRgb: "255,122,69",  shadowBaseRgb: "149,90,48"  },
-  sky:      { accent: "#3b8fd4", accentDeep: "#1a6aad", accentLight: "#60aee8", accentSoft: "rgba(59,143,212,0.12)",   line: "rgba(59,120,200,0.22)",  panel: "rgba(240,248,255,0.88)", shadow: "0 24px 50px rgba(30,90,160,0.14)",   accentRgb: "59,143,212",  shadowBaseRgb: "30,90,160"  },
-  mint:     { accent: "#2da868", accentDeep: "#1a7a48", accentLight: "#52c485", accentSoft: "rgba(45,168,104,0.12)",   line: "rgba(45,150,90,0.22)",   panel: "rgba(240,255,248,0.88)", shadow: "0 24px 50px rgba(30,110,60,0.14)",   accentRgb: "45,168,104",  shadowBaseRgb: "30,110,60"  },
-  lavender: { accent: "#8b64cc", accentDeep: "#6a45a8", accentLight: "#a884e0", accentSoft: "rgba(139,100,204,0.12)",  line: "rgba(120,80,200,0.22)",  panel: "rgba(248,244,255,0.88)", shadow: "0 24px 50px rgba(90,60,150,0.14)",   accentRgb: "139,100,204", shadowBaseRgb: "90,60,150"  },
-  gray:     { accent: "#7a8a98", accentDeep: "#5a6a78", accentLight: "#96a6b4", accentSoft: "rgba(122,138,152,0.12)",  line: "rgba(100,120,140,0.22)", panel: "rgba(245,247,250,0.88)", shadow: "0 24px 50px rgba(60,80,100,0.14)",   accentRgb: "122,138,152", shadowBaseRgb: "60,80,100"  },
+  warm:     { accent: "#ff7a45", accentDeep: "#ce5428", accentLight: "#ff9a52", accentSoft: "rgba(255,122,69,0.12)",  line: "rgba(166,97,54,0.2)",    panel: "rgba(255,252,245,0.88)", shadow: "0 24px 50px rgba(149,90,48,0.16)", accentRgb: "255,122,69",  shadowBaseRgb: "149,90,48" },
+  sky:      { accent: "#3b8fd4", accentDeep: "#1a6aad", accentLight: "#60aee8", accentSoft: "rgba(59,143,212,0.12)",  line: "rgba(59,120,200,0.22)",  panel: "rgba(240,248,255,0.88)", shadow: "0 24px 50px rgba(30,90,160,0.14)",  accentRgb: "59,143,212",  shadowBaseRgb: "30,90,160" },
+  mint:     { accent: "#2da868", accentDeep: "#1a7a48", accentLight: "#52c485", accentSoft: "rgba(45,168,104,0.12)",  line: "rgba(45,150,90,0.22)",   panel: "rgba(240,255,248,0.88)", shadow: "0 24px 50px rgba(30,110,60,0.14)",  accentRgb: "45,168,104",  shadowBaseRgb: "30,110,60" },
+  lavender: { accent: "#8b64cc", accentDeep: "#6a45a8", accentLight: "#a884e0", accentSoft: "rgba(139,100,204,0.12)", line: "rgba(120,80,200,0.22)",  panel: "rgba(248,244,255,0.88)", shadow: "0 24px 50px rgba(90,60,150,0.14)",  accentRgb: "139,100,204", shadowBaseRgb: "90,60,150" },
+  gray:     { accent: "#7a8a98", accentDeep: "#5a6a78", accentLight: "#96a6b4", accentSoft: "rgba(122,138,152,0.12)", line: "rgba(100,120,140,0.22)", panel: "rgba(245,247,250,0.88)", shadow: "0 24px 50px rgba(60,80,100,0.14)",   accentRgb: "122,138,152", shadowBaseRgb: "60,80,100" },
 };
+
+function defaultSettings() {
+  return {
+    mapStyle: "osm-bright",
+    bgTheme: "warm",
+    areaSuggestCount: 10,
+    areaSuggestTimeout: 10,
+    calendarStyle: "standard",
+    googlePlaceHoursEnabled: true,
+  };
+}
 
 function loadSettings() {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
-    return raw ? { mapStyle: "osm-bright", bgTheme: "warm", ...JSON.parse(raw) } : defaultSettings();
+    return { ...defaultSettings(), ...(raw ? JSON.parse(raw) : {}) };
   } catch {
     return defaultSettings();
   }
 }
 
-function defaultSettings() {
-  return { mapStyle: "osm-bright", bgTheme: "warm" };
+function saveSettings(settings) {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
-
-function saveSettings(s) {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
-}
-
-const settings = loadSettings();
-
-// Apply current bg theme to this page immediately
-applyBgFull(settings.bgTheme);
 
 function applyBgFull(key) {
   const theme = BG_THEMES.find((t) => t.key === key) || BG_THEMES[0];
   document.body.style.background = theme.full;
   const colors = THEME_COLOR_MAP[key] || THEME_COLOR_MAP.warm;
   const root = document.documentElement;
-  root.style.setProperty("--accent",       colors.accent);
-  root.style.setProperty("--accent-deep",  colors.accentDeep);
+  root.style.setProperty("--accent", colors.accent);
+  root.style.setProperty("--accent-deep", colors.accentDeep);
   root.style.setProperty("--accent-light", colors.accentLight);
-  root.style.setProperty("--accent-soft",  colors.accentSoft);
-  root.style.setProperty("--line",         colors.line);
-  root.style.setProperty("--panel",           colors.panel);
-  root.style.setProperty("--shadow",          colors.shadow);
-  root.style.setProperty("--accent-rgb",      colors.accentRgb);
+  root.style.setProperty("--accent-soft", colors.accentSoft);
+  root.style.setProperty("--line", colors.line);
+  root.style.setProperty("--panel", colors.panel);
+  root.style.setProperty("--shadow", colors.shadow);
+  root.style.setProperty("--accent-rgb", colors.accentRgb);
   root.style.setProperty("--shadow-base-rgb", colors.shadowBaseRgb);
 }
 
-// ── Hamburger drawer ─────────────────────────────────────────────────────────
+const savedSettings = loadSettings();
+const draftSettings = { ...savedSettings };
+applyBgFull(savedSettings.bgTheme);
 
 const hamburgerBtn = document.getElementById("hamburgerBtn");
 const drawerBackdrop = document.getElementById("drawerBackdrop");
 const sideDrawer = document.getElementById("sideDrawer");
-
-hamburgerBtn.addEventListener("click", () => {
+hamburgerBtn?.addEventListener("click", () => {
   sideDrawer.classList.contains("hidden") ? openDrawer() : closeDrawer();
 });
-drawerBackdrop.addEventListener("click", closeDrawer);
+drawerBackdrop?.addEventListener("click", closeDrawer);
 
 function openDrawer() {
   sideDrawer.classList.remove("hidden");
@@ -102,80 +105,92 @@ function closeDrawer() {
   sideDrawer.setAttribute("aria-hidden", "true");
 }
 
-// ── BG theme swatches ─────────────────────────────────────────────────────────
-
 const bgThemeSwatches = document.getElementById("bgThemeSwatches");
-
-// ── Area suggest count ────────────────────────────────────────────────────────
-
-const areaSuggestCountInput = document.getElementById("areaSuggestCountInput");
-areaSuggestCountInput.value = settings.areaSuggestCount ?? 10;
-areaSuggestCountInput.addEventListener("change", () => {
-  const v = parseInt(areaSuggestCountInput.value, 10);
-  if (v >= 1 && v <= 50) {
-    settings.areaSuggestCount = v;
-    saveSettings(settings);
-  } else {
-    areaSuggestCountInput.value = settings.areaSuggestCount ?? 10;
-  }
-});
-
-const areaSuggestTimeoutInput = document.getElementById("areaSuggestTimeoutInput");
-areaSuggestTimeoutInput.value = settings.areaSuggestTimeout ?? 10;
-areaSuggestTimeoutInput.addEventListener("change", () => {
-  const v = parseInt(areaSuggestTimeoutInput.value, 10);
-  if (v >= 3 && v <= 60) {
-    settings.areaSuggestTimeout = v;
-    saveSettings(settings);
-  } else {
-    areaSuggestTimeoutInput.value = settings.areaSuggestTimeout ?? 10;
-  }
-});
-
-// ── Calendar style ────────────────────────────────────────────────────────────
-
-const calStyleGroup = document.getElementById("calStyleGroup");
-const currentCalStyle = settings.calendarStyle || "standard";
-calStyleGroup.querySelectorAll("input[name=calStyle]").forEach(radio => {
-  if (radio.value === currentCalStyle) radio.checked = true;
-  radio.addEventListener("change", () => {
-    settings.calendarStyle = radio.value;
-    saveSettings(settings);
-  });
-});
-
-// ── Google Maps API key ───────────────────────────────────────────────────────
-
-const googleMapsKeyInput = document.getElementById("googleMapsKeyInput");
-const googleMapsKeySave  = document.getElementById("googleMapsKeySave");
-const googleMapsKeySavedMsg = document.getElementById("googleMapsKeySavedMsg");
-
-if (googleMapsKeyInput) {
-  googleMapsKeyInput.value = settings.googleMapsApiKey || "";
-  googleMapsKeySave?.addEventListener("click", () => {
-    settings.googleMapsApiKey = googleMapsKeyInput.value.trim();
-    saveSettings(settings);
-    if (googleMapsKeySavedMsg) {
-      googleMapsKeySavedMsg.style.display = "block";
-      setTimeout(() => { googleMapsKeySavedMsg.style.display = "none"; }, 2000);
-    }
-  });
-}
-
-// ── BG theme swatches ─────────────────────────────────────────────────────────
-
 BG_THEMES.forEach((theme) => {
   const btn = document.createElement("button");
-  btn.className = `theme-swatch${settings.bgTheme === theme.key ? " active" : ""}`;
+  btn.className = `theme-swatch${draftSettings.bgTheme === theme.key ? " active" : ""}`;
   btn.type = "button";
   btn.style.background = theme.swatch;
   btn.innerHTML = `<span class="theme-swatch-label">${theme.label}</span>`;
   btn.addEventListener("click", () => {
-    settings.bgTheme = theme.key;
-    saveSettings(settings);
+    draftSettings.bgTheme = theme.key;
     document.querySelectorAll(".theme-swatch").forEach((s) => s.classList.remove("active"));
     btn.classList.add("active");
     applyBgFull(theme.key);
+    markDirty();
   });
-  bgThemeSwatches.appendChild(btn);
+  bgThemeSwatches?.appendChild(btn);
 });
+
+const areaSuggestCountInput = document.getElementById("areaSuggestCountInput");
+const areaSuggestTimeoutInput = document.getElementById("areaSuggestTimeoutInput");
+const googlePlaceHoursEnabled = document.getElementById("googlePlaceHoursEnabled");
+const calStyleGroup = document.getElementById("calStyleGroup");
+const settingsSaveBtn = document.getElementById("settingsSaveBtn");
+const settingsStatus = document.getElementById("settingsStatus");
+const clearPageCacheBtn = document.getElementById("clearPageCacheBtn");
+const cacheClearStatus = document.getElementById("cacheClearStatus");
+
+if (areaSuggestCountInput) areaSuggestCountInput.value = draftSettings.areaSuggestCount;
+if (areaSuggestTimeoutInput) areaSuggestTimeoutInput.value = draftSettings.areaSuggestTimeout;
+if (googlePlaceHoursEnabled) googlePlaceHoursEnabled.checked = draftSettings.googlePlaceHoursEnabled !== false;
+
+areaSuggestCountInput?.addEventListener("change", () => {
+  const value = parseInt(areaSuggestCountInput.value, 10);
+  if (value >= 1 && value <= 50) draftSettings.areaSuggestCount = value;
+  else areaSuggestCountInput.value = draftSettings.areaSuggestCount;
+  markDirty();
+});
+
+areaSuggestTimeoutInput?.addEventListener("change", () => {
+  const value = parseInt(areaSuggestTimeoutInput.value, 10);
+  if (value >= 3 && value <= 60) draftSettings.areaSuggestTimeout = value;
+  else areaSuggestTimeoutInput.value = draftSettings.areaSuggestTimeout;
+  markDirty();
+});
+
+googlePlaceHoursEnabled?.addEventListener("change", () => {
+  draftSettings.googlePlaceHoursEnabled = googlePlaceHoursEnabled.checked;
+  markDirty();
+});
+
+calStyleGroup?.querySelectorAll("input[name=calStyle]").forEach((radio) => {
+  radio.checked = radio.value === draftSettings.calendarStyle;
+  radio.addEventListener("change", () => {
+    draftSettings.calendarStyle = radio.value;
+    markDirty();
+  });
+});
+
+settingsSaveBtn?.addEventListener("click", () => {
+  saveSettings(draftSettings);
+  if (settingsStatus) {
+    settingsStatus.textContent = "保存しました。";
+    settingsStatus.classList.remove("settings-status--dirty");
+  }
+});
+
+clearPageCacheBtn?.addEventListener("click", async () => {
+  clearPageCacheBtn.disabled = true;
+  if (cacheClearStatus) cacheClearStatus.textContent = "削除しています...";
+  try {
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((key) => caches.delete(key)));
+    }
+    sessionStorage.clear();
+    if (cacheClearStatus) cacheClearStatus.textContent = "削除しました。ページを再読み込みします。";
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
+  } catch (error) {
+    if (cacheClearStatus) cacheClearStatus.textContent = "削除に失敗しました。ブラウザの再読み込みを試してください。";
+    clearPageCacheBtn.disabled = false;
+  }
+});
+
+function markDirty() {
+  if (!settingsStatus) return;
+  settingsStatus.textContent = "未保存の変更があります。";
+  settingsStatus.classList.add("settings-status--dirty");
+}

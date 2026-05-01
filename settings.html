@@ -81,19 +81,50 @@
           <h2>交通経路API（Google Maps）</h2>
         </div>
       </div>
-      <p class="settings-desc" style="margin-bottom:10px">スケジュール画面の移動時間・乗り換え情報を正確に取得します。<br>
-        Google Cloud Console で「Maps JavaScript API」と「Directions API」を有効にしてAPIキーを取得してください（月$200相当まで無料、個人利用なら実質無制限）。</p>
-      <div class="settings-row">
-        <label class="settings-label" for="googleMapsKeyInput">
-          Google Maps API キー
-          <span class="settings-desc">設定するとスケジュール画面の移動時間が正確になります。未設定時は距離推定を使います。</span>
-        </label>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
-          <input id="googleMapsKeyInput" type="password" placeholder="AIzaSy..." class="settings-number-input" style="flex:1;min-width:180px;font-size:0.9rem" autocomplete="off" />
-          <button id="googleMapsKeySave" class="primary-button" type="button">保存</button>
+      <p class="settings-desc" style="margin-bottom:10px">
+        APIキーは画面には保存しません。プロジェクト直下の <code>.env</code> に
+        <code>GOOGLE_MAPS_API_KEY</code> として置くと、車移動はローカルサーバー経由でGoogle Routes APIを使います。
+        公共交通は日本の乗換API制限を避けるため、いったん電車移動の概算時間を表示します。
+      </p>
+    </section>
+
+    <section class="panel settings-section">
+      <div class="panel-head">
+        <div>
+          <p class="panel-kicker">Places API</p>
+          <h2>営業時間の自動取得</h2>
         </div>
       </div>
-      <p id="googleMapsKeySavedMsg" class="settings-desc" style="margin-top:6px;color:var(--accent-deep);display:none">✓ 保存しました</p>
+      <label class="settings-row" style="justify-content:flex-start; gap:12px">
+        <input id="googlePlaceHoursEnabled" type="checkbox" />
+        <span class="settings-label">
+          スポット追加時にGoogle Places APIから営業時間を取得する
+          <span class="settings-desc">プロジェクト直下の <code>.env</code> に <code>GOOGLE_MAPS_API_KEY</code> が必要です。取得できない場合もスポット保存は続行します。</span>
+        </span>
+      </label>
+    </section>
+
+    <section class="panel settings-section">
+      <div class="settings-save-row" style="display:flex; align-items:center; gap:12px; justify-content:flex-end; flex-wrap:wrap">
+        <span id="settingsStatus" class="settings-desc" aria-live="polite">変更後は保存ボタンを押してください。</span>
+        <button id="settingsSaveBtn" class="primary-button" type="button">設定を保存</button>
+      </div>
+    </section>
+
+    <section class="panel settings-section">
+      <div class="panel-head">
+        <div>
+          <p class="panel-kicker">Cache</p>
+          <h2>ページキャッシュ</h2>
+        </div>
+      </div>
+      <p class="settings-desc" style="margin-bottom:12px">
+        古い画面やスクリプトが残っているときに使います。しおりやスポットなどの保存データは削除しません。
+      </p>
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
+        <button id="clearPageCacheBtn" class="btn btn-outline" type="button">このページのキャッシュを削除</button>
+        <span id="cacheClearStatus" class="settings-desc" aria-live="polite"></span>
+      </div>
     </section>
 
     <div class="settings-back-row">
@@ -129,10 +160,6 @@
         <span class="drawer-nav-icon">🏨</span>
         <span>ホテルを見つける</span>
       </a>
-      <a href="./flight.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">✈</span>
-        <span>飛行機を見つける</span>
-      </a>
       <a href="./tour.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">🗺</span>
         <span>ツアーを見つける</span>
@@ -160,5 +187,6 @@
   <script src="./theme.js"></script>
 </body>
 </html>
+
 
 

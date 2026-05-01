@@ -16,6 +16,7 @@ const OVERVIEW_PADDING_RATIO = 0.15;
 const SHORT_HOSTS = new Set(["maps.app.goo.gl", "goo.gl"]);
 
 const SETTINGS_KEY = "spot-map-settings.v1";
+const IS_EMBEDDED_SPOT_MENU = new URLSearchParams(location.search).get("embedded") === "1";
 let _listsData = null;
 
 const MAP_STYLES_META = [
@@ -73,9 +74,14 @@ const THEME_COLOR_MAP = {
 function loadAppSettings() {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
-    return raw ? { mapStyle: "osm-bright", bgTheme: "warm", ...JSON.parse(raw) } : { mapStyle: "osm-bright", bgTheme: "warm" };
+    const defaults = {
+      mapStyle: "osm-bright",
+      bgTheme: "warm",
+      googlePlaceHoursEnabled: true,
+    };
+    return raw ? { ...defaults, ...JSON.parse(raw) } : defaults;
   } catch {
-    return { mapStyle: "osm-bright", bgTheme: "warm" };
+    return { mapStyle: "osm-bright", bgTheme: "warm", googlePlaceHoursEnabled: true };
   }
 }
 
@@ -140,7 +146,7 @@ const SPOT_PIN_ICONS = {
   restaurant: "🍽",
   tourist: "⛩",
   hotel: "🏨",
-  other: "",
+  other: "📍",
 };
 
 function detectSpotCategory(name, osmCategory, osmType) {
@@ -450,6 +456,7 @@ async function saveLocation() {
       type: "spot",
       spotCategory,
     };
+    await maybeAttachGoogleBusinessHours(location);
     state.spots = [...state.spots, location];
     persistState();
     form.reset();
@@ -477,6 +484,32 @@ async function buildSpotFromUrl(url) {
 }
 
 // Nominatim（OpenStreetMap）に直接問い合わせてスポットを1件取得
+async function maybeAttachGoogleBusinessHours(spot) {
+  if (!spot || loadAppSettings().googlePlaceHoursEnabled === false) return spot;
+  const query = spot.sourceQuery || spot.name || "";
+  if (!query.trim()) return spot;
+  try {
+    const response = await fetch("/api/place-hours", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: spot.name,
+        query,
+        lat: spot.lat,
+        lng: spot.lng,
+      }),
+    });
+    if (!response.ok) return spot;
+    const data = await response.json();
+    if (data.businessHours && typeof data.businessHours === "object") {
+      spot.businessHours = data.businessHours;
+    }
+  } catch (error) {
+    console.warn("Google Places営業時間の取得に失敗しました", error);
+  }
+  return spot;
+}
+
 async function searchByNominatim(query) {
   const params = new URLSearchParams({ q: query, format: "jsonv2", limit: "1" });
   const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
@@ -713,6 +746,15 @@ function openSpotMenu(id) {
   if (!spot) return;
   state.editingSpotId = id;
   spotMenuTitle.textContent = spot.name;
+  const tourLink = document.getElementById("spotTourSearchLink");
+  if (tourLink) {
+    const params = new URLSearchParams({ spotId: spot.id, spotName: spot.name || "" });
+    if (spot.lat && spot.lng) {
+      params.set("lat", spot.lat);
+      params.set("lng", spot.lng);
+    }
+    tourLink.href = `./tour.html?${params.toString()}`;
+  }
   spotNameInput.value = spot.name || "";
   spotBudgetInput.value = spot.budget || "";
   spotDescriptionInput.value = spot.description || "";
@@ -975,7 +1017,8 @@ function fillBusinessHoursInputs(hours) {
     const enabledInput = document.querySelector(`.spot-hours-enabled[data-day="${day}"]`);
     const openInput = row.querySelector('[data-part="open"]');
     const closeInput = row.querySelector('[data-part="close"]');
-    const ranges = String(hours?.[day] || "").split(",").map(v => splitBusinessHoursRange(v)).filter(r => r.open && r.close);
+    const isClosed = String(hours?.[day] || "").trim().toLowerCase() === "closed";
+    const ranges = isClosed ? [] : String(hours?.[day] || "").split(",").map(v => splitBusinessHoursRange(v)).filter(r => r.open && r.close);
     const range = ranges[0] || { open: "", close: "" };
     const enabled = !!(range.open && range.close);
     if (enabledInput) enabledInput.checked = enabled;
@@ -1015,6 +1058,7 @@ function fillBusinessHoursInputs(hours) {
 
 function readBusinessHoursInputs() {
   const businessHours = {};
+  const currentSpot = state.spots.find((spot) => spot.id === state.editingSpotId);
   if (!spotHoursWeeklyMode?.checked) {
     const sun = readPrimaryHoursRange("sun");
     // 非曜日別モードでは常に有効扱い（チェックボックスなし）
@@ -1035,7 +1079,10 @@ function readBusinessHoursInputs() {
   document.querySelectorAll(".spot-hours-range").forEach(row => {
     const day = row.dataset.day;
     const enabled = document.querySelector(`.spot-hours-enabled[data-day="${day}"]`)?.checked;
-    if (!enabled) return;
+    if (!enabled) {
+      if (currentSpot?.businessHours?.[day] === "closed") businessHours[day] = "closed";
+      return;
+    }
     if (row.classList.contains("hidden")) return;
     const openInput = row.querySelector('[data-part="open"]');
     const closeInput = row.querySelector('[data-part="close"]');
@@ -1093,6 +1140,9 @@ function closeSpotMenu() {
   spotMenu.classList.add("hidden");
   spotMenuBackdrop.classList.add("hidden");
   spotMenu.setAttribute("aria-hidden", "true");
+  if (IS_EMBEDDED_SPOT_MENU && window.parent && window.parent !== window) {
+    window.parent.postMessage({ type: "spot-menu-closed" }, window.location.origin);
+  }
 }
 
 function renderMapStylePopover() {
@@ -1953,7 +2003,7 @@ function deleteCustomCategory(key) {
   renderCategoryModal();
 }
 
-function addSpotFromSuggestion(suggestion) {
+async function addSpotFromSuggestion(suggestion) {
   const spotCategory = detectSpotCategory(
     suggestion.name,
     suggestion.osmCategory || "",
@@ -1973,6 +2023,7 @@ function addSpotFromSuggestion(suggestion) {
     osmCategory: suggestion.osmCategory || "",
     osmType: suggestion.osmType || "",
   };
+  await maybeAttachGoogleBusinessHours(location);
   state.spots = [...state.spots, location];
   persistState();
   placeInput.value = "";

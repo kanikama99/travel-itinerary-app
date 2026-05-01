@@ -1,112 +1,219 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ツアーを見つける — Trip Pop Map</title>
+  <title>ツアーを見つける - Trip Pop Map</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./styles.css" />
   <style>
-    .stub-shell {
-      width: min(760px, calc(100% - 32px));
-      margin: 0 auto;
-      padding: 40px 0 80px;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
-    .stub-eyebrow {
-      font-size: 0.82rem;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: var(--accent-deep);
-      font-weight: 700;
-      margin: 0 0 4px;
-    }
-    .stub-title { font-size: clamp(1.5rem, 4vw, 2rem); font-weight: 700; line-height: 1.2; margin: 0 0 8px; }
-    .stub-coming-soon {
-      padding: 48px 32px;
-      text-align: center;
-      background: var(--panel);
-      border-radius: var(--radius-xl);
-      border: 1px solid var(--line);
-      color: var(--muted);
-      font-size: 1.1rem;
-    }
-    .stub-coming-soon .stub-icon { font-size: 3rem; display: block; margin-bottom: 12px; }
+    .tour-shell { width: min(940px, calc(100% - 32px)); margin: 0 auto; padding: 40px 0 80px; display: grid; gap: 22px; }
+    .tour-eyebrow { font-size: .82rem; letter-spacing: .16em; text-transform: uppercase; color: var(--accent-deep); font-weight: 700; margin: 0 0 4px; }
+    .tour-title { font-size: clamp(1.7rem,4vw,2.25rem); margin: 0; line-height: 1.2; }
+    .tour-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 20px; box-shadow: 0 5px 18px rgb(var(--shadow-base-rgb,149,90,48) / .10); }
+    .tour-card-kicker { margin: 0 0 14px; font-size: .78rem; letter-spacing: .14em; text-transform: uppercase; color: var(--accent-deep); font-weight: 700; }
+    .tour-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .tour-field { display: grid; gap: 6px; }
+    .tour-field-label { font-size: .86rem; font-weight: 800; color: var(--accent-deep); }
+    .tour-input { width: 100%; font: inherit; font-size: .94rem; color: var(--text); border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 12px; background: rgba(255,255,255,.9); outline: none; }
+    .tour-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgb(var(--accent-rgb,255,122,69) / .12); }
+    .tour-sites { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+    .tour-site-btn, .tour-save-btn { display: flex; align-items: center; justify-content: center; gap: 8px; border: 1.5px solid rgb(var(--accent-rgb,255,122,69) / .24); border-radius: 12px; background: rgba(255,255,255,.72); color: var(--text); font: inherit; font-weight: 850; padding: 12px; cursor: pointer; text-decoration: none; text-align: center; }
+    .tour-site-btn:hover, .tour-save-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
+    .tour-save-btn { width: 100%; margin-top: 14px; color: #fff; background: linear-gradient(135deg,var(--accent),var(--accent-light)); border: none; }
+    .tour-note { margin: 10px 0 0; font-size: .84rem; color: var(--muted); line-height: 1.6; }
+    .target-pill { display: inline-flex; align-items: center; gap: 7px; width: fit-content; padding: 6px 12px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-deep); font-weight: 800; }
+    @media (max-width: 760px) { .tour-grid, .tour-sites { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
-  <div class="stub-shell">
+  <main class="tour-shell">
     <header>
-      <p class="stub-eyebrow">Tour Search</p>
-      <h1 class="stub-title">🗺 ツアーを見つける</h1>
+      <p class="tour-eyebrow">Tour Search</p>
+      <h1 class="tour-title">ツアーを見つける</h1>
+      <div id="targetPill" class="target-pill hidden">🗺 <span id="targetPillText"></span></div>
     </header>
 
-    <div class="stub-coming-soon">
-      <span class="stub-icon">🗺</span>
-      <p>ツアー検索機能は準備中です。<br>もうしばらくお待ちください。</p>
+    <section class="tour-card">
+      <p class="tour-card-kicker">Search - スポットに行くツアーを探す</p>
+      <div class="tour-grid">
+        <div class="tour-field">
+          <label class="tour-field-label" for="tourSpotInput">目的地・スポット</label>
+          <input id="tourSpotInput" class="tour-input" type="text" placeholder="例：万博記念公園" />
+        </div>
+        <div class="tour-field">
+          <label class="tour-field-label" for="tourAreaInput">出発地・エリア</label>
+          <input id="tourAreaInput" class="tour-input" type="text" placeholder="例：大阪、梅田、札幌" />
+        </div>
+        <div class="tour-field">
+          <label class="tour-field-label" for="tourDateInput">参加日</label>
+          <input id="tourDateInput" class="tour-input" type="date" data-cal />
+        </div>
+        <div class="tour-field">
+          <label class="tour-field-label" for="tourPeopleInput">人数</label>
+          <input id="tourPeopleInput" class="tour-input" type="number" min="1" max="20" step="1" value="2" />
+        </div>
+        <div class="tour-field">
+          <label class="tour-field-label" for="tourBudgetInput">予算上限（円/名）</label>
+          <input id="tourBudgetInput" class="tour-input" type="number" min="0" step="500" placeholder="例：10000" />
+        </div>
+        <div class="tour-field">
+          <label class="tour-field-label" for="tourKeywordInput">追加キーワード</label>
+          <input id="tourKeywordInput" class="tour-input" type="text" placeholder="例：日帰り、ガイド付き、チケット付き" />
+        </div>
+      </div>
+      <div class="tour-sites">
+        <button class="tour-site-btn" type="button" onclick="searchTour('google')">Google</button>
+        <button class="tour-site-btn" type="button" onclick="searchTour('veltra')">VELTRA</button>
+        <button class="tour-site-btn" type="button" onclick="searchTour('klook')">Klook</button>
+        <button class="tour-site-btn" type="button" onclick="searchTour('jtb')">JTB</button>
+      </div>
+      <p class="tour-note">将来アフィリエイト化しやすいよう、予約サイト別の検索ボタンに分けています。提携先が決まったら各URLにIDを付与します。</p>
+    </section>
+
+    <section class="tour-card">
+      <p class="tour-card-kicker">Register - 決めたツアーをメモ</p>
+      <div class="tour-grid">
+        <div class="tour-field">
+          <label class="tour-field-label" for="tourNameInput">ツアー名</label>
+          <input id="tourNameInput" class="tour-input" type="text" placeholder="例：万博記念公園 ガイドツアー" />
+        </div>
+        <div class="tour-field">
+          <label class="tour-field-label" for="tourProviderInput">予約サイト・会社</label>
+          <input id="tourProviderInput" class="tour-input" type="text" placeholder="例：VELTRA、Klook、JTB" />
+        </div>
+        <div class="tour-field">
+          <label class="tour-field-label" for="tourStartTimeInput">集合・開始時刻</label>
+          <input id="tourStartTimeInput" class="tour-input" type="time" step="300" />
+        </div>
+        <div class="tour-field">
+          <label class="tour-field-label" for="tourPriceInput">1名あたり予約金額（円）</label>
+          <input id="tourPriceInput" class="tour-input" type="number" min="0" step="500" />
+        </div>
+      </div>
+      <button id="saveTourBtn" class="tour-save-btn" type="button">このツアー情報を保存して戻る</button>
+      <p id="tourSaveStatus" class="tour-note" aria-live="polite"></p>
+    </section>
+
+    <div class="page-nav page-nav--end">
+      <a href="./schedule.html" class="page-nav-btn page-nav-btn--prev">スケジュールへ戻る</a>
     </div>
-  </div>
+  </main>
 
   <button id="hamburgerBtn" class="hamburger-btn" type="button" aria-label="メニューを開く">
-    <span class="hamburger-line"></span>
-    <span class="hamburger-line"></span>
-    <span class="hamburger-line"></span>
+    <span class="hamburger-line"></span><span class="hamburger-line"></span><span class="hamburger-line"></span>
   </button>
-
   <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
   <aside id="sideDrawer" class="side-drawer hidden" aria-hidden="true">
-    <div class="drawer-head">
-      <p class="drawer-kicker">Menu</p>
-    </div>
+    <div class="drawer-head"><p class="drawer-kicker">Menu</p></div>
     <nav class="drawer-nav">
-      <a href="./bookmarks.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">📒</span>
-        <span>しおりを選ぶ</span>
-      </a>
-      <a href="./spots.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">📍</span>
-        <span>行きたい場所</span>
-      </a>
-      <a href="./schedule.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">📅</span>
-        <span>スケジュール</span>
-      </a>
-      <a href="./hotel.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">🏨</span>
-        <span>ホテルを見つける</span>
-      </a>
-      <a href="./flight.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">✈</span>
-        <span>飛行機を見つける</span>
-      </a>
-      <a href="./tour.html" class="drawer-nav-item drawer-nav-item--active">
-        <span class="drawer-nav-icon">🗺</span>
-        <span>ツアーを見つける</span>
-      </a>
-      <a href="./gourmet.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">🍜</span>
-        <span>グルメを見つける</span>
-      </a>
-      <a href="./checklist.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">📋</span>
-        <span>持ち物リスト</span>
-      </a>
-      <a href="./print.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">🖨</span>
-        <span>印刷する</span>
-      </a>
-      <a href="./settings.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">⚙</span>
-        <span>設定</span>
-      </a>
+      <a href="./bookmarks.html" class="drawer-nav-item"><span class="drawer-nav-icon">📒</span><span>しおりを選ぶ</span></a>
+      <a href="./spots.html" class="drawer-nav-item"><span class="drawer-nav-icon">📍</span><span>行きたい場所</span></a>
+      <a href="./schedule.html" class="drawer-nav-item"><span class="drawer-nav-icon">📅</span><span>スケジュール</span></a>
+      <a href="./hotel.html" class="drawer-nav-item"><span class="drawer-nav-icon">🏨</span><span>ホテルを見つける</span></a>
+      <a href="./tour.html" class="drawer-nav-item drawer-nav-item--active"><span class="drawer-nav-icon">🗺</span><span>ツアーを見つける</span></a>
+      <a href="./gourmet.html" class="drawer-nav-item"><span class="drawer-nav-icon">🍜</span><span>グルメを見つける</span></a>
+      <a href="./checklist.html" class="drawer-nav-item"><span class="drawer-nav-icon">📋</span><span>持ち物リスト</span></a>
+      <a href="./print.html" class="drawer-nav-item"><span class="drawer-nav-icon">🖨</span><span>印刷する</span></a>
+      <a href="./settings.html" class="drawer-nav-item"><span class="drawer-nav-icon">⚙</span><span>設定</span></a>
     </nav>
   </aside>
 
   <script>
+    const LISTS_KEY = "spot-map-lists.v1";
+    const SCHEDULE_KEY = "spot-map-schedule.v1";
+
+    function params() { return new URLSearchParams(location.search); }
+    function val(id) { return document.getElementById(id)?.value?.trim() || ""; }
+    function enc(value) { return encodeURIComponent(value); }
+
+    function getActiveContext() {
+      const listsData = JSON.parse(localStorage.getItem(LISTS_KEY) || "{}");
+      const activeList = listsData.lists?.find(l => l.id === listsData.activeListId) || listsData.lists?.[0] || null;
+      const all = JSON.parse(localStorage.getItem(SCHEDULE_KEY) || "{}");
+      const schedule = activeList ? (all[activeList.id] || {}) : {};
+      return { listsData, activeList, all, schedule };
+    }
+
+    function initFromContext() {
+      const p = params();
+      const spotName = p.get("spotName") || "";
+      if (spotName) {
+        document.getElementById("tourSpotInput").value = spotName;
+        document.getElementById("tourNameInput").value = `${spotName} ツアー`;
+        document.getElementById("targetPillText").textContent = spotName;
+        document.getElementById("targetPill").classList.remove("hidden");
+      }
+      try {
+        const { activeList, schedule } = getActiveContext();
+        if (!val("tourAreaInput")) {
+          document.getElementById("tourAreaInput").value = schedule.tripMeetPlace || activeList?.name || "";
+        }
+        if (schedule.tripMeetDate) {
+          const el = document.getElementById("tourDateInput");
+          el.value = schedule.tripMeetDate;
+          window.CalendarPicker?.updateDisplay(el);
+        }
+      } catch {}
+    }
+
+    function buildQuery() {
+      return [
+        val("tourAreaInput"),
+        val("tourSpotInput"),
+        "ツアー",
+        val("tourDateInput"),
+        val("tourPeopleInput") ? `${val("tourPeopleInput")}名` : "",
+        val("tourBudgetInput") ? `${val("tourBudgetInput")}円以下` : "",
+        val("tourKeywordInput"),
+      ].filter(Boolean).join(" ");
+    }
+
+    function searchTour(site) {
+      const q = buildQuery();
+      const spot = val("tourSpotInput") || q;
+      let url = `https://www.google.com/search?q=${enc(q)}`;
+      if (site === "veltra") url = `https://www.veltra.com/jp/japan/search/?q=${enc(spot)}`;
+      if (site === "klook") url = `https://www.klook.com/ja/search/result/?query=${enc(spot)}`;
+      if (site === "jtb") url = `https://www.jtb.co.jp/kokunai-hotel/list/?keyword=${enc(q)}`;
+      window.open(url, "_blank");
+    }
+
+    document.getElementById("saveTourBtn").addEventListener("click", () => {
+      const status = document.getElementById("tourSaveStatus");
+      const name = val("tourNameInput");
+      if (!name) {
+        status.textContent = "ツアー名を入力してください。";
+        return;
+      }
+      try {
+        const p = params();
+        const { activeList, all, schedule } = getActiveContext();
+        if (!activeList) throw new Error("しおりが見つかりません");
+        if (!schedule.tours) schedule.tours = {};
+        const id = `tour_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+        schedule.tours[id] = {
+          id,
+          spotId: p.get("spotId") || "",
+          spotName: val("tourSpotInput"),
+          name,
+          provider: val("tourProviderInput"),
+          date: val("tourDateInput"),
+          startTime: val("tourStartTimeInput"),
+          pricePerPerson: parseInt(val("tourPriceInput"), 10) || 0,
+          people: parseInt(val("tourPeopleInput"), 10) || 1,
+          sourceType: "tour",
+        };
+        all[activeList.id] = schedule;
+        localStorage.setItem(SCHEDULE_KEY, JSON.stringify(all));
+        status.textContent = "保存しました。";
+      } catch (error) {
+        status.textContent = `保存に失敗しました: ${error.message}`;
+      }
+    });
+
     const hamburgerBtn = document.getElementById("hamburgerBtn");
     const sideDrawer = document.getElementById("sideDrawer");
     const drawerBackdrop = document.getElementById("drawerBackdrop");
@@ -122,39 +229,9 @@
       sideDrawer.setAttribute("aria-hidden", "true");
     });
 
-    (function () {
-      const saved = localStorage.getItem("spot-map-settings.v1");
-      if (!saved) return;
-      try {
-        const s = JSON.parse(saved);
-        const themes = [
-          ["#fff3dd","#fffaf0","rgba(166,97,54,0.18)","#233038","#5f6d73","#ff7a45","#ce5428","255,122,69","149,90,48"],
-          ["#e8f4fd","#f0f8ff","rgba(54,120,166,0.18)","#1a2a3a","#4a6070","#4a9ede","#2d7ab5","74,158,222","45,100,165"],
-          ["#f0fdf4","#f7fff9","rgba(54,166,97,0.18)","#1a3323","#3a6050","#34c97a","#1fa85e","52,201,122","30,140,80"],
-          ["#fdf0f8","#fff7fd","rgba(166,54,140,0.18)","#2a1a2a","#5f3a5a","#d44ab0","#a83285","212,74,176","140,50,120"],
-          ["#fff8f0","#fffaf5","rgba(200,120,40,0.18)","#2a1800","#6a4a20","#e08020","#b05a10","224,128,32","160,80,20"],
-          ["#f5f0ff","#faf7ff","rgba(120,80,200,0.18)","#180a2a","#4a3a6a","#8060d0","#6040a8","128,96,208","80,60,150"],
-          ["#fff0f0","#fff7f7","rgba(166,54,54,0.18)","#2a0a0a","#6a3a3a","#e05050","#b03030","224,80,80","160,40,40"],
-          ["#f0fff8","#f5fffb","rgba(40,160,120,0.18)","#001a12","#1a4a3a","#28c890","#10a870","40,200,144","20,140,90"]
-        ];
-        const idx = s.bgTheme ?? 0;
-        const c = themes[Math.max(0, Math.min(themes.length - 1, idx))];
-        const r = document.documentElement;
-        r.style.setProperty("--bg", c[0]);
-        r.style.setProperty("--panel", c[1]);
-        r.style.setProperty("--panel-strong", c[1]);
-        r.style.setProperty("--line", c[2]);
-        r.style.setProperty("--text", c[3]);
-        r.style.setProperty("--muted", c[4]);
-        r.style.setProperty("--accent", c[5]);
-        r.style.setProperty("--accent-deep", c[6]);
-        r.style.setProperty("--accent-rgb", c[7]);
-        r.style.setProperty("--shadow-base-rgb", c[8]);
-      } catch (e) {}
-    })();
+    initFromContext();
   </script>
+  <script src="./calendar.js"></script>
   <script src="./theme.js"></script>
 </body>
 </html>
-
-
