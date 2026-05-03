@@ -6,29 +6,77 @@
   <title>持ち物リスト - Trip Pop Map</title>
   <link rel="stylesheet" href="./styles.css" />
   <style>
-    .tool-shell{width:min(1040px,calc(100% - 32px));margin:0 auto;padding:40px 0 80px;display:grid;gap:18px}.tool-title{font-size:clamp(1.7rem,4vw,2.25rem);margin:0}.tool-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);padding:20px}.check-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}.check-card{background:rgba(255,255,255,.55);border:1px solid rgb(var(--accent-rgb,255,122,69)/.18);border-radius:12px;padding:16px}.check-card h3{margin:0 0 10px;color:var(--accent-deep)}.item{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:7px 0;font-weight:700}.item-name{overflow-wrap:anywhere}.delete-item{border:0;border-radius:999px;background:rgb(var(--accent-rgb,255,122,69)/.12);color:var(--accent-deep);font-weight:900;width:28px;height:28px;cursor:pointer}.add-row{display:grid;grid-template-columns:1fr auto;gap:8px}.input{font:inherit;border:1.5px solid var(--line);border-radius:10px;padding:9px 12px;background:rgba(255,255,255,.9)}.btn{border:1.5px solid var(--line);border-radius:999px;background:rgba(255,255,255,.72);color:var(--accent-deep);font:inherit;font-weight:900;padding:9px 14px;cursor:pointer}.hint{margin:8px 0 0;color:var(--muted);font-size:.88rem}
+    .tool-shell{width:min(1040px,calc(100% - 32px));margin:0 auto;padding:40px 0 80px;display:grid;gap:18px}.tool-title{font-size:clamp(1.7rem,4vw,2.25rem);margin:0}.tool-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);padding:20px}.check-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}.check-card{background:rgba(255,255,255,.55);border:1px solid rgb(var(--accent-rgb,255,122,69)/.18);border-radius:12px;padding:16px}.check-card h3{margin:0 0 10px;color:var(--accent-deep)}.item{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:7px 0;font-weight:700}.item-name{word-break:keep-all;overflow-wrap:normal}.delete-item{border:0;border-radius:999px;background:rgb(var(--accent-rgb,255,122,69)/.12);color:var(--accent-deep);width:34px;height:34px;cursor:pointer;display:grid;place-items:center}.delete-item:hover{background:rgba(204,51,51,.12);color:#b33}.delete-item svg{width:16px;height:16px}.add-row{display:grid;grid-template-columns:1fr auto;gap:8px}.input{font:inherit;border:1.5px solid var(--line);border-radius:10px;padding:9px 12px;background:rgba(255,255,255,.9)}.btn{min-height:44px;border:1.5px solid var(--line);border-radius:999px;background:rgba(255,255,255,.72);color:var(--accent-deep);font:inherit;font-weight:900;padding:9px 14px;cursor:pointer}.hint{margin:8px 0 0;color:var(--muted);font-size:.88rem;line-height:1.6}@media(max-width:520px){.add-row{grid-template-columns:1fr}.btn{width:100%}}
   </style>
 </head>
 <body>
   <main class="tool-shell">
     <header><p class="panel-kicker">Packing List</p><h1 class="tool-title">持ち物リスト</h1></header>
-    <section class="tool-card"><div class="add-row"><input id="newItem" class="input" placeholder="持ち物を追加" /><button id="addBtn" class="btn" type="button">追加</button></div><p id="packingHint" class="hint"></p></section>
+    <nav class="page-nav-bar">
+      <a href="./schedule.html" class="page-nav-bar-btn page-nav-bar-btn--prev">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        スケジュール
+      </a>
+      <a href="./print.html" class="page-nav-bar-btn page-nav-bar-btn--next">
+        印刷する
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+    </nav>
+    <section class="tool-card">
+      <div class="add-row">
+        <input id="newItem" class="input" placeholder="持ち物を追加" />
+        <button id="addBtn" class="btn" type="button">追加</button>
+      </div>
+      <p id="packingHint" class="hint"></p>
+    </section>
     <section class="check-grid" id="list"></section>
-    <div class="page-nav page-nav--end"><a href="./schedule.html" class="page-nav-btn page-nav-btn--prev">スケジュールへ戻る</a></div>
   </main>
   <button id="hamburgerBtn" class="hamburger-btn" type="button" aria-label="メニューを開く"><span class="hamburger-line"></span><span class="hamburger-line"></span><span class="hamburger-line"></span></button>
   <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
-  <aside id="sideDrawer" class="side-drawer hidden" aria-hidden="true"><div class="drawer-head"><p class="drawer-kicker">Menu</p></div><nav class="drawer-nav"><a href="./bookmarks.html" class="drawer-nav-item"><span class="drawer-nav-icon">📒</span><span>しおりを選ぶ</span></a><a href="./spots.html" class="drawer-nav-item"><span class="drawer-nav-icon">📍</span><span>行きたい場所</span></a><a href="./schedule.html" class="drawer-nav-item"><span class="drawer-nav-icon">📅</span><span>スケジュール</span></a><a href="./hotel.html" class="drawer-nav-item"><span class="drawer-nav-icon">🏨</span><span>ホテルを見つける</span></a><a href="./tour.html" class="drawer-nav-item"><span class="drawer-nav-icon">🗺</span><span>ツアーを見つける</span></a><a href="./gourmet.html" class="drawer-nav-item"><span class="drawer-nav-icon">🍜</span><span>グルメを見つける</span></a><a href="./checklist.html" class="drawer-nav-item drawer-nav-item--active"><span class="drawer-nav-icon">📋</span><span>持ち物リスト</span></a><a href="./print.html" class="drawer-nav-item"><span class="drawer-nav-icon">🖨</span><span>印刷する</span></a><a href="./settings.html" class="drawer-nav-item"><span class="drawer-nav-icon">⚙</span><span>設定</span></a></nav></aside>
+  <aside id="sideDrawer" class="side-drawer hidden" aria-hidden="true"><div class="drawer-head"><p class="drawer-kicker">Menu</p></div><nav class="drawer-nav"><a href="./bookmarks.html" class="drawer-nav-item"><span class="drawer-nav-icon">★</span><span>しおりを選ぶ</span></a><a href="./spots.html" class="drawer-nav-item"><span class="drawer-nav-icon">📍</span><span>行きたい場所</span></a><a href="./tripplan.html" class="drawer-nav-item"><span class="drawer-nav-icon">📝</span><span>旅行計画</span></a><a href="./schedule.html" class="drawer-nav-item"><span class="drawer-nav-icon">🗓</span><span>スケジュール</span></a><a href="./hotel.html" class="drawer-nav-item"><span class="drawer-nav-icon">H</span><span>ホテルを見つける</span></a><a href="./tour.html" class="drawer-nav-item"><span class="drawer-nav-icon">T</span><span>ツアーを見つける</span></a><a href="./checklist.html" class="drawer-nav-item drawer-nav-item--active"><span class="drawer-nav-icon">C</span><span>持ち物リスト</span></a><a href="./print.html" class="drawer-nav-item"><span class="drawer-nav-icon">P</span><span>印刷する</span></a><a href="./howto.html" class="drawer-nav-item"><span class="drawer-nav-icon">?</span><span>使い方</span></a><a href="./settings.html" class="drawer-nav-item"><span class="drawer-nav-icon">⚙</span><span>設定</span></a></nav></aside>
   <script>
-    const KEY="trip-packing-list.v1",LISTS_KEY="spot-map-lists.v1";
-    function base(){return[{cat:"必需品",items:["財布","スマホ","充電器","身分証","保険証"]},{cat:"衣類",items:["下着","靴下","着替え","羽織り","寝巻き"]},{cat:"ケア",items:["常備薬","歯ブラシ","コンタクト用品","日焼け止め","ハンカチ"]},{cat:"旅行",items:["チケット","予約控え","折りたたみ傘","モバイルバッテリー","エコバッグ"]}]}
-    function norm(x){return typeof x==="string"?{name:x,done:false}:{name:x.name,done:!!x.done}}
-    function load(){try{const raw=localStorage.getItem(KEY);return(raw?JSON.parse(raw):base()).map(g=>({...g,items:(g.items||[]).map(norm)}))}catch{return base().map(g=>({...g,items:g.items.map(norm)}))}}
+    const KEY="trip-packing-list.v1",DELETED_KEY="trip-packing-deleted.v1",LISTS_KEY="spot-map-lists.v1";
+    const BASE_GROUPS=[
+      {cat:"基本",items:["財布","スマートフォン","充電器","身分証","保険証","免許証","爪切り","ティッシュ","髭剃り"]},
+      {cat:"衣類",items:["下着","靴下","着替え","羽織り","寝巻き"]},
+      {cat:"ケア",items:["常備薬","歯ブラシ","コンタクト用品","日焼け止め","ハンカチ"]},
+      {cat:"旅先",items:["チケット","予約確認","折りたたみ傘","モバイルバッテリー","エコバッグ"]},
+      {cat:"条件付き",items:[]}
+    ];
+    const COUNTRY_RULES=[
+      {name:"韓国",pattern:/韓国|ソウル|釜山|済州/i,plug:"C・F",currency:"韓国ウォン"},
+      {name:"台湾",pattern:/台湾|台北|高雄|台中/i,plug:"A・B",currency:"台湾ドル"},
+      {name:"中国",pattern:/中国|上海|北京|深圳|広州/i,plug:"A・C・I",currency:"人民元"},
+      {name:"香港",pattern:/香港/i,plug:"BF",currency:"香港ドル"},
+      {name:"タイ",pattern:/タイ|バンコク|プーケット|チェンマイ/i,plug:"A・B・C",currency:"タイバーツ"},
+      {name:"シンガポール",pattern:/シンガポール/i,plug:"BF",currency:"シンガポールドル"},
+      {name:"アメリカ",pattern:/アメリカ|ハワイ|グアム|ニューヨーク|ロサンゼルス/i,plug:"A・B",currency:"米ドル"},
+      {name:"フランス",pattern:/フランス|パリ/i,plug:"C・E",currency:"ユーロ"},
+      {name:"イタリア",pattern:/イタリア|ローマ|ミラノ|ベネチア/i,plug:"C・F・L",currency:"ユーロ"},
+      {name:"イギリス",pattern:/イギリス|英国|ロンドン/i,plug:"BF",currency:"英ポンド"},
+      {name:"オーストラリア",pattern:/オーストラリア|シドニー|メルボルン/i,plug:"O",currency:"豪ドル"}
+    ];
+    function norm(x){return typeof x==="string"?{name:x,done:false}:{name:x.name||x.text,done:!!x.done}}
+    function normalizeCat(cat){return cat==="旅行"||cat==="旅行先"?"旅先":cat}
+    function readDeleted(){try{return new Set(JSON.parse(localStorage.getItem(DELETED_KEY)||"[]"))}catch{return new Set()}}
+    function writeDeleted(set){localStorage.setItem(DELETED_KEY,JSON.stringify([...set]))}
+    function forgetDeleted(name){const deleted=readDeleted();deleted.delete(name);writeDeleted(deleted)}
+    function rememberDeleted(name){const deleted=readDeleted();deleted.add(name);writeDeleted(deleted)}
+    function base(){const deleted=readDeleted();return BASE_GROUPS.map(g=>({...g,items:g.items.filter(name=>!deleted.has(name)).map(norm)}))}
+    function load(){try{const raw=localStorage.getItem(KEY);return raw?JSON.parse(raw).map(g=>({cat:normalizeCat(g.cat),items:(g.items||[]).map(norm)})):base()}catch{return base()}}
     function save(d){localStorage.setItem(KEY,JSON.stringify(d))}
-    function overseas(){try{const data=JSON.parse(localStorage.getItem(LISTS_KEY)||"{}");const list=data.lists?.find(l=>l.id===data.activeListId)||data.lists?.[0]||{};const text=[list.name,...(list.spots||[]).map(s=>s.name)].filter(Boolean).join(" ");if(/海外|韓国|台湾|中国|香港|タイ|シンガポール|ハワイ|アメリカ|フランス|イタリア|イギリス|オーストラリア/i.test(text))return true;return(list.spots||[]).some(s=>{const lat=Number(s.lat),lng=Number(s.lng);return Number.isFinite(lat)&&Number.isFinite(lng)&&(lat<20||lat>46||lng<122||lng>154)})}catch{return false}}
-    function ensurePassport(d){if(!overseas())return d;const exists=d.some(g=>g.items.some(i=>norm(i).name==="パスポート"));if(!exists){d[0].items.unshift({name:"パスポート",done:false});save(d)}document.getElementById("packingHint").textContent="海外を含む可能性があるため、パスポートを提案しました。";return d}
-    function render(){const d=ensurePassport(load());const box=document.getElementById("list");box.innerHTML="";d.forEach((g,gi)=>{const card=document.createElement("article");card.className="check-card";card.innerHTML=`<h3>${g.cat}</h3>`;g.items.forEach((it,ii)=>{const row=document.createElement("div");row.className="item";row.innerHTML=`<input type="checkbox" ${it.done?"checked":""}><span class="item-name">${it.name}</span><button class="delete-item" type="button">×</button>`;row.querySelector("input").onchange=e=>{g.items[ii]={...it,done:e.target.checked};save(d)};row.querySelector("button").onclick=()=>{g.items.splice(ii,1);save(d);render()};card.appendChild(row)});box.appendChild(card)})}
-    document.getElementById("addBtn").onclick=()=>{const input=document.getElementById("newItem");const v=input.value.trim();if(!v)return;const d=load();d[0].items.push({name:v,done:false});save(d);input.value="";render()};const hb=document.getElementById("hamburgerBtn"),sd=document.getElementById("sideDrawer"),db=document.getElementById("drawerBackdrop");hb.onclick=()=>{const o=!sd.classList.contains("hidden");sd.classList.toggle("hidden",o);db.classList.toggle("hidden",o)};db.onclick=()=>{sd.classList.add("hidden");db.classList.add("hidden")};render();
+    function activeTripText(){try{const data=JSON.parse(localStorage.getItem(LISTS_KEY)||"{}");const list=data.lists?.find(l=>l.id===data.activeListId)||data.lists?.[0]||{};return{list,text:[list.name,...(list.spots||[]).map(s=>s.name)].filter(Boolean).join(" ")}}catch{return{list:{},text:""}}}
+    function isOverseas(list,text){if(/海外|韓国|台湾|中国|香港|タイ|シンガポール|ハワイ|アメリカ|フランス|イタリア|イギリス|オーストラリア/i.test(text))return true;return(list.spots||[]).some(s=>{const lat=Number(s.lat),lng=Number(s.lng);return Number.isFinite(lat)&&Number.isFinite(lng)&&(lat<20||lat>46||lng<122||lng>154)})}
+    function countryRule(text){return COUNTRY_RULES.find(rule=>rule.pattern.test(text))}
+    function ensureGroup(d,cat){cat=normalizeCat(cat);let group=d.find(g=>normalizeCat(g.cat)===cat);if(!group){group={cat,items:[]};d.push(group)}else{group.cat=cat}return group}
+    function hasItem(d,name){return d.some(g=>g.items.some(item=>norm(item).name===name))}
+    function addSuggested(d,name){if(readDeleted().has(name)||hasItem(d,name))return false;ensureGroup(d,"条件付き").items.push({name,done:false});return true}
+    function mergeDefaults(d){const deleted=readDeleted();BASE_GROUPS.forEach(group=>{const target=ensureGroup(d,group.cat);group.items.forEach(name=>{if(deleted.has(name))return;if(!target.items.some(item=>norm(item).name===name))target.items.push({name,done:false})})});return d}
+    function enrich(d){d=mergeDefaults(d);const {list,text}=activeTripText();const overseas=isOverseas(list,text);const rule=countryRule(text);const notes=[];if(overseas){["パスポート","セキュリティポーチ","海外SIM"].forEach(item=>{if(addSuggested(d,item))notes.push(`${item}を追加しました。`)});if(rule){if(addSuggested(d,`現地通貨（${rule.currency}）`))notes.push(`${rule.name}向けの現地通貨を追加しました。`);if(addSuggested(d,`変換プラグ（${rule.plug}タイプ）`))notes.push(`${rule.name}向けの変換プラグを追加しました。`)}else{if(addSuggested(d,"現地通貨"))notes.push("海外向けの現地通貨を追加しました。");if(addSuggested(d,"変換プラグ（渡航先に合わせて確認）"))notes.push("海外向けの変換プラグを追加しました。")}}document.getElementById("packingHint").textContent=notes.length?notes.join(" "):(overseas?"海外旅行向けの条件付き持ち物を確認できます。":"国内旅行向けの基本リストです。");save(d);return d}
+    function trashIcon(){return'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>'}
+    function render(){const d=enrich(load());const box=document.getElementById("list");box.innerHTML="";d.filter(g=>g.items.length).forEach(g=>{const card=document.createElement("article");card.className="check-card";card.innerHTML=`<h3>${g.cat}</h3>`;g.items.forEach((it,ii)=>{const row=document.createElement("div");row.className="item";row.innerHTML=`<input type="checkbox" ${it.done?"checked":""}><span class="item-name"></span><button class="delete-item" type="button" aria-label="この持ち物を削除">${trashIcon()}</button>`;row.querySelector(".item-name").textContent=it.name;row.querySelector("input").onchange=e=>{g.items[ii]={...it,done:e.target.checked};save(d)};row.querySelector("button").onclick=()=>{rememberDeleted(it.name);g.items.splice(ii,1);save(d);render()};card.appendChild(row)});box.appendChild(card)})}
+    document.getElementById("addBtn").onclick=()=>{const input=document.getElementById("newItem");const v=input.value.trim();if(!v)return;forgetDeleted(v);const d=load();ensureGroup(d,"基本").items.push({name:v,done:false});save(d);input.value="";render()};
+    const hb=document.getElementById("hamburgerBtn"),sd=document.getElementById("sideDrawer"),db=document.getElementById("drawerBackdrop");hb.onclick=()=>{const o=!sd.classList.contains("hidden");sd.classList.toggle("hidden",o);db.classList.toggle("hidden",o)};db.onclick=()=>{sd.classList.add("hidden");db.classList.add("hidden")};render();
   </script>
   <script src="./theme.js"></script>
 </body>

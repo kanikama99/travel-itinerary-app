@@ -65,6 +65,17 @@
       </div>
     </header>
 
+    <nav class="page-nav-bar">
+      <a href="./bookmarks.html" class="page-nav-bar-btn page-nav-bar-btn--prev">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        しおりを選ぶ
+      </a>
+      <a href="./tripplan.html" class="page-nav-bar-btn page-nav-bar-btn--next">
+        旅行計画
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+    </nav>
+
     <section class="panel form-panel form-panel-wide">
       <div class="panel-head">
         <div>
@@ -93,19 +104,13 @@
           <svg class="area-suggest-chevron" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div id="areaSuggestPanel" class="area-suggest-panel hidden">
-          <p class="area-suggest-desc">エリア名を入力するか、地図で範囲を指定して有名スポットを候補表示します。</p>
+          <p class="area-suggest-desc">エリア名を入力すると、ローカル候補から観光スポットとご当地フードをすぐに提案します。</p>
           <div class="area-suggest-row">
             <input id="areaSuggestInput" type="text" placeholder="例: 東京、大阪、京都、沖縄..." class="area-suggest-input" />
-            <button id="areaSuggestSearchBtn" class="primary-button" type="button">候補を取得</button>
+            <button id="areaSuggestSearchBtn" class="primary-button" type="button">提案を見る</button>
           </div>
-          <div class="area-suggest-draw-row">
-            <button id="areaSuggestDrawToggle" class="area-suggest-draw-btn" type="button">地図で範囲を絞る</button>
-            <button id="areaSuggestFilterClear" class="area-suggest-filter-clear hidden" type="button">範囲リセット</button>
-          </div>
-          <div id="areaSuggestMapWrap" class="area-suggest-map-wrap hidden">
-            <p class="area-suggest-map-hint">地図をクリックして範囲の2点を選択してください</p>
-            <div id="areaSuggestMapEl" class="area-suggest-map-el"></div>
-          </div>
+          <div class="area-suggest-draw-row hidden"><button id="areaSuggestDrawToggle" class="area-suggest-draw-btn" type="button">地図で範囲を絞る</button><button id="areaSuggestFilterClear" class="area-suggest-filter-clear hidden" type="button">範囲リセット</button></div>
+          <div id="areaSuggestMapWrap" class="area-suggest-map-wrap hidden"><p class="area-suggest-map-hint">地図をクリックして範囲の2点を選択してください</p><div id="areaSuggestMapEl" class="area-suggest-map-el"></div></div>
           <p id="areaSuggestStatus" class="area-suggest-status hidden"></p>
           <div id="areaSuggestResults" class="area-suggest-results"></div>
         </div>
@@ -171,12 +176,6 @@
       <div id="spotList" class="spot-list empty-state">まだスポットが登録されていません。</div>
     </section>
 
-    <div class="page-nav page-nav--end">
-      <a href="./schedule.html" class="page-nav-btn page-nav-btn--next">
-        スケジュールへ
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </a>
-    </div>
   </div>
 
   <template id="spotItemTemplate">
@@ -196,12 +195,21 @@
 
   <div id="spotMenuBackdrop" class="spot-menu-backdrop hidden"></div>
   <section id="spotMenu" class="spot-menu hidden" aria-hidden="true">
-    <p class="spot-menu-kicker">スポットメニュー</p>
     <div class="spot-menu-head">
       <h3 id="spotMenuTitle">-</h3>
       <div class="spot-menu-head-actions">
+        <button id="spotDeleteButton" class="ghost-button danger icon-btn" type="button" title="このスポットを削除">
+          <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
         <button id="spotDescriptionSave" class="primary-button" type="button">保存</button>
         <button id="spotMenuClose" class="ghost-button" type="button">閉じる</button>
+      </div>
+    </div>
+    <div id="spotDeleteConfirm" class="spot-delete-confirm hidden">
+      <p class="spot-delete-confirm-msg">⚠️ このスポットを削除しますか？この操作は元に戻せません。</p>
+      <div class="spot-delete-confirm-btns">
+        <button id="spotDeleteConfirmYes" class="primary-button danger-btn" type="button">削除する</button>
+        <button id="spotDeleteConfirmNo" class="ghost-button" type="button">キャンセル</button>
       </div>
     </div>
 
@@ -227,7 +235,7 @@
       表示名
       <input id="spotNameInput" type="text" placeholder="表示名を変更" />
     </label>
-    <label class="spot-menu-label">
+    <label id="spotBudgetField" class="spot-menu-label">
       予算（円）
       <input id="spotBudgetInput" type="number" min="0" step="100" placeholder="例: 3000" />
     </label>
@@ -255,8 +263,8 @@
       <p class="spot-menu-sublabel spot-hours-title">営業時間（任意）</p>
       <p class="spot-menu-note">通常は全曜日共通で設定できます。曜日ごとに違う場合だけ曜日別に切り替えてください。</p>
       <div class="spot-hours-bulk-actions">
-        <label class="spot-hours-bulk-label"><input id="spotHoursToggleAllChk" type="checkbox" /> 営業時間を一括切り替え</label>
-        <label class="spot-hours-weekly-toggle"><input id="spotHoursWeeklyMode" type="checkbox" /> 曜日別に設定</label>
+        <label class="spot-hours-mode-toggle"><input id="spotHoursToggleAllChk" type="checkbox" /><span>全曜日を営業日にする</span></label>
+        <label class="spot-hours-mode-toggle spot-hours-weekly-toggle"><input id="spotHoursWeeklyMode" type="checkbox" /><span>曜日ごとに設定</span></label>
       </div>
       <table class="spot-hours-table">
         <tr><td class="spot-hours-day"><label><input type="checkbox" class="spot-hours-enabled" data-day="sun" /> <span class="spot-hours-common-label">全日共通</span><span class="spot-hours-weekly-label">日</span></label></td><td><div class="spot-hours-range" data-day="sun"><div class="spot-hours-slider"><div class="spot-hours-track"></div><div class="spot-hours-fill"></div><input type="range" min="0" max="1440" step="30" value="600" data-part="open" class="spot-hours-range-input" aria-label="日曜の開始時刻" /><input type="range" min="0" max="1440" step="30" value="1080" data-part="close" class="spot-hours-range-input" aria-label="日曜の終了時刻" /></div><span class="spot-hours-value">10:00-18:00</span></div></td></tr>
@@ -308,11 +316,23 @@
       簡単な説明
       <textarea id="spotDescriptionInput" rows="4" placeholder="見どころ、集合メモ、持ち物など"></textarea>
     </label>
+    <div class="spot-menu-label spot-photo-menu">
+      <span>写真</span>
+      <button id="spotPhotoDrop" class="spot-photo-drop" type="button">
+        <span id="spotPhotoPreviewText">写真を選択 / ドロップ</span>
+        <img id="spotPhotoPreview" class="spot-photo-preview hidden" alt="" />
+      </button>
+      <input id="spotPhotoInput" type="file" accept="image/*" hidden />
+      <div id="spotPhotoPosition" class="spot-photo-position hidden">
+        <span>横</span>
+        <input id="spotPhotoX" type="range" min="0" max="100" value="50" />
+        <span>縦</span>
+        <input id="spotPhotoY" type="range" min="0" max="100" value="50" />
+      </div>
+      <p class="spot-menu-note">ここで選んだ写真と位置は、印刷する画面にも反映されます。</p>
+    </div>
     <div class="spot-menu-actions">
       <a id="spotTourSearchLink" class="primary-button" href="./tour.html" target="_top">ツアーを探す</a>
-      <button id="spotDeleteButton" class="ghost-button danger icon-btn" type="button" title="このスポットを削除">
-        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-      </button>
     </div>
   </section>
 
@@ -336,6 +356,10 @@
         <span class="drawer-nav-icon">📍</span>
         <span>行きたい場所</span>
       </a>
+      <a href="./tripplan.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">📝</span>
+        <span>旅行計画</span>
+      </a>
       <a href="./schedule.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">🗓</span>
         <span>スケジュール</span>
@@ -348,10 +372,6 @@
         <span class="drawer-nav-icon">🎫</span>
         <span>ツアーを見つける</span>
       </a>
-      <a href="./gourmet.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">🍽</span>
-        <span>グルメを見つける</span>
-      </a>
       <a href="./checklist.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">📋</span>
         <span>持ち物リスト</span>
@@ -359,6 +379,10 @@
       <a href="./print.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">🖨</span>
         <span>印刷する</span>
+      </a>
+      <a href="./howto.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">?</span>
+        <span>使い方</span>
       </a>
       <a href="./settings.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">⚙</span>
@@ -411,6 +435,7 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="./local_area_suggestions.js"></script>
   <script src="./app.js"></script>
   <script src="./theme.js"></script>
 </body>

@@ -26,6 +26,14 @@
     return "warm";
   }
 
+  function shouldShowBudget() {
+    try {
+      return JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}").showBudget !== false;
+    } catch {
+      return true;
+    }
+  }
+
   function applyTheme() {
     const key = loadThemeKey();
     const c = colors[key] || colors.warm;
@@ -42,6 +50,7 @@
     root.style.setProperty("--shadow", c.shadow);
     root.style.setProperty("--accent-rgb", c.accentRgb);
     root.style.setProperty("--shadow-base-rgb", c.shadowBaseRgb);
+    document.body.classList.toggle("budget-hidden", !shouldShowBudget());
   }
 
   applyTheme();

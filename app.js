@@ -10,7 +10,7 @@ const LABEL_GAP = 24;
 const LABEL_PIN_PAD = 20;
 const LABEL_EDGE_PAD = 8;
 const LABEL_DIRS = ["right", "left", "top", "bottom"];
-const LABEL_DISTANCES = [24, 54, 84, 114];
+const LABEL_DISTANCES = [24, 54, 84, 114, 154, 204, 264, 334];
 const DETAIL_PADDING_RATIO = 0.35;
 const OVERVIEW_PADDING_RATIO = 0.15;
 const SHORT_HOSTS = new Set(["maps.app.goo.gl", "goo.gl"]);
@@ -78,11 +78,17 @@ function loadAppSettings() {
       mapStyle: "osm-bright",
       bgTheme: "warm",
       googlePlaceHoursEnabled: true,
+      showBudget: true,
+      areaSuggestCount: 10,
     };
     return raw ? { ...defaults, ...JSON.parse(raw) } : defaults;
   } catch {
-    return { mapStyle: "osm-bright", bgTheme: "warm", googlePlaceHoursEnabled: true };
+    return { mapStyle: "osm-bright", bgTheme: "warm", googlePlaceHoursEnabled: true, showBudget: true, areaSuggestCount: 10 };
   }
+}
+
+function shouldShowBudget() {
+  return loadAppSettings().showBudget !== false;
 }
 
 function applyBgTheme(themeKey) {
@@ -196,8 +202,18 @@ const spotMenuClose = document.getElementById("spotMenuClose");
 const spotNameInput = document.getElementById("spotNameInput");
 const spotBudgetInput = document.getElementById("spotBudgetInput");
 const spotDescriptionInput = document.getElementById("spotDescriptionInput");
+const spotPhotoDrop = document.getElementById("spotPhotoDrop");
+const spotPhotoInput = document.getElementById("spotPhotoInput");
+const spotPhotoPreview = document.getElementById("spotPhotoPreview");
+const spotPhotoPreviewText = document.getElementById("spotPhotoPreviewText");
+const spotPhotoPosition = document.getElementById("spotPhotoPosition");
+const spotPhotoX = document.getElementById("spotPhotoX");
+const spotPhotoY = document.getElementById("spotPhotoY");
 const spotDescriptionSave = document.getElementById("spotDescriptionSave");
 const spotDeleteButton = document.getElementById("spotDeleteButton");
+const spotDeleteConfirm = document.getElementById("spotDeleteConfirm");
+const spotDeleteConfirmYes = document.getElementById("spotDeleteConfirmYes");
+const spotDeleteConfirmNo = document.getElementById("spotDeleteConfirmNo");
 const mapStyleBtn = document.getElementById("mapStyleBtn");
 const saveAllMapsBtn = document.getElementById("saveAllMapsBtn");
 const mapStylePopover = document.getElementById("mapStylePopover");
@@ -271,7 +287,16 @@ bulkDeleteButton.addEventListener("click", deleteCheckedSpots);
 spotMenuBackdrop.addEventListener("click", closeSpotMenu);
 spotMenuClose.addEventListener("click", closeSpotMenu);
 spotDescriptionSave.addEventListener("click", saveSpotDescription);
-spotDeleteButton.addEventListener("click", deleteEditingSpot);
+spotDeleteButton.addEventListener("click", () => {
+  spotDeleteConfirm.classList.remove("hidden");
+});
+spotDeleteConfirmYes.addEventListener("click", () => {
+  spotDeleteConfirm.classList.add("hidden");
+  deleteEditingSpot();
+});
+spotDeleteConfirmNo.addEventListener("click", () => {
+  spotDeleteConfirm.classList.add("hidden");
+});
 categoryCustomizeBtn.addEventListener("click", () => {
   openCategoryModal();
 });
@@ -292,6 +317,7 @@ listNameInput.addEventListener("keydown", (e) => {
 });
 
 setupAutocomplete(placeInput, placeDropdown);
+setupSpotPhotoControls();
 
 spotCategorySelect.addEventListener("change", () => {
   if (spotCategorySelect.value === "__add_new__") {
@@ -734,7 +760,7 @@ function buildSpotMeta(spot) {
   const parts = hasSpotCoords(spot)
     ? [`${Number(spot.lat).toFixed(5)}, ${Number(spot.lng).toFixed(5)}`]
     : ["座標未設定"];
-  if (spot.budget) parts.push(`予算: ¥${Number(spot.budget).toLocaleString()}`);
+  if (shouldShowBudget() && spot.budget) parts.push(`予算: ¥${Number(spot.budget).toLocaleString()}`);
   if (spot.description) parts.push(`メモ: ${spot.description}`);
   if (spot.sourceType === "search" && spot.sourceQuery) parts.push(`検索: ${spot.sourceQuery}`);
   if (spot.sourceUrl) parts.push(spot.sourceUrl);
@@ -756,8 +782,19 @@ function openSpotMenu(id) {
     tourLink.href = `./tour.html?${params.toString()}`;
   }
   spotNameInput.value = spot.name || "";
-  spotBudgetInput.value = spot.budget || "";
+  const budgetField = document.getElementById("spotBudgetField");
+  if (budgetField) budgetField.classList.toggle("hidden", !shouldShowBudget());
+  spotBudgetInput.value = shouldShowBudget() ? (spot.budget || "") : "";
   spotDescriptionInput.value = spot.description || "";
+  const scheduleNote = new URLSearchParams(location.search).get("scheduleNote") || "";
+  if (scheduleNote) {
+    const currentMemo = spotDescriptionInput.value.trim();
+    if (!currentMemo) {
+      spotDescriptionInput.value = scheduleNote;
+    } else if (!currentMemo.includes(scheduleNote)) {
+      spotDescriptionInput.value = `${currentMemo}\n${scheduleNote}`;
+    }
+  }
   const stayParts = splitSpotDuration(spot.defaultStayMinutes ?? defaultStayMinutesForCategory(spot.spotCategory));
   const stayHoursInput = document.getElementById("spotStayHoursInput");
   const stayMinutesInput = document.getElementById("spotStayMinutesInput");
@@ -806,6 +843,7 @@ function openSpotMenu(id) {
 
   // 営業時間（曜日ごと）
   fillBusinessHoursInputs(spot.businessHours);
+  updateSpotPhotoPreview(spot);
 
   spotMenu.classList.remove("hidden");
   spotMenuBackdrop.classList.remove("hidden");
@@ -921,7 +959,72 @@ function setExtraHoursVisible(day, visible) {
 function updateHoursBulkVisibility() {
   const isWeekly = !!spotHoursWeeklyMode?.checked;
   const wrap = spotHoursToggleAllBtn?.closest("label");
-  if (wrap) wrap.style.visibility = isWeekly ? "" : "hidden";
+  if (wrap) wrap.style.display = isWeekly ? "" : "none";
+}
+
+function updateSpotPhotoPreview(spot) {
+  if (!spotPhotoDrop || !spotPhotoPreview || !spotPhotoPreviewText) return;
+  const photoUrl = spot?.photoUrl || "";
+  const x = Number.isFinite(Number(spot?.photoX)) ? Number(spot.photoX) : 50;
+  const y = Number.isFinite(Number(spot?.photoY)) ? Number(spot.photoY) : 50;
+  if (spotPhotoX) spotPhotoX.value = x;
+  if (spotPhotoY) spotPhotoY.value = y;
+  if (spotPhotoPosition) spotPhotoPosition.classList.toggle("hidden", !photoUrl);
+  spotPhotoPreview.classList.toggle("hidden", !photoUrl);
+  spotPhotoPreviewText.classList.toggle("hidden", !!photoUrl);
+  if (photoUrl) {
+    spotPhotoPreview.src = photoUrl;
+    spotPhotoPreview.alt = spot?.name || "";
+    spotPhotoPreview.style.objectPosition = `${x}% ${y}%`;
+  } else {
+    spotPhotoPreview.removeAttribute("src");
+    spotPhotoPreview.alt = "";
+  }
+}
+
+function updateEditingSpotPhoto(fields, rerenderList = false) {
+  const targetIndex = state.spots.findIndex((spot) => spot.id === state.editingSpotId);
+  if (targetIndex < 0) return;
+  state.spots[targetIndex] = { ...state.spots[targetIndex], ...fields };
+  persistState();
+  updateSpotPhotoPreview(state.spots[targetIndex]);
+  if (rerenderList) render();
+}
+
+function readSpotPhotoFile(file) {
+  if (!file || !file.type?.startsWith("image/")) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    updateEditingSpotPhoto({ photoUrl: reader.result, photoX: 50, photoY: 50 }, true);
+  };
+  reader.readAsDataURL(file);
+}
+
+function setupSpotPhotoControls() {
+  if (!spotPhotoDrop || !spotPhotoInput) return;
+  spotPhotoDrop.addEventListener("click", () => spotPhotoInput.click());
+  spotPhotoDrop.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    spotPhotoDrop.classList.add("is-drag");
+  });
+  spotPhotoDrop.addEventListener("dragleave", () => spotPhotoDrop.classList.remove("is-drag"));
+  spotPhotoDrop.addEventListener("drop", (event) => {
+    event.preventDefault();
+    spotPhotoDrop.classList.remove("is-drag");
+    readSpotPhotoFile(event.dataTransfer?.files?.[0]);
+  });
+  spotPhotoInput.addEventListener("change", (event) => {
+    readSpotPhotoFile(event.target.files?.[0]);
+    event.target.value = "";
+  });
+  [spotPhotoX, spotPhotoY].forEach((input) => {
+    input?.addEventListener("input", () => {
+      updateEditingSpotPhoto({
+        photoX: Number(spotPhotoX?.value) || 50,
+        photoY: Number(spotPhotoY?.value) || 50,
+      });
+    });
+  });
 }
 
 function setupBusinessHoursControls() {
@@ -1042,7 +1145,8 @@ function fillBusinessHoursInputs(hours) {
   document.querySelector(".spot-hours-table")?.classList.toggle("is-weekly", isWeekly);
 
   // 非曜日別モードでは全日共通チェックボックスを常に有効にする
-  if (!isWeekly) {
+  const hasAnyHours = values.some(value => String(value || "").trim());
+  if (!isWeekly && hasAnyHours) {
     const sunInput = document.querySelector('.spot-hours-enabled[data-day="sun"]');
     const sunRow   = document.querySelector('.spot-hours-range[data-day="sun"]:not(.spot-hours-range--extra)');
     if (sunInput && !sunInput.checked) {
@@ -1061,6 +1165,7 @@ function readBusinessHoursInputs() {
   const currentSpot = state.spots.find((spot) => spot.id === state.editingSpotId);
   if (!spotHoursWeeklyMode?.checked) {
     const sun = readPrimaryHoursRange("sun");
+    if (!sun.enabled) return businessHours;
     // 非曜日別モードでは常に有効扱い（チェックボックスなし）
     const open = formatMinutesAsTime(sun.open);
     const close = formatMinutesAsTime(sun.close);
@@ -1140,6 +1245,7 @@ function closeSpotMenu() {
   spotMenu.classList.add("hidden");
   spotMenuBackdrop.classList.add("hidden");
   spotMenu.setAttribute("aria-hidden", "true");
+  spotDeleteConfirm?.classList.add("hidden");
   if (IS_EMBEDDED_SPOT_MENU && window.parent && window.parent !== window) {
     window.parent.postMessage({ type: "spot-menu-closed" }, window.location.origin);
   }
@@ -1226,7 +1332,7 @@ function saveSpotDescription() {
   state.spots[targetIndex] = {
     ...state.spots[targetIndex],
     name: spotNameInput.value.trim() || state.spots[targetIndex].name,
-    budget: Math.max(0, parseInt(spotBudgetInput.value, 10) || 0),
+    budget: shouldShowBudget() ? Math.max(0, parseInt(spotBudgetInput.value, 10) || 0) : (spot.budget || 0),
     description: spotDescriptionInput.value.trim(),
     type: "spot",
     spotCategory: newCategory,
@@ -1238,6 +1344,9 @@ function saveSpotDescription() {
     ...extraFields,
   };
   persistState();
+  if (IS_EMBEDDED_SPOT_MENU && window.parent && window.parent !== window) {
+    window.parent.postMessage({ type: "spot-menu-saved", spotId: state.editingSpotId }, window.location.origin);
+  }
   setFeedback("スポットを保存しました。", false);
   closeSpotMenu();
   render();
@@ -1391,48 +1500,56 @@ function chooseLabelPlacements(map, points, options = {}) {
   points.forEach((point) => {
     const px = pointToLayerPx(map, point);
     const size = sizeFor(point);
-    let best = null;
-    let bestPenalty = Infinity;
+    let fallback = null;
+    let fallbackPenalty = Infinity;
 
     for (const dir of dirOrder) {
       for (const distance of distances) {
         const r = labelRect(px, dir, point, distance, size);
         const overlapPenalty = placed.reduce((sum, b) => sum + overlapArea(r, b), 0);
-        const edgePenalty = outOfBoundsArea(r, viewRect) * 12;
+        const edgeOverflow = outOfBoundsArea(r, viewRect);
         const distancePenalty = distance * 0.15;
-        const penalty = overlapPenalty + edgePenalty + distancePenalty;
-        if (penalty < bestPenalty) {
-          bestPenalty = penalty;
-          best = { direction: dir, distance, rect: r };
+        const penalty = overlapPenalty + edgeOverflow * 12 + distancePenalty;
+        if (overlapPenalty === 0 && edgeOverflow === 0) {
+          placed.push(r);
+          result.set(point.id, { direction: dir, distance, rect: r });
+          return;
+        }
+        if (penalty < fallbackPenalty) {
+          fallbackPenalty = penalty;
+          fallback = { direction: dir, distance, rect: r };
         }
       }
     }
-    if (best) {
-      placed.push(best.rect);
-      result.set(point.id, { direction: best.direction, distance: best.distance, rect: best.rect });
+    if (options.allowEdgeOverflow && fallback) {
+      const overlapPenalty = placed.reduce((sum, b) => sum + overlapArea(fallback.rect, b), 0);
+      if (overlapPenalty === 0) {
+        placed.push(fallback.rect);
+        result.set(point.id, fallback);
+      }
     }
   });
   return result;
 }
 
-function addMarkerToMap(map, point, placement = "right") {
-  const direction = typeof placement === "string" ? placement : placement.direction;
-  const distance = typeof placement === "string" ? LABEL_GAP : placement.distance;
+function addMarkerToMap(map, point, placement = null) {
   const offsets = {
-    right: [distance, 0],
-    left: [-distance, 0],
-    top: [0, -distance],
-    bottom: [0, distance]
+    right: placement ? [placement.distance, 0] : [LABEL_GAP, 0],
+    left: placement ? [-placement.distance, 0] : [-LABEL_GAP, 0],
+    top: placement ? [0, -placement.distance] : [0, -LABEL_GAP],
+    bottom: placement ? [0, placement.distance] : [0, LABEL_GAP]
   };
   const roles = getSpotRoles(point);
   const markerRole = roles.includes("meet") && roles.includes("dismiss") ? "meet-dismiss" : getSpotRole(point);
   const marker = L.marker([point.lat, point.lng], { icon: createMarkerIcon(point.type, point.spotCategory, markerRole) }).addTo(map);
-  marker.bindTooltip(escapeHtml(point.name), {
-    permanent: true,
-    direction,
-    offset: offsets[direction] || [16, 0],
-    className: `spot-label spot-label-gap-${distance}`,
-  });
+  if (placement) {
+    marker.bindTooltip(escapeHtml(point.name), {
+      permanent: true,
+      direction: placement.direction,
+      offset: offsets[placement.direction] || [16, 0],
+      className: `spot-label spot-label-gap-${placement.distance}`,
+    });
+  }
   marker.on("click", () => openSpotMenu(point.id));
   setTimeout(() => {
     marker.getTooltip()?.getElement()?.addEventListener("click", () => openSpotMenu(point.id));
@@ -1459,7 +1576,7 @@ function renderOverviewLayer(map, items, bounds) {
         initialRects: allPointRects,
         sizeFor: point => estimateClusterLabelSize(point._clusterItem),
         preferredDirs: ["right", "bottom", "top", "left"],
-        distances: [34, 64, 94, 124, 154]
+        distances: [34, 64, 94, 124, 154, 204, 264]
       })
     : new Map();
   const clusterRects = [...clusterPlacements.values()].map(p => p.rect).filter(Boolean);
@@ -1467,13 +1584,13 @@ function renderOverviewLayer(map, items, bounds) {
     ? chooseLabelPlacements(map, singles, {
         initialRects: [...allPointRects, ...clusterRects],
         preferredDirs: clusters.length > 0 ? ["left", "bottom", "top", "right"] : LABEL_DIRS,
-        distances: [34, 64, 94, 124, 154]
+        distances: [34, 64, 94, 124, 154, 204, 264]
       })
     : new Map();
 
   items.forEach((item) => {
     if (item.type === "single") {
-      addMarkerToMap(map, item.point, placements.get(item.point.id) || "right");
+      addMarkerToMap(map, item.point, placements.get(item.point.id));
       return;
     }
 
@@ -1508,7 +1625,8 @@ function renderOverviewLayer(map, items, bounds) {
     });
 
     const clusterIndex = clusters.indexOf(item);
-    const placement = clusterPlacements.get(`cluster-${clusterIndex}`) || { direction: "bottom", distance: LABEL_GAP };
+    const placement = clusterPlacements.get(`cluster-${clusterIndex}`);
+    if (!placement) return;
     const size = estimateClusterLabelSize(item);
     const anchor = clusterIconAnchor(placement.direction, placement.distance, size);
 
@@ -1532,7 +1650,7 @@ function clusterIconAnchor(direction, distance, size) {
 
 function renderDetailLayer(map, points, bounds) {
   const placements = chooseLabelPlacements(map, points);
-  points.forEach((point) => addMarkerToMap(map, point, placements.get(point.id) || "right"));
+  points.forEach((point) => addMarkerToMap(map, point, placements.get(point.id)));
 }
 
 function buildMapGroups(points) {
@@ -1756,7 +1874,7 @@ function createMarkerIcon(type, spotCategory, spotRole = "") {
     : isDefaultCat ? `map-pin-${spotCategory || "other"}` : "map-pin-custom";
   let icon = "";
   if (spotRole === "meet-dismiss") {
-    icon = "🤝👋";
+    icon = "🔁";
   } else if (spotRole) {
     icon = SPOT_PIN_ICONS[spotRole] || "";
   } else if (isDefaultCat) {
@@ -2004,26 +2122,31 @@ function deleteCustomCategory(key) {
 }
 
 async function addSpotFromSuggestion(suggestion) {
-  const spotCategory = detectSpotCategory(
+  const spotCategory = suggestion.spotCategory || detectSpotCategory(
     suggestion.name,
     suggestion.osmCategory || "",
     suggestion.osmType || ""
   );
+  const lat = Number(suggestion.lat);
+  const lng = Number(suggestion.lng);
+  const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
   const location = {
     id: createStableId(),
     name: suggestion.name,
-    lat: suggestion.lat,
-    lng: suggestion.lng,
+    lat: hasCoords ? lat : null,
+    lng: hasCoords ? lng : null,
     url: suggestion.url || "",
     sourceUrl: suggestion.url || "",
-    sourceType: "search",
-    description: "",
+    sourceType: suggestion.sourceType || "search",
+    description: suggestion.description || "",
     type: "spot",
     spotCategory,
     osmCategory: suggestion.osmCategory || "",
     osmType: suggestion.osmType || "",
   };
-  await maybeAttachGoogleBusinessHours(location);
+  if (hasCoords && location.sourceType !== "local-suggestion") {
+    await maybeAttachGoogleBusinessHours(location);
+  }
   state.spots = [...state.spots, location];
   persistState();
   placeInput.value = "";
@@ -2108,11 +2231,6 @@ function getAreaSuggestCount() {
   return (typeof s.areaSuggestCount === "number" && s.areaSuggestCount >= 1) ? s.areaSuggestCount : 6;
 }
 
-function getAreaSuggestTimeout() {
-  const s = loadAppSettings();
-  return (typeof s.areaSuggestTimeout === "number" && s.areaSuggestTimeout >= 3) ? s.areaSuggestTimeout : 10;
-}
-
 function toggleAreaSuggestPanel() {
   const isHidden = areaSuggestPanel.classList.contains("hidden");
   areaSuggestPanel.classList.toggle("hidden", !isHidden);
@@ -2121,173 +2239,75 @@ function toggleAreaSuggestPanel() {
 
 async function handleAreaSuggest() {
   const areaName = areaSuggestInput.value.trim();
-  if (!areaName && !geoFilterBounds) {
-    setAreaSuggestStatus("エリア名を入力するか、地図で範囲を指定してください。", true);
+  if (!areaName) {
+    setAreaSuggestStatus("エリア名を入力してください。", true);
     return;
   }
-  const displayName = areaName || "指定範囲";
   areaSuggestResults.innerHTML = "";
-  const timeoutSec = getAreaSuggestTimeout();
-  setAreaSuggestStatus(`観光スポットを検索中（最大 ${timeoutSec} 秒）...`, false);
+  setAreaSuggestStatus("ローカル候補から提案を作成しています...", false);
   areaSuggestSearchBtn.disabled = true;
-
-  const controller = new AbortController();
-  const timerId = setTimeout(() => controller.abort(), timeoutSec * 1000);
 
   try {
     const count = getAreaSuggestCount();
-    const suggestions = await fetchAreaSuggestions(areaName, count, controller.signal);
-    const didTimeout = controller.signal.aborted;
+    const suggestions = fetchAreaSuggestions(areaName, count);
 
     if (!suggestions.length) {
-      const msg = didTimeout
-        ? `${timeoutSec}秒以内に候補が見つかりませんでした。設定で上限時間を延ばすか、別のエリア名を試してください。`
-        : "候補が見つかりませんでした。別のエリア名や別の範囲を試してください。";
-      setAreaSuggestStatus(msg, true);
+      setAreaSuggestStatus("ローカル候補が見つかりませんでした。都道府県名や主要エリア名で試してください。", true);
       return;
     }
-    const suffix = didTimeout ? `（${timeoutSec}秒でタイムアウト・途中結果）` : "";
-    setAreaSuggestStatus(`「${displayName}」周辺の有名スポット ${suggestions.length} 件${suffix}`, false);
+    setAreaSuggestStatus(`「${areaName}」向けのローカル候補 ${suggestions.length} 件`, false);
     renderAreaSuggestions(suggestions);
   } catch (_) {
-    setAreaSuggestStatus("取得に失敗しました。しばらく待ってから再試行してください。", true);
+    setAreaSuggestStatus("候補の作成に失敗しました。別のエリア名で試してください。", true);
   } finally {
-    clearTimeout(timerId);
     areaSuggestSearchBtn.disabled = false;
   }
 }
 
-async function fetchAreaSuggestions(areaName, count, signal) {
-  let minLat, maxLat, minLng, maxLng;
+function normalizeAreaText(value) {
+  return String(value || "").trim().replace(/[都道府県市区町村\s]/g, "");
+}
 
-  if (geoFilterBounds) {
-    // 地図で描いた範囲を使う
-    const sw = geoFilterBounds.getSouthWest();
-    const ne = geoFilterBounds.getNorthEast();
-    minLat = sw.lat; maxLat = ne.lat;
-    minLng = sw.lng; maxLng = ne.lng;
-  } else {
-    // Step1: Nominatimでエリアの座標・バウンディングボックスを取得
-    const nominatimParams = new URLSearchParams({ q: areaName, format: "jsonv2", limit: "1" });
-    let nominatimRes;
-    try {
-      nominatimRes = await fetch(`https://nominatim.openstreetmap.org/search?${nominatimParams}`, {
-        headers: { "Accept-Language": "ja,en" },
-        signal,
-      });
-    } catch (e) {
-      if (e.name === "AbortError") return [];
-      throw e;
-    }
-    if (!nominatimRes.ok) throw new Error("エリア検索失敗");
-    const nominatimData = await nominatimRes.json();
-    if (!nominatimData.length) return [];
+function findLocalAreaData(areaName) {
+  const data = window.LOCAL_AREA_SUGGESTIONS || {};
+  const needle = normalizeAreaText(areaName);
+  return Object.entries(data).find(([pref, entry]) =>
+    [pref, ...(entry.keys || [])].some(key => {
+      const normalized = normalizeAreaText(key);
+      return normalized && (needle.includes(normalized) || normalized.includes(needle));
+    })
+  );
+}
 
-    const area = nominatimData[0];
-    const bbox = area.boundingbox; // [minlat, maxlat, minlng, maxlng]
-    if (!bbox) return [];
-
-    minLat = parseFloat(bbox[0]);
-    maxLat = parseFloat(bbox[1]);
-    minLng = parseFloat(bbox[2]);
-    maxLng = parseFloat(bbox[3]);
+function fetchAreaSuggestions(areaName, count) {
+  const found = findLocalAreaData(areaName);
+  if (!found) return [];
+  const [pref, entry] = found;
+  const foods = (entry.foods || []).map(name => ({
+    name: `${pref}名物 ${name}`,
+    display: "ご当地フード",
+    spotCategory: "restaurant",
+    osmCategory: "amenity",
+    osmType: "restaurant",
+    sourceType: "local-suggestion",
+    description: `${pref}で食べたいご当地フード候補です。具体的なお店は現地で調整してください。`,
+  }));
+  const spots = (entry.spots || []).map(name => ({
+    name,
+    display: "おすすめスポット",
+    spotCategory: "tourist",
+    osmCategory: "tourism",
+    osmType: "attraction",
+    sourceType: "local-suggestion",
+    description: `${pref}のローカル候補から追加したおすすめスポットです。`,
+  }));
+  const mixed = [];
+  const max = Math.max(count, 1);
+  for (let i = 0; i < Math.max(foods.length, spots.length); i++) {
+    if (spots[i]) mixed.push(spots[i]);
+    if (foods[i]) mixed.push(foods[i]);
   }
-
-  const fetchLimit = Math.min(count * 8, 200);
-
-  // wikidataタグ必須で著名スポットのみに絞る（品質確保のため常に適用）
-  const overpassQuery =
-`[out:json][timeout:25];
-(
-  node["tourism"~"^(attraction|museum|zoo|aquarium|theme_park)$"]["name"]["wikidata"](${minLat},${minLng},${maxLat},${maxLng});
-  way["tourism"~"^(attraction|museum|zoo|aquarium|theme_park)$"]["name"]["wikidata"](${minLat},${minLng},${maxLat},${maxLng});
-  node["historic"~"^(castle|monument|ruins|shrine)$"]["name"]["wikidata"](${minLat},${minLng},${maxLat},${maxLng});
-  way["historic"~"^(castle|monument|ruins|shrine)$"]["name"]["wikidata"](${minLat},${minLng},${maxLat},${maxLng});
-);
-out center ${fetchLimit};`;
-
-  // Step2: Overpass — タイムアウト時は空を返す（まだ何も取れていないため）
-  let elements = [];
-  try {
-    const overpassRes = await fetch("https://overpass-api.de/api/interpreter", {
-      method: "POST",
-      body: overpassQuery,
-      signal,
-    });
-    if (!overpassRes.ok) throw new Error("スポット検索失敗");
-    const overpassData = await overpassRes.json();
-    elements = overpassData.elements || [];
-  } catch (e) {
-    if (e.name === "AbortError") return []; // Overpass未完了のため結果なし
-    throw e;
-  }
-
-  if (!elements.length) return [];
-
-  // Step3: Wikidata enrichment（任意 — タイムアウト済みならスキップして素のOverpass結果を返す）
-  const wikidataIds = [...new Set(
-    elements.map(el => el.tags?.wikidata).filter(id => id && /^Q\d+$/.test(id))
-  )];
-  const wikidataMap = {};
-  if (wikidataIds.length > 0 && !signal?.aborted) {
-    try {
-      for (let i = 0; i < wikidataIds.length; i += 50) {
-        if (signal?.aborted) break;
-        const batch = wikidataIds.slice(i, i + 50);
-        // URLSearchParamsは"|"を"%7C"にエンコードするため手動で組み立てる
-        const wdUrl = `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${batch.join("|")}&props=labels|sitelinks&languages=ja|en&sitefilter=jawiki|enwiki&format=json&origin=*`;
-        const innerController = new AbortController();
-        const innerTimer = setTimeout(() => innerController.abort(), 5000);
-        const onOuterAbort = () => innerController.abort();
-        signal?.addEventListener("abort", onOuterAbort);
-        try {
-          const wdRes = await fetch(wdUrl, { signal: innerController.signal });
-          if (wdRes.ok) {
-            const wdData = await wdRes.json();
-            const entities = wdData.entities || {};
-            Object.keys(entities).forEach(id => {
-              const entity = entities[id];
-              wikidataMap[id] = {
-                jaLabel: entity.labels?.ja?.value,
-                hasJawiki: !!(entity.sitelinks?.jawiki),
-                hasEnwiki: !!(entity.sitelinks?.enwiki),
-              };
-            });
-          }
-        } catch (_) {
-          break; // タイムアウトまたは中断 — 取得済みのwikidataMapで続行
-        } finally {
-          clearTimeout(innerTimer);
-          signal?.removeEventListener("abort", onOuterAbort);
-        }
-      }
-    } catch (_) {}
-  }
-
-  // 日本語Wikipedia記事があるほど高スコア（観光地としての著名度の指標）
-  elements.sort((a, b) => {
-    const wdA = wikidataMap[a.tags?.wikidata] || {};
-    const wdB = wikidataMap[b.tags?.wikidata] || {};
-    const scoreA = (wdA.hasJawiki ? 4 : 0) + (wdA.hasEnwiki ? 2 : 0) + (a.tags?.wikipedia ? 1 : 0);
-    const scoreB = (wdB.hasJawiki ? 4 : 0) + (wdB.hasEnwiki ? 2 : 0) + (b.tags?.wikipedia ? 1 : 0);
-    return scoreB - scoreA;
-  });
-
-  return elements.slice(0, count).map(el => {
-    const elLat = el.type === "way" ? el.center.lat : el.lat;
-    const elLng = el.type === "way" ? el.center.lon : el.lon;
-    const wd = wikidataMap[el.tags?.wikidata] || {};
-    // 日本語名の優先順位: OSMのname:ja > WikidataのJAラベル > OSMのname
-    const name = el.tags?.["name:ja"] || wd.jaLabel || el.tags?.name || "";
-    return {
-      name,
-      lat: elLat,
-      lng: elLng,
-      url: `https://www.google.com/maps/search/?api=1&query=${elLat},${elLng}`,
-      osmCategory: el.tags?.tourism ? "tourism" : "historic",
-      osmType: el.tags?.tourism || el.tags?.historic || "",
-    };
-  }).filter(s => s.name);
+  return mixed.slice(0, max);
 }
 
 function setAreaSuggestStatus(msg, isError) {
@@ -2302,13 +2322,17 @@ function renderAreaSuggestions(suggestions) {
     const card = document.createElement("div");
     card.className = "area-suggest-item";
 
-    const alreadyAdded = state.spots.some(s =>
-      Math.abs(s.lat - item.lat) < 0.0001 && Math.abs(s.lng - item.lng) < 0.0001
-    );
+    const hasCoords = Number.isFinite(Number(item.lat)) && Number.isFinite(Number(item.lng));
+    const alreadyAdded = state.spots.some(s => {
+      if (hasCoords && Number.isFinite(Number(s.lat)) && Number.isFinite(Number(s.lng))) {
+        return Math.abs(Number(s.lat) - Number(item.lat)) < 0.0001 && Math.abs(Number(s.lng) - Number(item.lng)) < 0.0001;
+      }
+      return String(s.name || "") === String(item.name || "");
+    });
 
     const nameSpan = document.createElement("span");
     nameSpan.className = "area-suggest-item-name";
-    nameSpan.textContent = item.name;
+    nameSpan.innerHTML = `${escapeHtml(item.name)}<small>${escapeHtml(item.display || (hasCoords ? "座標あり" : "座標未設定"))}</small>`;
 
     const addBtn = document.createElement("button");
     addBtn.type = "button";

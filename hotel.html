@@ -81,6 +81,7 @@
     }
     .hotel-site-btn {
       display: flex; align-items: center; gap: 10px;
+      min-height: 64px;
       padding: 13px 16px;
       background: rgba(255,255,255,0.6);
       border: 1.5px solid rgba(166,97,54,0.14);
@@ -138,7 +139,7 @@
     }
     .hotel-save-btn {
       display: flex; align-items: center; justify-content: center; gap: 6px;
-      width: 100%; margin-top: 14px; padding: 11px 20px;
+      width: 100%; min-height: 44px; margin-top: 14px; padding: 11px 20px;
       border: none; border-radius: 999px; font: inherit; font-size: 0.9rem; font-weight: 700;
       color: #fff;
       background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
@@ -172,7 +173,7 @@
     .hotel-reg-budget { font-size: 0.8rem; color: var(--accent-deep); font-weight: 700; flex-shrink: 0; }
     .hotel-reg-edit  {
       background: none; border: 1px solid var(--line); border-radius: 6px;
-      padding: 3px 8px; font: inherit; font-size: 0.74rem; color: var(--muted);
+      min-height: 32px; padding: 5px 10px; font: inherit; font-size: 0.74rem; color: var(--muted);
       cursor: pointer; flex-shrink: 0; transition: border-color 0.15s, color 0.15s;
     }
     .hotel-reg-edit:hover { border-color: var(--accent); color: var(--accent-deep); }
@@ -187,6 +188,10 @@
       .hotel-search-grid { grid-template-columns: 1fr; }
       .hotel-sites-grid { grid-template-columns: 1fr 1fr; }
       .hotel-night-form { grid-template-columns: 1fr; }
+      .hotel-night-form--booking { grid-template-columns: 1fr 1fr; }
+    }
+    @media (min-width: 601px) and (max-width: 760px) {
+      .hotel-night-form--booking { grid-template-columns: 1fr 1fr 1fr; }
     }
     @media (min-width: 601px) and (max-width: 760px) {
       .hotel-sites-grid { grid-template-columns: 1fr 1fr; }
@@ -203,6 +208,12 @@
         <span id="listNameBadge">—</span>
       </div>
     </header>
+    <nav class="page-nav-bar page-nav-bar--start">
+      <a href="./schedule.html" class="page-nav-bar-btn page-nav-bar-btn--prev">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        スケジュール
+      </a>
+    </nav>
 
     <!-- 夜別登録カード（スケジュールページの宿泊先ボタンから遷移した時に表示） -->
     <div id="nightRegistrationCard" class="hotel-night-card hidden">
@@ -213,7 +224,7 @@
           <label class="hotel-field-label" for="hotelNameInput">ホテル名・宿泊先</label>
           <input id="hotelNameInput" class="hotel-input" type="text" placeholder="例：東横イン新宿" required />
         </div>
-        <div class="hotel-field">
+        <div class="hotel-field" data-budget-ui>
           <label class="hotel-field-label" for="hotelBudgetInput">1名あたり予約金額（円）</label>
           <input id="hotelBudgetInput" class="hotel-input" type="number" min="0" step="500" placeholder="例：12000" />
         </div>
@@ -223,11 +234,11 @@
         </div>
         <div class="hotel-field">
           <label class="hotel-field-label" for="hotelCheckinTimeInput">チェックイン予定時刻</label>
-          <input id="hotelCheckinTimeInput" class="hotel-input" type="time" step="300" value="18:00" />
+          <input id="hotelCheckinTimeInput" class="hotel-input" type="time" step="900" value="18:00" />
         </div>
         <div class="hotel-field">
           <label class="hotel-field-label" for="hotelCheckoutTimeInput">チェックアウト予定時刻</label>
-          <input id="hotelCheckoutTimeInput" class="hotel-input" type="time" step="300" value="09:00" />
+          <input id="hotelCheckoutTimeInput" class="hotel-input" type="time" step="900" value="09:00" />
         </div>
       </div>
       <label class="hotel-add-spot-option">
@@ -242,7 +253,7 @@
     <div id="registeredHotelsCard" class="hotel-search-card hidden">
       <p class="hotel-card-kicker">Registered — 登録済み宿泊先</p>
       <div id="registeredHotelsList" class="hotel-registered-list"></div>
-      <p id="totalBudgetLabel" class="hotel-total-budget hidden"></p>
+      <p id="totalBudgetLabel" class="hotel-total-budget hidden" data-budget-ui></p>
     </div>
 
     <div id="hotelSearchCard" class="hotel-search-card">
@@ -268,7 +279,7 @@
           <label class="hotel-field-label" for="hotelRooms">部屋数</label>
           <input id="hotelRooms" class="hotel-input" type="number" min="1" max="10" step="1" value="1" />
         </div>
-        <div class="hotel-field">
+        <div class="hotel-field" data-budget-ui>
           <label class="hotel-field-label" for="hotelBudgetMax">予算上限（円）</label>
           <input id="hotelBudgetMax" class="hotel-input" type="number" min="0" step="500" placeholder="例：15000" />
         </div>
@@ -322,12 +333,6 @@
       <p>エリアとチェックイン・アウト日を入力してから各ボタンを押すと、そのサイトの検索結果が開きます。スケジュールページで集合・解散日時を設定しておくと、日付が自動的に入力されます。</p>
     </div>
 
-    <div class="page-nav">
-      <a href="./schedule.html" class="page-nav-btn page-nav-btn--prev">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-        スケジュールに戻る
-      </a>
-    </div>
   </div>
 
   <button id="hamburgerBtn" class="hamburger-btn" type="button" aria-label="メニューを開く">
@@ -350,6 +355,10 @@
         <span class="drawer-nav-icon">📍</span>
         <span>行きたい場所</span>
       </a>
+      <a href="./tripplan.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">📝</span>
+        <span>旅行計画</span>
+      </a>
       <a href="./schedule.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">📅</span>
         <span>スケジュール</span>
@@ -362,10 +371,6 @@
         <span class="drawer-nav-icon">🗺</span>
         <span>ツアーを見つける</span>
       </a>
-      <a href="./gourmet.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">🍜</span>
-        <span>グルメを見つける</span>
-      </a>
       <a href="./checklist.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">📋</span>
         <span>持ち物リスト</span>
@@ -374,7 +379,7 @@
         <span class="drawer-nav-icon">🖨</span>
         <span>印刷する</span>
       </a>
-      <a href="./settings.html" class="drawer-nav-item">
+      <a href="./howto.html" class="drawer-nav-item"><span class="drawer-nav-icon">❔</span><span>使い方</span></a><a href="./settings.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">⚙</span>
         <span>設定</span>
       </a>
@@ -425,6 +430,10 @@
 
     function makeId() {
       return `id_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    }
+
+    function normalizeHotelSpotName(value) {
+      return String(value || "").toLowerCase().replace(/\s+/g, "").replace(/ｉｎｎ/g, "inn");
     }
 
     // アクティブリストとスケジュールから日付を自動入力
@@ -515,7 +524,15 @@
       const n = parseInt(document.getElementById(id)?.value, 10);
       return Number.isFinite(n) && n > 0 ? n : fallback;
     }
+    function hotelShowBudget() {
+      try {
+        return JSON.parse(localStorage.getItem("spot-map-settings.v1") || "{}").showBudget !== false;
+      } catch {
+        return true;
+      }
+    }
     function getBudgetMax() {
+      if (!hotelShowBudget()) return 0;
       const n = parseInt(document.getElementById("hotelBudgetMax")?.value, 10);
       return Number.isFinite(n) && n > 0 ? n : 0;
     }
@@ -776,10 +793,11 @@
           item.className = "hotel-registered-item";
           const nightLabel  = h.checkin ? fmtDate(h.checkin) : nightId;
           const budgetLabel = (h.pricePerPerson || h.budget) ? `¥${Number(h.pricePerPerson || h.budget).toLocaleString()}/名` : "金額未設定";
+          const budgetHtml = hotelShowBudget() ? `<span class="hotel-reg-budget" data-budget-ui>${budgetLabel}</span>` : "";
           item.innerHTML =
             `<span class="hotel-reg-night">${escHtml(nightLabel)}</span>` +
             `<span class="hotel-reg-name">${escHtml(h.name || "（名称未設定）")}</span>` +
-            `<span class="hotel-reg-budget">${budgetLabel}</span>` +
+            budgetHtml +
             `<button class="hotel-reg-edit" type="button"` +
               ` data-night-id="${escHtml(nightId)}"` +
               ` data-checkin="${escHtml(h.checkin||'')}"` +
@@ -967,7 +985,16 @@
 
           if (addAsSpot) {
             if (!Array.isArray(activeList.spots)) activeList.spots = [];
-            const existingSpotIndex = activeList.spots.findIndex(s => s.sourceNightId === nightId || (s.spotCategory === "hotel" && s.name === name));
+            const targetNightIds = Array.from({ length: nights }, (_, offset) => {
+              const targetDay = dayIdx >= 0 ? days[dayIdx + offset] : null;
+              return targetDay?.id || nightId;
+            });
+            const nameKey = normalizeHotelSpotName(name);
+            const existingSpotIndex = activeList.spots.findIndex(s => {
+              const sourceIds = [s.sourceNightId, ...(Array.isArray(s.sourceNightIds) ? s.sourceNightIds : [])].filter(Boolean);
+              if (sourceIds.some(id => targetNightIds.includes(id) || id === nightId)) return true;
+              return s.spotCategory === "hotel" && normalizeHotelSpotName(s.name) === nameKey;
+            });
             const hotelSpot = {
               ...(existingSpotIndex >= 0 ? activeList.spots[existingSpotIndex] : {}),
               id: existingSpotIndex >= 0 ? activeList.spots[existingSpotIndex].id : makeId(),
@@ -983,7 +1010,8 @@
               hotelCheckoutTime: checkoutTime || null,
               hotelNights: nights,
               sourceType: "hotel",
-              sourceNightId: nightId
+              sourceNightId: nightId,
+              sourceNightIds: targetNightIds
             };
             if (existingSpotIndex >= 0) activeList.spots[existingSpotIndex] = hotelSpot;
             else activeList.spots.push(hotelSpot);

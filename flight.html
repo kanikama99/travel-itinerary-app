@@ -20,7 +20,7 @@
     .flight-input { width: 100%; font: inherit; font-size: 0.94rem; color: var(--text); border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 12px; background: rgba(255,255,255,0.9); outline: none; }
     .flight-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgb(var(--accent-rgb, 255,122,69) / 0.12); }
     .flight-sites { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
-    .flight-site-btn, .flight-save-btn { display: flex; align-items: center; justify-content: center; gap: 8px; border: 1.5px solid rgb(var(--accent-rgb, 255,122,69) / 0.24); border-radius: 12px; background: rgba(255,255,255,0.72); color: var(--text); font: inherit; font-weight: 800; padding: 12px; cursor: pointer; text-decoration: none; }
+    .flight-site-btn, .flight-save-btn { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border: 1.5px solid rgb(var(--accent-rgb, 255,122,69) / 0.24); border-radius: 12px; background: rgba(255,255,255,0.72); color: var(--text); font: inherit; font-weight: 800; padding: 12px; cursor: pointer; text-decoration: none; text-align: center; }
     .flight-site-btn:hover, .flight-save-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
     .flight-save-btn { width: 100%; margin-top: 14px; color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-light)); border: none; }
     .flight-note { margin: 10px 0 0; font-size: 0.82rem; color: var(--muted); line-height: 1.6; }
@@ -34,6 +34,12 @@
       <p class="flight-eyebrow">Flight Search</p>
       <h1 class="flight-title">飛行機を見つける</h1>
     </header>
+    <nav class="page-nav-bar page-nav-bar--start">
+      <a href="./schedule.html" class="page-nav-bar-btn page-nav-bar-btn--prev">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        スケジュール
+      </a>
+    </nav>
 
     <section id="flightRegistrationCard" class="flight-card flight-registration hidden">
       <p class="flight-card-kicker">Flight Registration - 空港予定に紐づけ</p>
@@ -54,7 +60,7 @@
           <label class="flight-field-label" for="flightNumber">便名</label>
           <input id="flightNumber" class="flight-input" type="text" placeholder="例：JL123" />
         </div>
-        <div class="flight-field">
+        <div class="flight-field" data-budget-ui>
           <label class="flight-field-label" for="flightPrice">1名あたり予約金額（円）</label>
           <input id="flightPrice" class="flight-input" type="number" min="0" step="500" placeholder="例：18000" />
         </div>
@@ -95,9 +101,6 @@
       <p class="flight-note">将来アフィリエイト化しやすいよう、予約サイト別の検索ボタンに分けています。提携先が決まったら各URLにアフィリエイトIDを付与できます。</p>
     </section>
 
-    <div class="page-nav page-nav--end">
-      <a href="./schedule.html" class="page-nav-btn page-nav-btn--prev">スケジュールへ戻る</a>
-    </div>
   </div>
 
   <button id="hamburgerBtn" class="hamburger-btn" type="button" aria-label="メニューを開く">
@@ -112,12 +115,12 @@
     <nav class="drawer-nav">
       <a href="./bookmarks.html" class="drawer-nav-item"><span class="drawer-nav-icon">📒</span><span>しおりを選ぶ</span></a>
       <a href="./spots.html" class="drawer-nav-item"><span class="drawer-nav-icon">📍</span><span>行きたい場所</span></a>
+      <a href="./tripplan.html" class="drawer-nav-item"><span class="drawer-nav-icon">📝</span><span>旅行計画</span></a>
       <a href="./schedule.html" class="drawer-nav-item"><span class="drawer-nav-icon">📅</span><span>スケジュール</span></a>
       <a href="./tour.html" class="drawer-nav-item"><span class="drawer-nav-icon">🗺</span><span>ツアーを見つける</span></a>
-      <a href="./gourmet.html" class="drawer-nav-item"><span class="drawer-nav-icon">🍜</span><span>グルメを見つける</span></a>
       <a href="./checklist.html" class="drawer-nav-item"><span class="drawer-nav-icon">📋</span><span>持ち物リスト</span></a>
       <a href="./print.html" class="drawer-nav-item"><span class="drawer-nav-icon">🖨</span><span>印刷する</span></a>
-      <a href="./settings.html" class="drawer-nav-item"><span class="drawer-nav-icon">⚙</span><span>設定</span></a>
+      <a href="./howto.html" class="drawer-nav-item"><span class="drawer-nav-icon">❔</span><span>使い方</span></a><a href="./settings.html" class="drawer-nav-item"><span class="drawer-nav-icon">⚙</span><span>設定</span></a>
     </nav>
   </aside>
 

@@ -95,6 +95,9 @@
     .trip-place-input::placeholder { color: #c0c8cc; }
     .trip-place-controls {
       margin-top: 4px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
     }
     .trip-place-add-row {
       display: grid;
@@ -108,8 +111,16 @@
       padding: 6px 10px; background: rgba(255,255,255,0.85);
       outline: none;
     }
+    .trip-place-menu-btn {
+      min-width: 42px; min-height: 42px; padding: 0;
+      border: 1.5px solid var(--line); border-radius: 10px;
+      background: rgba(255,255,255,0.72); color: var(--accent-deep);
+      font: inherit; font-weight: 900; cursor: pointer;
+    }
+    .trip-place-menu-btn:disabled { opacity: 0.42; cursor: default; }
     .trip-place-add-btn {
-      padding: 6px 10px;
+      min-height: 38px;
+      padding: 7px 12px;
       border: 1.5px solid rgba(166,97,54,0.18);
       border-radius: 8px;
       background: rgba(255,255,255,0.7);
@@ -212,6 +223,8 @@
       font-weight: 800;
     }
     .day-delete-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 36px; min-height: 36px;
       background: none; border: none; padding: 6px;
       border-radius: 8px; color: var(--muted);
       cursor: pointer; transition: color 0.15s, background 0.15s; flex-shrink: 0;
@@ -415,6 +428,13 @@
       writing-mode: horizontal-tb;
     }
     .spot-chip-empty { font-size: 0.82rem; color: var(--muted); padding: 10px 0; text-align: center; }
+    .spot-auto-warn {
+      margin: 8px 0 10px;
+      color: #b3261e;
+      font-size: 0.86rem;
+      font-weight: 800;
+      line-height: 1.55;
+    }
 
     .sidebar-drag-hint {
       font-size: 0.76rem; color: var(--muted);
@@ -446,6 +466,7 @@
     .auto-place-btn {
       display: flex; align-items: center; justify-content: center; gap: 6px;
       width: 100%; margin-top: 12px;
+      min-height: 44px;
       padding: 10px 16px; border: none; border-radius: 999px;
       font: inherit; font-size: 0.84rem; font-weight: 700;
       color: #fff;
@@ -459,6 +480,7 @@
     .return-all-spots-btn {
       display: flex; align-items: center; justify-content: center; gap: 6px;
       width: 100%; margin-top: 8px;
+      min-height: 44px;
       padding: 9px 14px; border: 1.5px solid rgba(166,97,54,0.18); border-radius: 999px;
       font: inherit; font-size: 0.82rem; font-weight: 700;
       color: var(--accent-deep);
@@ -493,6 +515,7 @@
     .day-picker-list { display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow-y: auto; margin-bottom: 14px; }
     .day-picker-item {
       display: flex; align-items: center; gap: 10px;
+      min-height: 44px;
       padding: 11px 14px; border-radius: 12px;
       background: rgba(255,255,255,0.5); border: 1px solid rgba(166,97,54,0.12);
       font: inherit; font-size: 0.88rem; font-weight: 600;
@@ -500,7 +523,7 @@
     }
     .day-picker-item:hover { background: var(--accent-soft); border-color: var(--accent); }
     .day-picker-cancel {
-      width: 100%; padding: 10px; border-radius: 10px;
+      width: 100%; min-height: 44px; padding: 10px; border-radius: 10px;
       border: 1.5px solid var(--line); background: transparent;
       font: inherit; font-size: 0.88rem; color: var(--muted); cursor: pointer;
     }
@@ -688,11 +711,14 @@
     }
     .spot-edit-menu-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
     .tl-end-time {
-      margin-top: -3px;
-      font-size: 0.72rem;
+      font-size: 0.96rem;
       font-weight: 700;
-      color: var(--muted);
+      color: var(--accent-deep);
       white-space: nowrap;
+      height: 24px;
+      line-height: 24px;
+      text-align: center;
+      width: 100%;
     }
     .tl-line {
       width: 2px; flex: 1; min-height: 8px;
@@ -747,7 +773,9 @@
     .tl-note:focus { background: rgba(255,255,255,0.8); border-radius: 6px; padding: 2px 5px; }
     .tl-note::placeholder { color: #c0c8cc; }
     .tl-move-btn {
-      background: none; border: none; padding: 2px 4px; border-radius: 5px;
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 30px; min-height: 30px;
+      background: none; border: none; padding: 2px 4px; border-radius: 7px;
       color: var(--muted); cursor: pointer; flex-shrink: 0;
       font-size: 0.66rem; line-height: 1;
       transition: color 0.12s, background 0.12s;
@@ -755,7 +783,9 @@
     .tl-move-btn:hover:not(:disabled) { color: var(--accent-deep); background: var(--accent-soft); }
     .tl-move-btn:disabled { opacity: 0.2; cursor: default; }
     .tl-remove-btn {
-      background: none; border: none; padding: 3px; border-radius: 6px;
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 30px; min-height: 30px;
+      background: none; border: none; padding: 3px; border-radius: 7px;
       color: var(--muted); cursor: pointer; flex-shrink: 0;
       transition: color 0.15s, background 0.15s;
     }
@@ -828,6 +858,11 @@
       .entry-note { display: none; }
       .tl-note { display: none; }
       .trip-settings-grid { grid-template-columns: 1fr; }
+      .tl-move-btn,
+      .tl-remove-btn {
+        min-width: 34px;
+        min-height: 34px;
+      }
     }
   </style>
 </head>
@@ -844,12 +879,23 @@
       </div>
     </header>
 
+    <nav class="page-nav-bar">
+      <a href="./tripplan.html" class="page-nav-bar-btn page-nav-bar-btn--prev">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        旅行計画
+      </a>
+      <a href="./checklist.html" class="page-nav-bar-btn page-nav-bar-btn--next">
+        持ち物リスト
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+    </nav>
+
     <!-- 旅程全体の集合・解散設定 -->
     <div class="trip-settings-card">
       <p class="trip-settings-kicker">Trip Period — 旅程全体の設定</p>
       <div class="trip-settings-grid">
         <div class="trip-setting-group">
-          <span class="trip-setting-label">🏁 集合</span>
+          <span class="trip-setting-label">🤝 集合</span>
           <div class="trip-setting-row">
             <input id="tripMeetDate" class="trip-date-input" type="date" data-cal title="集合日" />
             <input id="tripMeetTime" class="trip-time-input" type="time" value="09:00" title="集合時刻" />
@@ -857,13 +903,14 @@
           <div class="trip-place-controls">
             <select id="tripMeetSpotSelect" class="trip-place-select" title="SPOTSから集合場所を選択"></select>
           </div>
+          <p class="trip-place-or">または</p>
           <div class="trip-place-add-row">
             <input id="tripMeetPlace" class="trip-place-input" type="text" placeholder="集合場所（例：東京駅）" />
             <button id="tripMeetAddBtn" class="trip-place-add-btn" type="button">新規追加</button>
           </div>
         </div>
         <div class="trip-setting-group">
-          <span class="trip-setting-label">🏁 解散</span>
+          <span class="trip-setting-label">👋 解散</span>
           <div class="trip-setting-row">
             <input id="tripDismissDate" class="trip-date-input" type="date" data-cal title="解散日" />
             <input id="tripDismissTime" class="trip-time-input" type="time" value="18:00" title="解散時刻" />
@@ -871,6 +918,7 @@
           <div class="trip-place-controls">
             <select id="tripDismissSpotSelect" class="trip-place-select" title="SPOTSから解散場所を選択"></select>
           </div>
+          <p class="trip-place-or">または</p>
           <div class="trip-place-add-row">
             <input id="tripDismissPlace" class="trip-place-input" type="text" placeholder="解散場所（例：新宿駅）" />
             <button id="tripDismissAddBtn" class="trip-place-add-btn" type="button">新規追加</button>
@@ -887,16 +935,6 @@
       <p id="tripSummary" class="trip-summary hidden"></p>
     </div>
 
-    <div class="page-nav">
-      <a href="./spots.html" class="page-nav-btn page-nav-btn--prev">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-        行きたい場所に戻る
-      </a>
-      <a href="./gourmet.html" class="page-nav-btn page-nav-btn--next">
-        グルメを見つけるへ
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </a>
-    </div>
 
     <div class="schedule-layout">
       <div>
@@ -907,6 +945,7 @@
         <div class="sidebar-card">
           <p class="sidebar-kicker">Spots — 滞在時間を入れて日程に追加</p>
           <p class="sidebar-drag-hint">営業時間は「行きたい場所」のスポットメニューで設定できます。</p>
+          <p id="autoPlaceWarning" class="spot-auto-warn hidden"></p>
           <div id="unscheduledList" class="unscheduled-list"></div>
           <button id="autoPlaceBtn" class="auto-place-btn" type="button">✨ 自動配置</button>
           <button id="returnAllSpotsBtn" class="return-all-spots-btn" type="button">↩ 配置済みをSPOTSへ戻す</button>
@@ -979,6 +1018,10 @@
         <span class="drawer-nav-icon">📍</span>
         <span>行きたい場所</span>
       </a>
+      <a href="./tripplan.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">📝</span>
+        <span>旅行計画</span>
+      </a>
       <a href="./schedule.html" class="drawer-nav-item drawer-nav-item--active">
         <span class="drawer-nav-icon">📅</span>
         <span>スケジュール</span>
@@ -991,10 +1034,6 @@
         <span class="drawer-nav-icon">🗺</span>
         <span>ツアーを見つける</span>
       </a>
-      <a href="./gourmet.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">🍜</span>
-        <span>グルメを見つける</span>
-      </a>
       <a href="./checklist.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">📋</span>
         <span>持ち物リスト</span>
@@ -1003,7 +1042,7 @@
         <span class="drawer-nav-icon">🖨</span>
         <span>印刷する</span>
       </a>
-      <a href="./settings.html" class="drawer-nav-item">
+      <a href="./howto.html" class="drawer-nav-item"><span class="drawer-nav-icon">❔</span><span>使い方</span></a><a href="./settings.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">⚙</span>
         <span>設定</span>
       </a>
@@ -1045,6 +1084,18 @@
         r.style.setProperty("--shadow-base-rgb",  c[8]);
       } catch {}
     })();
+
+    function loadDisplaySettings() {
+      try {
+        return { showBudget: true, ...JSON.parse(localStorage.getItem("spot-map-settings.v1") || "{}") };
+      } catch {
+        return { showBudget: true };
+      }
+    }
+
+    function shouldShowBudget() {
+      return loadDisplaySettings().showBudget !== false;
+    }
 
     const LISTS_KEY    = "spot-map-lists.v1";
     const SCHEDULE_KEY = "spot-map-schedule.v1";
@@ -1097,6 +1148,18 @@
       return Number.isFinite(Number(spot?.defaultStayMinutes)) && Number(spot.defaultStayMinutes) > 0
         ? Number(spot.defaultStayMinutes)
         : getDefaultStayTime(spot?.spotCategory);
+    }
+
+    function getEntryStayMinutes(day, entry, spot) {
+      const spotStay = getSpotStayDefault(spot);
+      if (Number.isFinite(Number(spot?.defaultStayMinutes)) && Number(spot.defaultStayMinutes) > 0) {
+        return spotStay;
+      }
+      const scheduleStay = Number(schedule.defaultStayTimes?.[entry.spotId]);
+      if (Number.isFinite(scheduleStay) && scheduleStay > 0) return scheduleStay;
+      const dayStay = Number(day.stayTimes?.[entry.spotId]);
+      if (Number.isFinite(dayStay) && dayStay > 0) return dayStay;
+      return spotStay;
     }
 
     function splitDuration(mins) {
@@ -1160,6 +1223,7 @@
     let pendingSpot = null;
     let dragState   = null; // { spotId, fromDayId: string|null }
     let editingScheduleSpotId = null;
+    let autoPlaceSkippedNames = [];
 
     function getSpotById(spotId) {
       return activeList?.spots?.find(s => s.id === spotId) || null;
@@ -1202,10 +1266,18 @@
     function getOrderedSpots() {
       const spots = activeList?.spots || [];
       const order = schedule?.spotsOrder || [];
+      const seenHotelKeys = new Set();
+      const dedupeHotel = spot => {
+        if (spot?.spotCategory !== "hotel") return true;
+        const key = spot.sourceNightId || (Array.isArray(spot.sourceNightIds) ? spot.sourceNightIds.join("|") : "") || `name:${spot.name}`;
+        if (seenHotelKeys.has(key)) return false;
+        seenHotelKeys.add(key);
+        return true;
+      };
       const inOrder = order
         .map(id => spots.find(s => s.id === id))
-        .filter(spot => spot && !isMeetSpot(spot) && !isDismissSpot(spot));
-      const remaining = spots.filter(s => !order.includes(s.id) && !isMeetSpot(s) && !isDismissSpot(s));
+        .filter(spot => spot && !isMeetSpot(spot) && !isDismissSpot(spot) && dedupeHotel(spot));
+      const remaining = spots.filter(s => !order.includes(s.id) && !isMeetSpot(s) && !isDismissSpot(s) && dedupeHotel(s));
       return [...inOrder, ...remaining];
     }
 
@@ -1685,7 +1757,7 @@
           if (travelInfo && !travelInfo.failed && travelInfo.durationMin) travelDuration = travelInfo.durationMin;
         }
 
-        const stay    = stays[entry.spotId] || 60;
+        const stay    = getEntryStayMinutes(day, entry, spot);
         const arriveT = t + travelDuration;
         const leaveT  = arriveT + stay;
 
@@ -1917,8 +1989,25 @@
 
       const nights = Math.round((end - start) / 86400000);
       const days   = nights + 1;
-      el.textContent = `${formatDate(meetDate)} 〜 ${formatDate(dismissDate)}（${nights}泊${days}日）`;
+      const budgetText = shouldShowBudget() ? `　現在の予算総額：¥${calculateBudgetTotal().toLocaleString()}` : "";
+      el.textContent = `${formatDate(meetDate)} 〜 ${formatDate(dismissDate)}（${nights}泊${days}日）${budgetText}`;
       el.classList.remove("hidden");
+    }
+
+    function calculateBudgetTotal() {
+      const entriesTotal = (schedule.days || []).reduce((sum, day) => {
+        return sum + (day.entries || []).reduce((daySum, entry) => {
+          const spot = getSpotById(entry.spotId);
+          return daySum + (Number(spot?.budget) || 0);
+        }, 0);
+      }, 0);
+      const hotelsTotal = Object.values(schedule.hotels || {}).reduce((sum, hotel) => {
+        return sum + (Number(hotel?.pricePerPerson || hotel?.budget) || 0);
+      }, 0);
+      const flightsTotal = Object.values(schedule.flights || {}).reduce((sum, flight) => {
+        return sum + (Number(flight?.pricePerPerson || flight?.budget) || 0);
+      }, 0);
+      return entriesTotal + hotelsTotal + flightsTotal;
     }
 
     // ── 描画 ───────────────────────────────────────────────────────
@@ -1952,6 +2041,14 @@
           select.appendChild(opt);
         });
         select.value = current;
+        const menuBtn = document.getElementById(category === "meet" ? "tripMeetSpotMenuBtn" : "tripDismissSpotMenuBtn");
+        if (menuBtn) {
+          menuBtn.disabled = !current;
+          menuBtn.onclick = () => {
+            const spotId = select.value || current;
+            if (spotId) openScheduleSpotMenu(spotId);
+          };
+        }
       };
       fill("tripMeetSpotSelect", "meet", "SPOTSから集合場所を選択");
       fill("tripDismissSpotSelect", "dismiss", "SPOTSから解散場所を選択");
@@ -1959,6 +2056,7 @@
 
     function renderUnscheduled() {
       const el    = document.getElementById("unscheduledList");
+      const warn  = document.getElementById("autoPlaceWarning");
       const spots = activeList?.spots || [];
       const scheduledIds = new Set(
         schedule.days.flatMap(d => (d.entries || []).map(e => e.spotId))
@@ -1966,6 +2064,13 @@
       const returnAllBtn = document.getElementById("returnAllSpotsBtn");
       if (returnAllBtn) returnAllBtn.disabled = scheduledIds.size === 0;
       const unscheduled = getOrderedSpots().filter(s => !scheduledIds.has(s.id) && !isMeetSpot(s) && !isDismissSpot(s));
+      if (warn) {
+        const visibleSkipped = autoPlaceSkippedNames.filter(name => unscheduled.some(s => s.name === name));
+        warn.classList.toggle("hidden", visibleSkipped.length === 0);
+        warn.textContent = visibleSkipped.length
+          ? `自動配置で入りきらなかったスポットがあります: ${visibleSkipped.join("、")}`
+          : "";
+      }
 
       const schedulableSpots = spots.filter(s => !isMeetSpot(s) && !isDismissSpot(s));
       if (unscheduled.length === 0) {
@@ -1989,9 +2094,8 @@
         btn.innerHTML = `
           <span>${escHtml(roleEmoji || getSpotCatEmoji(spot.spotCategory))}</span>
           <span class="spot-chip-name">${escHtml(spot.name)}</span>
-          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>
         `;
-        btn.addEventListener("click", () => openDayPicker(spot));
         btn.addEventListener("dragstart", e => {
           dragState = { spotId: spot.id, fromDayId: null };
           e.dataTransfer.setData("text/plain", spot.id);
@@ -2070,15 +2174,8 @@
         renderAll();
       });
 
-      if (day.entries.length === 0) {
-        const empty = document.createElement("div");
-        empty.className = "tl-empty";
-        empty.textContent = "右のスポットをクリック or ドラッグして追加できます";
-        wrap.appendChild(empty);
-        return wrap;
-      }
-
       const { steps, skipped } = generatePlan(day, dayIdx, totalDays);
+      const isEmptyDay = day.entries.length === 0;
 
       steps.forEach((step, sIdx) => {
         const isLast = sIdx === steps.length - 1;
@@ -2109,7 +2206,7 @@
               nameSpan.className = "tl-hotel-name";
               nameSpan.textContent = hotel.name;
               btn.appendChild(nameSpan);
-              if (hotel.pricePerPerson || hotel.budget) {
+              if (shouldShowBudget() && (hotel.pricePerPerson || hotel.budget)) {
                 const budgetSpan = document.createElement("span");
                 budgetSpan.className = "tl-hotel-budget";
                 budgetSpan.textContent = `¥${Number(hotel.pricePerPerson || hotel.budget).toLocaleString()}/名`;
@@ -2245,7 +2342,7 @@
           const entry = day.entries.find(en => en.spotId === step.spotId);
           if (!entry) return;
           const eIdx = day.entries.indexOf(entry);
-          const stayMin = (day.stayTimes && day.stayTimes[entry.spotId]) || 60;
+          const stayMin = getEntryStayMinutes(day, entry, getSpotById(entry.spotId));
 
           row.className = "tl-row tl-row--spot";
           row.dataset.spotId = step.spotId;
@@ -2253,7 +2350,7 @@
           const leftEl = document.createElement("div");
           leftEl.className = "tl-left";
           const endTimeStr = minutesToTime(step.time + step.duration);
-          leftEl.innerHTML = `<span class="tl-time">${minutesToTime(step.time)}</span>${!isLast ? `<div class="tl-line"></div><span class="tl-end-time">出発 ${endTimeStr}</span>` : ""}`;
+          leftEl.innerHTML = `<span class="tl-time">${minutesToTime(step.time)}</span>${step.duration ? `<div class="tl-line"></div><span class="tl-end-time">${endTimeStr}</span>` : (!isLast ? '<div class="tl-line"></div>' : "")}`;
 
           const rightEl = document.createElement("div");
           rightEl.className = "tl-right";
@@ -2304,7 +2401,7 @@
           rightEl.appendChild(handle);
           rightEl.appendChild(dot);
           rightEl.appendChild(nameEl);
-          if (step.budget) rightEl.appendChild(budgetEl);
+          if (shouldShowBudget() && step.budget) rightEl.appendChild(budgetEl);
           if (step.outsideHours) rightEl.appendChild(hoursWarnEl);
           if (step.overflow) rightEl.appendChild(overflowWarnEl);
           rightEl.appendChild(noteInput);
@@ -2318,7 +2415,7 @@
           noteInput.addEventListener("change", e => { entry.note = e.target.value; saveSchedule(schedule); });
           nameEl.addEventListener("click", e => {
             e.stopPropagation();
-            openScheduleSpotMenu(step.spotId);
+            openScheduleSpotMenu(step.spotId, entry.note || "");
           });
           upBtn.addEventListener("click", e => {
             e.stopPropagation();
@@ -2391,6 +2488,13 @@
         wrap.appendChild(row);
       });
 
+      if (isEmptyDay) {
+        const empty = document.createElement("div");
+        empty.className = "tl-empty";
+        empty.textContent = "右のスポットをクリック or ドラッグして追加できます";
+        wrap.appendChild(empty);
+      }
+
       if (skipped.length > 0) {
         const warn = document.createElement("p");
         warn.className = "tl-over-warn";
@@ -2424,21 +2528,6 @@
         saveSchedule(schedule);
       });
       card.appendChild(header);
-
-      // ── 移動時間設定 ──
-      const travelRow = document.createElement("div");
-      travelRow.className = "travel-row";
-      travelRow.innerHTML = `
-        <span class="travel-label">スポット間の移動時間（目安）</span>
-        <input class="travel-min-input" type="number" min="0" max="180" step="5" value="${day.travelMinutes}" />
-        <span class="travel-min-suffix">分</span>
-      `;
-      travelRow.querySelector(".travel-min-input").addEventListener("change", e => {
-        day.travelMinutes = Math.max(0, parseInt(e.target.value) || 20);
-        saveSchedule(schedule);
-        renderDays();
-      });
-      card.appendChild(travelRow);
 
       // 中日（非初日・非最終日）の開始/終了時刻編集行
       const isFirst = idx === 0;
@@ -2491,6 +2580,7 @@
       if (stripAnchorEntriesFromSchedule()) saveSchedule(schedule);
       renderDays();
       renderUnscheduled();
+      updateTripSummary();
       scheduleTransitFetches();
       fetchWeatherForecast();
     }
@@ -2537,8 +2627,8 @@
       ["thu", "木曜"], ["fri", "金曜"], ["sat", "土曜"]
     ];
 
-    function openScheduleSpotMenu(spotId) {
-      openSharedSpotMenu(spotId);
+    function openScheduleSpotMenu(spotId, scheduleNote = "") {
+      openSharedSpotMenu(spotId, scheduleNote);
       return;
       const spot = getSpotById(spotId);
       if (!spot) return;
@@ -2603,11 +2693,13 @@
     document.getElementById("scheduleSpotMenuClose")?.addEventListener("click", closeScheduleSpotMenu);
     document.getElementById("scheduleSpotMenuSave")?.addEventListener("click", saveScheduleSpotMenu);
 
-    function openSharedSpotMenu(spotId) {
+    function openSharedSpotMenu(spotId, scheduleNote = "") {
       const overlay = document.getElementById("sharedSpotMenuOverlay");
       const frame = document.getElementById("sharedSpotMenuFrame");
       if (!overlay || !frame) return;
-      frame.src = `./spots.html?editSpot=${encodeURIComponent(spotId)}&embedded=1`;
+      const p = new URLSearchParams({ editSpot: spotId, embedded: "1" });
+      if (scheduleNote) p.set("scheduleNote", scheduleNote);
+      frame.src = `./spots.html?${p.toString()}`;
       overlay.classList.remove("hidden");
     }
 
@@ -2627,7 +2719,7 @@
     document.getElementById("sharedSpotMenuClose")?.addEventListener("click", closeSharedSpotMenu);
     window.addEventListener("message", event => {
       if (event.origin !== window.location.origin) return;
-      if (event.data?.type === "spot-menu-closed") closeSharedSpotMenu();
+      if (event.data?.type === "spot-menu-saved" || event.data?.type === "spot-menu-closed") closeSharedSpotMenu();
     });
 
     // ── 旅程設定イベント ──────────────────────────────────────────
@@ -2723,6 +2815,7 @@
     }
 
     document.getElementById("autoPlaceBtn").addEventListener("click", () => {
+      autoPlaceSkippedNames = [];
       ensureDaysFromTripDates();
       if (schedule.days.length === 0) {
         alert("先に集合日と解散日を設定してください。");
@@ -2743,7 +2836,7 @@
         alert("配置できるスポットがありません。");
         return;
       }
-      const others      = unscheduled.filter(s => !isMeetSpot(s) && !isDismissSpot(s));
+      const others      = unscheduled.filter(s => !isMeetSpot(s) && !isDismissSpot(s) && s.spotCategory !== "hotel");
       others.forEach((spot, i) => {
         const dayIdx = pickAutoPlaceDay(spot, i);
         const day    = schedule.days[dayIdx];
@@ -2755,9 +2848,11 @@
       schedule.days.forEach((day, idx) => {
         const plan = generatePlan(day, idx, schedule.days.length, { strictCapacity: true });
         if (!plan.skipped.length) return;
+        autoPlaceSkippedNames.push(...plan.skipped);
         const skippedNames = new Set(plan.skipped);
         day.entries = (day.entries || []).filter(en => !skippedNames.has(getSpotById(en.spotId)?.name));
       });
+      autoPlaceSkippedNames = [...new Set(autoPlaceSkippedNames)];
       saveSchedule(schedule);
       renderAll();
     });

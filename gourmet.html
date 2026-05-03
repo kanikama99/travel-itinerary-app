@@ -1,62 +1,22 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>グルメを見つける - Trip Pop Map</title>
+  <meta http-equiv="refresh" content="0; url=./spots.html" />
+  <title>行きたい場所へ移動中 - Trip Pop Map</title>
   <link rel="stylesheet" href="./styles.css" />
-  <style>
-    .tool-shell{width:min(1080px,calc(100% - 32px));margin:0 auto;padding:40px 0 80px;display:grid;gap:18px}.tool-title{font-size:clamp(1.7rem,4vw,2.25rem);margin:0}.tool-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);padding:20px}.control-grid{display:grid;grid-template-columns:1.4fr .7fr auto;gap:12px;align-items:end}.field{display:grid;gap:6px}.field label{font-size:.86rem;font-weight:800;color:var(--accent-deep)}.input{font:inherit;border:1.5px solid var(--line);border-radius:10px;padding:9px 12px;background:rgba(255,255,255,.9)}.suggestions{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}.food-card{background:rgba(255,255,255,.62);border:1px solid rgb(var(--accent-rgb,255,122,69)/.18);border-radius:12px;padding:14px;display:grid;gap:10px}.shop-row{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:start}.shop-link{color:var(--accent-deep);font-weight:900;text-decoration:none;font-size:.82rem}.primary-action,.ghost-action{border-radius:999px;padding:10px 16px;font:inherit;font-weight:900;cursor:pointer}.primary-action{border:0;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent-light))}.ghost-action{border:1.5px solid var(--line);background:rgba(255,255,255,.72);color:var(--accent-deep)}.status{color:var(--muted);font-size:.88rem}.hamburger-btn{display:flex!important}@media(max-width:720px){.control-grid{grid-template-columns:1fr}}
-  </style>
 </head>
 <body>
-  <main class="tool-shell">
-    <header><p class="panel-kicker">Gourmet Search</p><h1 class="tool-title">グルメを見つける</h1></header>
-    <section class="tool-card">
-      <div class="control-grid">
-        <div class="field"><label for="areaInput">エリア</label><input id="areaInput" class="input" placeholder="例: 札幌、梅田、京都" /></div>
-        <div class="field"><label for="perThemeInput">各ジャンルの候補数</label><input id="perThemeInput" class="input" type="number" min="1" max="8" value="5" /></div>
-        <button id="generateBtn" class="ghost-action" type="button">候補を作る</button>
-      </div>
+  <main class="page-shell">
+    <section class="panel">
+      <p class="panel-kicker">Moved</p>
+      <h1>グルメ提案は行きたい場所に統合しました</h1>
+      <p class="muted">エリアから提案で、観光スポットとご当地フードをまとめて追加できます。</p>
+      <a class="primary-button" href="./spots.html">行きたい場所へ</a>
     </section>
-    <section class="tool-card">
-      <div id="suggestions" class="suggestions"></div>
-      <button id="addSelectedBtn" class="primary-action" type="button" style="margin-top:14px">選択したグルメをSPOTSに追加</button>
-      <p id="status" class="status"></p>
-    </section>
-    <div class="page-nav page-nav--end"><a href="./schedule.html" class="page-nav-btn page-nav-btn--prev">スケジュールへ戻る</a></div>
   </main>
-  <button id="hamburgerBtn" class="hamburger-btn" type="button" aria-label="メニューを開く"><span class="hamburger-line"></span><span class="hamburger-line"></span><span class="hamburger-line"></span></button>
-  <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
-  <aside id="sideDrawer" class="side-drawer hidden" aria-hidden="true"><div class="drawer-head"><p class="drawer-kicker">Menu</p></div><nav class="drawer-nav">
-    <a href="./bookmarks.html" class="drawer-nav-item"><span class="drawer-nav-icon">📒</span><span>しおりを選ぶ</span></a>
-    <a href="./spots.html" class="drawer-nav-item"><span class="drawer-nav-icon">📍</span><span>行きたい場所</span></a>
-    <a href="./schedule.html" class="drawer-nav-item"><span class="drawer-nav-icon">📅</span><span>スケジュール</span></a>
-    <a href="./hotel.html" class="drawer-nav-item"><span class="drawer-nav-icon">🏨</span><span>ホテルを見つける</span></a>
-    <a href="./tour.html" class="drawer-nav-item"><span class="drawer-nav-icon">🗺</span><span>ツアーを見つける</span></a>
-    <a href="./gourmet.html" class="drawer-nav-item drawer-nav-item--active"><span class="drawer-nav-icon">🍜</span><span>グルメを見つける</span></a>
-    <a href="./checklist.html" class="drawer-nav-item"><span class="drawer-nav-icon">📋</span><span>持ち物リスト</span></a>
-    <a href="./print.html" class="drawer-nav-item"><span class="drawer-nav-icon">🖨</span><span>印刷する</span></a>
-    <a href="./settings.html" class="drawer-nav-item"><span class="drawer-nav-icon">⚙</span><span>設定</span></a>
-  </nav></aside>
-  <script>
-    const LISTS_KEY="spot-map-lists.v1";
-    const MENUS=[
-      {match:/大阪|梅田|難波|なんば|新世界|通天閣|ユニバ|USJ/i,label:"大阪",themes:{"お好み焼き":["美津の","福太郎 本店","千房 千日前本店","きじ 梅田スカイビル店","ゆかり 曽根崎本店"],"たこ焼き":["甲賀流 アメリカ村本店","会津屋 本店","わなか 千日前本店","十八番 道頓堀店","くくる 道頓堀本店"],"串カツ":["だるま 新世界総本店","八重勝","てんぐ","近江屋本店","串かつ 越源"],"地元チェーン":["551蓬莱","りくろーおじさんの店","インデアンカレー","どうとんぼり神座","金龍ラーメン"]}},
-      {match:/札幌|すすきの|大通|北海道|新千歳|小樽/i,label:"札幌",themes:{"札幌ラーメン":["すみれ 札幌中の島本店","麺屋 彩未","けやき すすきの本店","白樺山荘 札幌らーめん共和国店","らーめん信玄 南6条店"],"スープカレー":["GARAKU","奥芝商店 駅前創成寺","Suage+ 本店","カレー食堂 心 札幌本店","ピカンティ"],"ジンギスカン":["だるま 5・5店","サッポロビール園","松尾ジンギスカン 札幌駅前店","いただきます。","士別バーベキュー"],"地元チェーン":["みよしの","セイコーマート","どんぐり","175°DENO担担麺","回転寿しトリトン"]}},
-      {match:/京都|祇園|河原町|嵐山|清水/i,label:"京都",themes:{"京料理":["祇園 きらら","京菜味 のむら","おめん 銀閣寺本店","いづう","貴船 右源太"],"抹茶・甘味":["茶寮都路里 祇園本店","中村藤吉本店 京都駅店","ぎおん徳屋","鍵善良房 四条本店","伊藤久右衛門 祇園四条店"],"ラーメン":["本家 第一旭 本店","新福菜館 本店","麺屋 猪一","麺屋 極鶏","天下一品 総本店"],"地元チェーン":["餃子の王将","進々堂","マールブランシュ","志津屋","からふね屋珈琲"]}}
-    ];
-    const GENERIC={label:"旅行先",themes:{"名物グルメ":["ご当地グルメ 人気店","郷土料理 人気店","駅近 ランチ 人気店","地元で人気の定食","夜ごはん 人気店"],"カフェ":["人気カフェ","喫茶店 人気","スイーツ 人気","朝食 カフェ","テイクアウト スイーツ"],"居酒屋":["地元 居酒屋 人気","海鮮居酒屋","焼き鳥 人気","クラフトビール","郷土料理 居酒屋"],"地元チェーン":["地元チェーン 人気","駅ナカ グルメ","ローカルスーパー 惣菜","ベーカリー 人気","回転寿司 人気"]}};
-    function id(){return `id_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`}
-    function esc(s){return String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]))}
-    function ctx(){const data=JSON.parse(localStorage.getItem(LISTS_KEY)||"{}");const list=data.lists?.find(l=>l.id===data.activeListId)||data.lists?.[0]||null;return{data,list}}
-    function inferArea(){const {list}=ctx();const text=[list?.name,...(list?.spots||[]).map(s=>s.name)].filter(Boolean).join(" ");return MENUS.find(m=>m.match.test(text))?.label||""}
-    function menu(area){return MENUS.find(m=>m.match.test(area||""))||GENERIC}
-    function render(){const areaEl=document.getElementById("areaInput");const area=areaEl.value.trim()||inferArea()||"旅行先";areaEl.value=area;const m=menu(area);const n=Math.max(1,Math.min(8,parseInt(document.getElementById("perThemeInput").value,10)||5));const box=document.getElementById("suggestions");box.innerHTML="";Object.entries(m.themes).forEach(([theme,shops])=>{const card=document.createElement("article");card.className="food-card";card.innerHTML=`<h3>${esc(theme)}</h3>`;shops.slice(0,n).forEach(shop=>{const q=`${area} ${shop}`;const row=document.createElement("label");row.className="shop-row";row.innerHTML=`<input type="checkbox" class="shop-check" data-theme="${esc(theme)}" data-name="${esc(shop)}"><span><strong>${esc(shop)}</strong><br><small>${esc(area)}の${esc(theme)}候補</small><br><a class="shop-link" href="https://www.google.com/search?q=${encodeURIComponent(q)}" target="_blank" rel="noopener">Googleで検索</a></span>`;card.appendChild(row)});box.appendChild(card)});document.getElementById("status").textContent=`${area}向けの候補を表示しています。`}
-    async function geocode(area,shop){try{const res=await fetch("/api/search",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({query:`${area} ${shop}`})});if(!res.ok)return null;const hit=await res.json();const lat=parseFloat(hit.lat),lng=parseFloat(hit.lng);return Number.isFinite(lat)&&Number.isFinite(lng)?{lat,lng,sourceUrl:hit.url||"",sourceQuery:`${area} ${shop}`}:null}catch{return null}}
-    async function addSelected(){const checks=[...document.querySelectorAll(".shop-check:checked")];const status=document.getElementById("status");if(!checks.length){status.textContent="追加するお店にチェックを入れてください。";return}const {data,list}=ctx();if(!list){status.textContent="しおりが見つかりません。";return}const area=document.getElementById("areaInput").value.trim()||"旅行先";if(!Array.isArray(list.spots))list.spots=[];let added=0,skipped=0;for(const ch of checks){const geo=await geocode(area,ch.dataset.name);if(!geo){skipped++;continue}list.spots.push({id:id(),name:ch.dataset.name,description:`${area}の${ch.dataset.theme}候補`,type:"spot",spotCategory:"restaurant",defaultStayMinutes:60,budget:0,lat:geo.lat,lng:geo.lng,sourceType:"gourmet",sourceUrl:geo.sourceUrl,sourceQuery:geo.sourceQuery});added++}const idx=data.lists.findIndex(l=>l.id===list.id);if(idx>=0)data.lists[idx]=list;localStorage.setItem(LISTS_KEY,JSON.stringify(data));status.textContent=skipped?`${added}件追加しました。${skipped}件は座標が見つかりませんでした。`:`${added}件追加しました。`}
-    const hb=document.getElementById("hamburgerBtn"),sd=document.getElementById("sideDrawer"),db=document.getElementById("drawerBackdrop");hb.onclick=()=>{const o=!sd.classList.contains("hidden");sd.classList.toggle("hidden",o);db.classList.toggle("hidden",o)};db.onclick=()=>{sd.classList.add("hidden");db.classList.add("hidden")};document.getElementById("generateBtn").onclick=render;document.getElementById("addSelectedBtn").onclick=addSelected;render();
-  </script>
+  <script>location.replace("./spots.html");</script>
   <script src="./theme.js"></script>
 </body>
 </html>

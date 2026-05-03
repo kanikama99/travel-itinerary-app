@@ -34,11 +34,11 @@ const BG_THEMES = [
 ];
 
 const THEME_COLOR_MAP = {
-  warm:     { accent: "#ff7a45", accentDeep: "#ce5428", accentLight: "#ff9a52", accentSoft: "rgba(255,122,69,0.12)",  line: "rgba(166,97,54,0.2)",    panel: "rgba(255,252,245,0.88)", shadow: "0 24px 50px rgba(149,90,48,0.16)", accentRgb: "255,122,69",  shadowBaseRgb: "149,90,48" },
-  sky:      { accent: "#3b8fd4", accentDeep: "#1a6aad", accentLight: "#60aee8", accentSoft: "rgba(59,143,212,0.12)",  line: "rgba(59,120,200,0.22)",  panel: "rgba(240,248,255,0.88)", shadow: "0 24px 50px rgba(30,90,160,0.14)",  accentRgb: "59,143,212",  shadowBaseRgb: "30,90,160" },
-  mint:     { accent: "#2da868", accentDeep: "#1a7a48", accentLight: "#52c485", accentSoft: "rgba(45,168,104,0.12)",  line: "rgba(45,150,90,0.22)",   panel: "rgba(240,255,248,0.88)", shadow: "0 24px 50px rgba(30,110,60,0.14)",  accentRgb: "45,168,104",  shadowBaseRgb: "30,110,60" },
-  lavender: { accent: "#8b64cc", accentDeep: "#6a45a8", accentLight: "#a884e0", accentSoft: "rgba(139,100,204,0.12)", line: "rgba(120,80,200,0.22)",  panel: "rgba(248,244,255,0.88)", shadow: "0 24px 50px rgba(90,60,150,0.14)",  accentRgb: "139,100,204", shadowBaseRgb: "90,60,150" },
-  gray:     { accent: "#7a8a98", accentDeep: "#5a6a78", accentLight: "#96a6b4", accentSoft: "rgba(122,138,152,0.12)", line: "rgba(100,120,140,0.22)", panel: "rgba(245,247,250,0.88)", shadow: "0 24px 50px rgba(60,80,100,0.14)",   accentRgb: "122,138,152", shadowBaseRgb: "60,80,100" },
+  warm: { accent: "#ff7a45", accentDeep: "#ce5428", accentLight: "#ff9a52", accentSoft: "rgba(255,122,69,0.12)", line: "rgba(166,97,54,0.2)", panel: "rgba(255,252,245,0.88)", shadow: "0 24px 50px rgba(149,90,48,0.16)", accentRgb: "255,122,69", shadowBaseRgb: "149,90,48" },
+  sky: { accent: "#3b8fd4", accentDeep: "#1a6aad", accentLight: "#60aee8", accentSoft: "rgba(59,143,212,0.12)", line: "rgba(59,120,200,0.22)", panel: "rgba(240,248,255,0.88)", shadow: "0 24px 50px rgba(30,90,160,0.14)", accentRgb: "59,143,212", shadowBaseRgb: "30,90,160" },
+  mint: { accent: "#2da868", accentDeep: "#1a7a48", accentLight: "#52c485", accentSoft: "rgba(45,168,104,0.12)", line: "rgba(45,150,90,0.22)", panel: "rgba(240,255,248,0.88)", shadow: "0 24px 50px rgba(30,110,60,0.14)", accentRgb: "45,168,104", shadowBaseRgb: "30,110,60" },
+  lavender: { accent: "#8b64cc", accentDeep: "#6a45a8", accentLight: "#a884e0", accentSoft: "rgba(139,100,204,0.12)", line: "rgba(120,80,200,0.22)", panel: "rgba(248,244,255,0.88)", shadow: "0 24px 50px rgba(90,60,150,0.14)", accentRgb: "139,100,204", shadowBaseRgb: "90,60,150" },
+  gray: { accent: "#7a8a98", accentDeep: "#5a6a78", accentLight: "#96a6b4", accentSoft: "rgba(122,138,152,0.12)", line: "rgba(100,120,140,0.22)", panel: "rgba(245,247,250,0.88)", shadow: "0 24px 50px rgba(60,80,100,0.14)", accentRgb: "122,138,152", shadowBaseRgb: "60,80,100" },
 };
 
 function defaultSettings() {
@@ -46,9 +46,9 @@ function defaultSettings() {
     mapStyle: "osm-bright",
     bgTheme: "warm",
     areaSuggestCount: 10,
-    areaSuggestTimeout: 10,
     calendarStyle: "standard",
     googlePlaceHoursEnabled: true,
+    showBudget: true,
   };
 }
 
@@ -67,8 +67,8 @@ function saveSettings(settings) {
 
 function applyBgFull(key) {
   const theme = BG_THEMES.find((t) => t.key === key) || BG_THEMES[0];
-  document.body.style.background = theme.full;
   const colors = THEME_COLOR_MAP[key] || THEME_COLOR_MAP.warm;
+  document.body.style.background = theme.full;
   const root = document.documentElement;
   root.style.setProperty("--accent", colors.accent);
   root.style.setProperty("--accent-deep", colors.accentDeep);
@@ -114,7 +114,7 @@ BG_THEMES.forEach((theme) => {
   btn.innerHTML = `<span class="theme-swatch-label">${theme.label}</span>`;
   btn.addEventListener("click", () => {
     draftSettings.bgTheme = theme.key;
-    document.querySelectorAll(".theme-swatch").forEach((s) => s.classList.remove("active"));
+    document.querySelectorAll(".theme-swatch").forEach((swatch) => swatch.classList.remove("active"));
     btn.classList.add("active");
     applyBgFull(theme.key);
     markDirty();
@@ -123,17 +123,19 @@ BG_THEMES.forEach((theme) => {
 });
 
 const areaSuggestCountInput = document.getElementById("areaSuggestCountInput");
-const areaSuggestTimeoutInput = document.getElementById("areaSuggestTimeoutInput");
 const googlePlaceHoursEnabled = document.getElementById("googlePlaceHoursEnabled");
+const showBudgetEnabled = document.getElementById("showBudgetEnabled");
 const calStyleGroup = document.getElementById("calStyleGroup");
 const settingsSaveBtn = document.getElementById("settingsSaveBtn");
 const settingsStatus = document.getElementById("settingsStatus");
 const clearPageCacheBtn = document.getElementById("clearPageCacheBtn");
 const cacheClearStatus = document.getElementById("cacheClearStatus");
+const clearSavedDataBtn = document.getElementById("clearSavedDataBtn");
+const savedDataClearStatus = document.getElementById("savedDataClearStatus");
 
 if (areaSuggestCountInput) areaSuggestCountInput.value = draftSettings.areaSuggestCount;
-if (areaSuggestTimeoutInput) areaSuggestTimeoutInput.value = draftSettings.areaSuggestTimeout;
 if (googlePlaceHoursEnabled) googlePlaceHoursEnabled.checked = draftSettings.googlePlaceHoursEnabled !== false;
+if (showBudgetEnabled) showBudgetEnabled.checked = draftSettings.showBudget !== false;
 
 areaSuggestCountInput?.addEventListener("change", () => {
   const value = parseInt(areaSuggestCountInput.value, 10);
@@ -142,15 +144,13 @@ areaSuggestCountInput?.addEventListener("change", () => {
   markDirty();
 });
 
-areaSuggestTimeoutInput?.addEventListener("change", () => {
-  const value = parseInt(areaSuggestTimeoutInput.value, 10);
-  if (value >= 3 && value <= 60) draftSettings.areaSuggestTimeout = value;
-  else areaSuggestTimeoutInput.value = draftSettings.areaSuggestTimeout;
+googlePlaceHoursEnabled?.addEventListener("change", () => {
+  draftSettings.googlePlaceHoursEnabled = googlePlaceHoursEnabled.checked;
   markDirty();
 });
 
-googlePlaceHoursEnabled?.addEventListener("change", () => {
-  draftSettings.googlePlaceHoursEnabled = googlePlaceHoursEnabled.checked;
+showBudgetEnabled?.addEventListener("change", () => {
+  draftSettings.showBudget = showBudgetEnabled.checked;
   markDirty();
 });
 
@@ -172,21 +172,30 @@ settingsSaveBtn?.addEventListener("click", () => {
 
 clearPageCacheBtn?.addEventListener("click", async () => {
   clearPageCacheBtn.disabled = true;
-  if (cacheClearStatus) cacheClearStatus.textContent = "削除しています...";
+  if (cacheClearStatus) cacheClearStatus.textContent = "ページキャッシュを削除しています...";
   try {
     if ("caches" in window) {
       const keys = await caches.keys();
       await Promise.all(keys.map((key) => caches.delete(key)));
     }
     sessionStorage.clear();
-    if (cacheClearStatus) cacheClearStatus.textContent = "削除しました。ページを再読み込みします。";
-    setTimeout(() => {
-      window.location.reload();
-    }, 500);
-  } catch (error) {
+    if (cacheClearStatus) cacheClearStatus.textContent = "ページキャッシュを削除しました。保存データは残っています。";
+    setTimeout(() => window.location.reload(), 500);
+  } catch {
     if (cacheClearStatus) cacheClearStatus.textContent = "削除に失敗しました。ブラウザの再読み込みを試してください。";
     clearPageCacheBtn.disabled = false;
   }
+});
+
+clearSavedDataBtn?.addEventListener("click", () => {
+  const ok = window.confirm("しおり、スポット、スケジュール、持ち物リスト、印刷編集内容をすべて削除します。元に戻せません。実行しますか？");
+  if (!ok) return;
+  localStorage.clear();
+  sessionStorage.clear();
+  if (savedDataClearStatus) savedDataClearStatus.textContent = "保存データをすべて削除しました。";
+  setTimeout(() => {
+    window.location.href = "./index.html";
+  }, 500);
 });
 
 function markDirty() {

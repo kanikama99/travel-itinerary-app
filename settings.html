@@ -61,16 +61,9 @@
       <div class="settings-row">
         <label class="settings-label" for="areaSuggestCountInput">
           提案候補数
-          <span class="settings-desc">エリア検索で表示するスポット候補の最大数（1〜50）</span>
+          <span class="settings-desc">ローカル候補から表示する観光スポット・ご当地フードの最大数（1〜50）</span>
         </label>
         <input id="areaSuggestCountInput" type="number" min="1" max="50" value="10" class="settings-number-input" />
-      </div>
-      <div class="settings-row">
-        <label class="settings-label" for="areaSuggestTimeoutInput">
-          検索上限時間（秒）
-          <span class="settings-desc">エリア検索のタイムアウト。時間内に見つかったスポットを表示します（3〜60）</span>
-        </label>
-        <input id="areaSuggestTimeoutInput" type="number" min="3" max="60" value="10" class="settings-number-input" />
       </div>
     </section>
 
@@ -105,6 +98,22 @@
     </section>
 
     <section class="panel settings-section">
+      <div class="panel-head">
+        <div>
+          <p class="panel-kicker">Display</p>
+          <h2>表示項目</h2>
+        </div>
+      </div>
+      <label class="settings-row" style="justify-content:flex-start; gap:12px">
+        <input id="showBudgetEnabled" type="checkbox" />
+        <span class="settings-label">
+          予算機能を表示する
+          <span class="settings-desc">OFFにすると予算入力・現在の予算総額・金額表示を隠します。保存済みの金額は削除しません。</span>
+        </span>
+      </label>
+    </section>
+
+    <section class="panel settings-section">
       <div class="settings-save-row" style="display:flex; align-items:center; gap:12px; justify-content:flex-end; flex-wrap:wrap">
         <span id="settingsStatus" class="settings-desc" aria-live="polite">変更後は保存ボタンを押してください。</span>
         <button id="settingsSaveBtn" class="primary-button" type="button">設定を保存</button>
@@ -124,6 +133,22 @@
       <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
         <button id="clearPageCacheBtn" class="btn btn-outline" type="button">このページのキャッシュを削除</button>
         <span id="cacheClearStatus" class="settings-desc" aria-live="polite"></span>
+      </div>
+    </section>
+
+    <section class="panel settings-section">
+      <div class="panel-head">
+        <div>
+          <p class="panel-kicker">Data Reset</p>
+          <h2>保存データの消去</h2>
+        </div>
+      </div>
+      <p class="settings-desc" style="margin-bottom:12px">
+        しおり、スポット、スケジュール、ホテル、ツアー、持ち物リスト、印刷ページの編集内容をすべて削除します。ページキャッシュ削除とは別の操作です。
+      </p>
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
+        <button id="clearSavedDataBtn" class="btn btn-outline danger" type="button">保存データをすべて消去</button>
+        <span id="savedDataClearStatus" class="settings-desc" aria-live="polite"></span>
       </div>
     </section>
 
@@ -152,6 +177,10 @@
         <span class="drawer-nav-icon">📍</span>
         <span>行きたい場所</span>
       </a>
+      <a href="./tripplan.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">📝</span>
+        <span>旅行計画</span>
+      </a>
       <a href="./schedule.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">📅</span>
         <span>スケジュール</span>
@@ -164,10 +193,6 @@
         <span class="drawer-nav-icon">🗺</span>
         <span>ツアーを見つける</span>
       </a>
-      <a href="./gourmet.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">🍜</span>
-        <span>グルメを見つける</span>
-      </a>
       <a href="./checklist.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">📋</span>
         <span>持ち物リスト</span>
@@ -175,6 +200,10 @@
       <a href="./print.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">🖨</span>
         <span>印刷する</span>
+      </a>
+      <a href="./howto.html" class="drawer-nav-item">
+        <span class="drawer-nav-icon">?</span>
+        <span>使い方</span>
       </a>
       <a href="./settings.html" class="drawer-nav-item drawer-nav-item--active">
         <span class="drawer-nav-icon">⚙</span>

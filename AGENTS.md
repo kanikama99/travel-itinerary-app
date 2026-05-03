@@ -7,69 +7,40 @@
 - 作業後は、変更したファイル・確認したこと・次のAIに残したい注意を短く追記する。
 - 既存のユーザー変更を勝手に戻さない。判断に迷う差分があれば、まず共有メモに状況を書く。
 
----
+## 文字化けチェック
 
-## ⚠️ 地図プレビューの吹き出し（ラベル）重なり — 再発注意
+- 日本語を含む HTML / JS / CSS / Markdown を編集したら、最後に文字化けしていないか確認する。
+- 少なくとも触ったページと主要導線のページで、`繧` / `縺` / `譁` / `蛟` / `蜊` / `謖` / `驛` / `譌` / `�` が残っていないか検索する。
+- 可能ならブラウザでもページタイトル、ハンバーガーメニュー、主要ボタン、フォームラベルを目視確認する。
+- PowerShell の表示だけが文字化けすることがあるため、`Select-String` の一致有無やブラウザ表示も合わせて判断する。
+- 文字化けを直すために一括変換や `Set-Content` で広範囲を書き換えない。必要な箇所だけ `apply_patch` で直す。
+
+## 地図プレビューの吹き出し（ラベル）重なり — 再発注意
 
 **症状:** スポットピンの横に出るラベル（spot-label tooltip）が他のラベルやピンと重なる。
 近いスポットが多いと吹き出しが欠けたり、どのピンのラベルか分からなくなる。
 
 **根本原因:**
-- Leaflet の permanent tooltip は CSS でサイズが決まるが、**衝突判定は app.js の `chooseLabelPlacements()` が実際の Leaflet レイヤー座標で計算する。**
+- Leaflet の permanent tooltip は CSS でサイズが決まるが、衝突判定は app.js の `chooseLabelPlacements()` が実際の Leaflet レイヤー座標で計算する。
 - ラベル寸法の見積もり（`LABEL_MIN_W` / `LABEL_MAX_W` / `LABEL_CHAR_W` / `LABEL_H`）が実際の描画サイズと合わないと判定がズレる。
 - spot-label は横書き固定。`white-space: nowrap` / `word-break: keep-all` / `writing-mode: horizontal-tb` を崩さないこと。
-- 衝突判定は app.js の `estimateLabelSize()` がスポット名の長さから幅を見積もる。`LABEL_MIN_W` / `LABEL_MAX_W` / `LABEL_CHAR_W` / `LABEL_H` と実CSSのフォント・paddingを大きくズラさないこと。
-- `chooseLabelPlacements(map, points)` はラベル同士・ピン・地図枠を避ける。推定ズームや固定 `MAP_W` / `MAP_H` ベースに戻さないこと。
 - `chooseLabelPlacements()` の戻り値には `rect` を必ず含める。`renderOverviewLayer()` のクラスターラベル配置が単独ラベルを避けるために `occupiedRects` として使う。
-- 近いスポットは `RELATIVE_CLUSTER_THRESHOLD` で全体図クラスタ化する。近接スポットの渋滞が再発したら閾値も確認する。
+- スポットピン・スポット吹き出し・クラスタ吹き出しは、他のピンや吹き出しと絶対に重ねて配置しない。`chooseLabelPlacements()` は重ならない候補だけを採用し、空きがない場合は吹き出しを省略する。重ねて表示するフォールバック（例: `|| "right"`）は禁止。
+- 地図の配置を変更したら、行きたい場所ページと印刷ページの両方でスクリーンショットまたはブラウザ確認を行い、ピン・吹き出し同士が重なっていないことを確認する。
 
 **禁止パターン:**
-- ラベル幅見積もりを実際より小さい値にしない（長い日本語スポット名でラベルが重なる）
-- `overflow-wrap: anywhere` を spot-label に指定しない（日本語が1文字ずつ縦に並ぶ）
-- スケジュール画面のSPOTS名にも `overflow-wrap: anywhere` を指定しない。狭い欄でも横書き・省略表示を優先し、1文字ずつの縦表記は禁止。
-- `text-overflow: ellipsis` や `overflow: hidden` で長いスポット名を切らない
-- 吹き出し方向を一律 `"right"` にハードコードしない（`chooseLabelPlacements()` を必ず呼ぶ）
-- `estimateZoom(bounds)` や固定幅でラベル配置を推定しない（実表示とズレて地図端で吹き出しが欠ける）
-
-**正しい実装:**
-```js
-// app.js
-const LABEL_MIN_W = 92;
-const LABEL_MAX_W = 520;
-const LABEL_CHAR_W = 15; // 横書きラベルの文字幅見積もり
-const LABEL_H = 38;      // 1行横書き + padding の実測値
-const LABEL_GAP = 24;    // ピンからラベルまでの余白（Leaflet offset と揃える）
-const LABEL_PIN_PAD = 20;
-const LABEL_EDGE_PAD = 8;
-const LABEL_DISTANCES = [24, 54, 84, 114]; // 近接時に段階的に離す
-const LABEL_DIRS = ["right", "left", "top", "bottom"]; // 4方向を試す
-
-// renderOverviewLayer / renderDetailLayer で必ず chooseLabelPlacements() を使う
-const placements = chooseLabelPlacements(map, singles);
-addMarkerToMap(map, point, placements.get(point.id) || "right");
-```
-
-```css
-/* styles.css */
-.leaflet-tooltip.spot-label {
-  width: max-content;
-  max-width: none;
-  white-space: nowrap;
-  word-break: keep-all;
-  writing-mode: horizontal-tb;
-}
-```
-
----
+- ラベル幅見積もりを実際より小さい値にしない。
+- `overflow-wrap: anywhere` を spot-label やスケジュール画面のSPOTS名に指定しない。
+- `text-overflow: ellipsis` や `overflow: hidden` で長いスポット名を切らない。
+- 吹き出し方向を一律 `"right"` にハードコードしない。`chooseLabelPlacements()` を必ず呼ぶ。
+- `estimateZoom(bounds)` や固定幅でラベル配置を推定しない。
 
 ## カレンダーピッカー
 
 - `calendar.js` に共通カスタムカレンダー実装。
 - `<input type="date" data-cal>` 属性を付けると自動でカスタムピッカーに変換。
-- 設定キー `calendarStyle`（"standard" / "cute" / "minimal"）で外観切替。
-- schedule.html と hotel.html の両方で `<script src="./calendar.js">` を読み込む。
-
----
+- 設定キー `calendarStyle`（`standard` / `cute` / `minimal`）で外観切替。
+- `schedule.html` と `hotel.html` の両方で `<script src="./calendar.js">` を読み込む。
 
 ## インラインテーマ適用（schedule.html / hotel.html）
 
@@ -77,6 +48,6 @@ addMarkerToMap(map, point, placements.get(point.id) || "right");
 `--accent-rgb` と `--shadow-base-rgb` も必ずセットすること（影色のテーマ連動に必要）。
 
 ```js
-r.style.setProperty("--accent-rgb",      c[7]);
+r.style.setProperty("--accent-rgb", c[7]);
 r.style.setProperty("--shadow-base-rgb", c[8]);
 ```

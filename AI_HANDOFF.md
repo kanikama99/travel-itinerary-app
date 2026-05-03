@@ -1,147 +1,125 @@
 # AI_HANDOFF.md
 
-Claude / Codex など、このプロジェクトを触るAI同士の共有メモです。
-作業前に読み、作業後に短く追記してください。
+Shared notes for Claude / Codex agents working on this repo.
 
-## 運用ルール
+## Working Rules
 
-- 既存のユーザー変更や他AIの変更を勝手に戻さない。
-- 大きめの変更をしたら「変更したファイル」「確認したこと」「未解決」を残す。
-- バグ再発防止や設計判断は、理由が後から分かるように1-3行で残す。
-- 古いメモを消すより、必要なら「完了」「不要になった」と追記する。
+- Read this file before starting work, and update it before finishing.
+- Do not revert user changes or other agent changes unless the user explicitly asks.
+- After editing files with Japanese text, check for mojibake in both source search and the in-app browser.
+- For mojibake checks, use the pattern documented in `AGENTS.md`.
 
-## 現在の状態
+## Map Label Caution
 
-- `bookmarks.html` / `hotel.html` / `schedule.html` に未コミットの変更あり。
-- `AGENTS.md` は未追跡ファイルとして存在していた。Codex向けのプロジェクト指示として利用。
-- `CLAUDE.md` と `AGENTS.md` には同じプロジェクト固有注意が入っている。
+- Spot label placement is handled by `chooseLabelPlacements()` in `app.js` using actual Leaflet layer coordinates.
+- Do not hard-code all labels to one direction.
+- Do not add `overflow-wrap: anywhere` to `.spot-label` or schedule SPOTS names.
+- Keep `spot-label` horizontal: `white-space: nowrap`, `word-break: keep-all`, `writing-mode: horizontal-tb`.
+- `chooseLabelPlacements()` must return `rect`; overview cluster labels use those occupied rects.
 
-## 重要な注意
+## Recent Work Log
 
-- 地図プレビューの spot-label tooltip は横書き固定。`overflow-wrap: anywhere` 禁止。衝突判定は `chooseLabelPlacements(map, points)` で実際の Leaflet レイヤー座標を使い、地図枠・ピン・ラベル同士を避ける。
-- tooltip方向と距離は `chooseLabelPlacements()` で決める。方向を一律 `"right"` に固定しない。
-- カスタムカレンダーは `calendar.js` 共通実装。`<input type="date" data-cal>` で変換される。
-- `schedule.html` / `hotel.html` のインラインテーマ適用では `--accent-rgb` と `--shadow-base-rgb` も必ず設定する。
+### 2026-05-01 Codex local area suggestions
 
-## 未解決・次に見ること
+- Retired the gourmet page as an active workflow.
+  - Removed gourmet links from page navigation/drawers.
+  - `gourmet.html` now redirects to `spots.html`.
+  - Schedule now advances directly to the packing checklist; checklist back goes to schedule.
+- Added `local_area_suggestions.js` with 47-prefecture local suggestions.
+  - Each prefecture has local foods and tourist spots.
+  - `spots.html` loads this before `app.js`.
+- Reworked the `spots.html` area suggestion flow in `app.js`.
+  - No Nominatim / Overpass / Wikidata network search is used for area suggestions.
+  - Suggestions are returned immediately from the local table.
+  - Default suggestion count is 10.
+  - Food suggestions are added as coordinate-less restaurant/category entries; tourist suggestions are coordinate-less tourist entries.
+  - Coordinate-less suggestions are deduplicated by name and can be adjusted later from the spot menu.
+- Removed the unused `/api/gourmet-suggestions` handler from `server.py`.
+- Removed the area suggestion timeout setting because local suggestions no longer need a network timeout.
+- Checks: JS syntax OK, `server.py` AST parse OK, mojibake scan OK, HTTP 200 for `spots.html`, `local_area_suggestions.js`, `gourmet.html`, `schedule.html`, and `checklist.html`.
 
-- 未コミット変更の中身はまだ精査していない。次の機能追加や修正前に関連ファイルを確認する。
-- PowerShell起動時に `C:\ProgramData\Anaconda3\Scripts\conda.exe` が見つからないという profile エラーが毎回出る。作業自体は継続可能。
+### 2026-05-01 Codex latest
 
-## 作業ログ
+- Answered the store-listing concern by keeping gourmet suggestions to names/search links and avoiding copied photos/reviews/descriptions.
+- Updated `gourmet.html` and `server.py`.
+  - Added a 47-prefecture hidden gourmet seed table.
+  - Added `/api/gourmet-suggestions`; when Google Places API is available, it returns real store candidates with Google Maps attribution text.
+  - Fallback remains local search candidates so minor prefectures no longer go blank.
+- Updated map pin/label behavior in `app.js`, `print.html`, and `styles.css`.
+  - Pins now use emoji-style icons instead of kanji labels.
+  - Label placement only accepts non-overlapping candidates; if no safe label position exists, the marker remains and the label is omitted.
+  - Added longer connector distances for speech-bubble labels.
+- Added budget display setting in `settings.html` / `settings.js`; `app.js`, `schedule.html`, `hotel.html`, `tour.html`, `flight.html`, and `theme.js` hide budget UI/summary when disabled without deleting saved amounts.
+- Added the non-overlap rule to `AGENTS.md`.
+- Checks: JS inline/script syntax OK; `server.py` AST parse OK; mojibake scan OK for touched app files; server restarted but live Places call returned 502 in this environment, so fallback behavior is important.
 
-### 2026-04-29 Codex
+### 2026-05-01 Codex follow-up
 
-- AI間の引き継ぎ用にこの `AI_HANDOFF.md` を追加。
-- `AGENTS.md` / `CLAUDE.md` の先頭に、このファイルを見る運用ルールを追記。
-- 既存のアプリコードには変更なし。
+- Changed map tooltip styling in `styles.css` so spot labels use a connected speech-bubble neck instead of a diamond pointer.
+- Updated `schedule.html`.
+  - SPOTS chips no longer open the day picker popup on click; users should drag/drop to schedule.
+  - The plus icon on SPOTS chips was replaced with a drag-grip icon.
+  - Auto-placement skipped spots are shown as a red warning in the SPOTS sidebar.
+- Updated `gourmet.html`.
+  - Added Miyazaki actual-shop candidates, including chicken nanban and local chicken options.
+- Updated `checklist.html`.
+  - Merged old `旅行` / `旅行先` category names into `旅先`.
+- Updated `print.html`.
+  - Conditional packing groups are hidden from print output.
 
-### 2026-04-29 Codex
+### 2026-05-01 Codex update
 
-- `hotel.html` のホテル検索フォームに人数・部屋数・予算上限を追加。
-- Booking.com / じゃらん / 楽天トラベル / Google検索のURL生成を、追加条件と日付に対応するよう修正。
-- じゃらんは旧 `search/search.do` ではなく `uw/uwp2011/uww2011init.do`、楽天は `kw.travel.rakuten.co.jp/keyword/Search.do` を使う。
-- Google検索ボタンは検索ボタン群の最後に移動。デスクトップでは右端、モバイルでは2列目側に出る。
+- Rebuilt `gourmet.html` with clean Japanese text and a curated actual-shop candidate table.
+  - Osaka, Tokyo, Kyoto, Fukuoka, Nagoya, and Sapporo now show concrete shop names instead of generic search phrases.
+  - Shop names still link to Google search for current confirmation.
+- Fixed `checklist.html` delete behavior.
+  - Default items are no longer re-added immediately after deletion.
+  - Deleted item names are tracked in `trip-packing-deleted.v1`.
+- Rebuilt `print.html` with clean Japanese text.
+  - Business hours are summarized into compact chips such as all days / day ranges.
+  - Added per-spot hide/show controls for the spot photo/introduction section.
+  - Schedule day headers now include weekdays, for example `[1日目] 5/2(土)`.
+- Verified scripts with `new Function(...)`.
+- Browser checks passed for `checklist.html` and `print.html`: no mojibake and no page errors.
 
-### 2026-04-29 Codex
+### 2026-05-01 Codex
 
-- 地図プレビューの spot-label をしっぽ付き吹き出しに変更。
-- `overflow-wrap: anywhere` で日本語が縦並びになる問題を避けるため、spot-label は1行横書き固定。`estimateLabelSize()` でスポット名の長さから衝突判定用の幅を見積もる。
-- `schedule.html` に「配置済みをSPOTSへ戻す」ボタンを追加。全日程の `entries` と `stayTimes`、`transitCache` をクリアする。
-- 楽天トラベル検索は日本語キーワードの文字化け対策として、URL直書きではなく `accept-charset="Shift_JIS"` のGETフォーム送信に変更。
+- Updated spot menu business-hours controls in `spots.html`, `styles.css`, and `app.js`.
+  - Replaced the awkward checkbox/label layout with clearer card-like switch controls.
+  - Weekly day rows are hidden unless weekly mode is enabled.
+- Fixed print-page map rendering in `print.html`.
+  - Corrected the Leaflet CSS integrity hash; the previous typo could block Leaflet CSS and make tiles appear grey/misaligned.
+  - Map initialization now waits until the generated card is in the DOM, then invalidates size and refits bounds.
+- Updated packing list behavior in `checklist.html`.
+  - Added default items: license, nail clipper, tissues, razor.
+  - Added overseas/country-based suggestions: security pouch, overseas SIM, local currency, conversion plug.
+  - Country rules are currently a static table in `COUNTRY_RULES`.
+  - Delete controls are now trash icon buttons.
+- Updated `print.html` packing list rendering so default packing additions are merged even if saved packing data already exists.
+- Browser checks passed for:
+  - `checklist.html`: no mojibake, requested packing items visible, trash delete button present.
+  - `print.html`: no mojibake, requested packing items visible, no print-page Leaflet/CSS integrity errors.
 
-### 2026-04-29 Codex
+### 2026-05-03 Claude ナビ統一・tripplan新規作成・削除確認・背表紙
 
-- 通天閣/新世界など近接スポットで吹き出しが欠ける問題に対し、`chooseLabelPlacements()` を実Leaflet座標ベースへ変更し、段階的なラベル距離候補・地図枠外ペナルティ・ピン障害物判定を追加。
-- ラベル距離が伸びても対応ピンが追えるように、`spot-label-gap-*` クラスと `::after` でコネクタ線を追加。
-- ユニバ/梅田付近の渋滞緩和として `RELATIVE_CLUSTER_THRESHOLD` を `0.12` に調整。
-- じゃらん/楽天トラベルの梅田文字化け対策として、両方とも `accept-charset="Shift_JIS"` のGETフォーム送信に統一。
+- 新ページ `tripplan.html`（旅行計画）を作成。目的地・日程・人数・予算・メモの入力フォームとやりたいこと/食べたいもの等のウィッシュリストを含む。データは `trip-basic-plan.v1` に保存。
+- 全ページのナビゲーションボタンを「← ページ名」「ページ名 →」形式に統一。`styles.css` に `.page-nav-bar` / `.page-nav-bar-btn--prev` / `.page-nav-bar-btn--next` を追加（sticky / top:0）。
+- ページフローを spots → tripplan → schedule に変更。spots.html の次ボタン先を tripplan.html に更新。schedule.html の前ボタン先を tripplan.html に更新。
+- 全ページのドロワーナビに「旅行計画」（tripplan.html）を追加。
+- スポットメニューのゴミ箱ボタンを上部（`.spot-menu-top-bar`）に移動し、初回クリックで `#spotDeleteConfirm` 確認ダイアログを表示してから削除する二段式に変更（`app.js`）。
+- `print.html` に「背表紙写真を選択」ボタン (`#backCoverPhotoBtn`) を追加。背表紙は `cover.backCoverImage` に保存し、しおりの最終ページとして `.back-cover` セクションを出力。
 
-### 2026-04-29 Codex
+### 2026-05-03 Claude ナビボタン色統一・スポット設定ページ・削除ボタン移動・印刷マップスタイル・ホテル時刻修正
 
-- 複数スポットの `cluster-label` だけ小さめサイズに調整。個別 spot-label とは別サイズなので混同しない。
-- ホテル登録はホテル名必須、1名あたり予約金額・チェックイン予定時刻を任意入力として保存。スケジュールのホテル行に金額/時刻を表示。
-- スポットメニューにスポットごとの予算入力を追加。スポット一覧メタとスケジュール行に表示。
+- **ナビボタン色統一** — `styles.css` の `.page-nav-bar-btn--prev` を `--next` と同じアクセントグラデーションに変更。戻るボタンも進むボタンも同色になった。
+- **ゴミ箱ボタン移動** — `spots.html` のスポットメニューで `.spot-menu-top-bar` を廃止し、`#spotDeleteButton` を `.spot-menu-head-actions` 内の保存・閉じるボタン左に移動。確認ダイアログ `#spotDeleteConfirm` は `spot-menu-head` の直後に配置。
+- **旅行計画ページ再設計** — `tripplan.html` を「スポット設定」ページとして全面書き直し。概要フォーム・ウィッシュリストを廃止し、スポット一覧を展開表示（優先度・滞在時間・営業時間・予算・メモ）。変更は即時保存（`spot-map-lists.v1` に書き込み）。ホテルスポット（sourceType あり）は一覧から除外。曜日別営業時間はスポットメニューへ案内する旨を明記。
+- **印刷ページ地図スタイル** — `print.html` のツールバーに `<select id="printMapStyleSelect">` を追加。OSM Bright / OSM スタンダード / CartoDB Light / CartoDB Dark / 衛星写真を選択でき、`spot-map-settings.v1` に保存して即再描画。
+- **ホテルページ時刻入力修正** — `hotel.html` のチェックイン・チェックアウト予定時刻の `step="300"` を `step="900"`（15分刻み）に変更。`.hotel-night-form--booking` のレスポンシブCSS（600px以下: 2カラム、601-760px: 3カラム）を追加してカレンダーアイコンと時刻入力の重複を解消。
+- **スケジュール自動配置からホテル除外** — `schedule.html` の自動配置ボタン処理で `s.spotCategory !== "hotel"` フィルタを追加。ホテルスポットは自動配置の対象外になった。
 
-### 2026-04-29 Codex
+## Next Things To Watch
 
-- 複数スポットの `cluster-label` を固定幅150pxの縦積みリストに変更。各スポット名は1行省略で、ラベル枠外に漏れないようにした。
-- `schedule.html` の集合/解散設定にSPOTS選択と新規追加ボタンを追加。
-- SPOTSから選ぶと対象スポットのカテゴリを `meet` / `dismiss` に更新し、同カテゴリの既存スポットは `other` に戻す。
-- 新規追加は座標なしスポットとして activeList に追加し、カテゴリ `meet` / `dismiss` を付与する。行きたい場所ページにも反映される。
-
-### 2026-04-29 Codex
-
-- クラスターラベルも `chooseLabelPlacements()` に載せ、単独スポットラベル・全ピンを避けて配置するよう修正。梅田クラスターが関空ラベルに被る問題の対策。
-- 集合/解散の新規追加ボタンを、プルダウン横ではなくテキスト入力欄の右へ移動。テキスト未入力時は追加せず入力欄にフォーカスする。
-- 集合/解散の新規追加は座標なしスポットを作るため、`app.js` 側で `hasSpotCoords()` を使い、地図プレビューは座標ありスポットだけを描画する。スポット一覧のメタ表示は座標なしなら「座標未設定」と出す。
-
-### 2026-04-29 Codex
-
-- `chooseLabelPlacements()` の戻り値に `rect` を含めるよう修正。これが無いと `renderOverviewLayer()` の `occupiedRects` が空になり、ユニバなど単独スポットラベルへクラスターラベルが重なる。
-- `#categoryCustomizeBtn` はテーマ色によって埋もれないよう、白背景・濃色文字・境界線を明示。
-- `schedule.html` のSPOTS欄は滞在時間を促す文言に変更し、スポット名が見切れにくいよう折り返しへ変更。営業時間（例 `10:00-18:00`）の手動入力を追加し、自動配置の日程選択とタイムラインの「営業時間外」警告に反映。
-- Googleの営業時間を自動取得するなら、スクレイピングではなく Google Places API 連携として実装する方針。現状は手動営業時間を制約条件として使う。
-
-### 2026-04-29 Codex
-
-- 地図プレビューの全体図では、クラスターラベルを東側優先、単独ラベルを西側優先で配置するよう調整。ユニバのラベルが大阪市街側へ重なりにくくするため。
-- スケジュール画面SPOTS名の `overflow-wrap: anywhere` を禁止し、横書き1行省略へ戻した。SPOTS欄の1文字ずつ縦表記は再発禁止。
-- `schedule.travelMode` を追加。既定は `transit`。`transit` は公共交通→車fallback、`driving` は車→公共交通fallback。移動時間キャッシュキーにモードを含め、切替時は `transitCache` をクリアする。
-
-### 2026-04-29 Codex
-
-- 集合/解散は `spotCategory` ではなく `spotRole` として分離。旧 `spotCategory=meet/dismiss` は読み込み時に `spotRole` へ移し、カテゴリは `other` に戻す。集合/解散はそれぞれ常に1件だけになるよう、最新指定以外の同ロールを解除する。
-- スケジュールSPOTS欄とタイムラインの滞在時間は「時間」「分」の2入力に変更。保存値は引き続き分単位。
-- 自動配置後、`generatePlan()` の `skipped` に入ったスポットは日程から外すため、SPOTSに残る。
-- ホテル登録フォームにチェックアウト予定時刻と「ホテルスポットとしてSPOTSにも追加」チェックを追加。保存時に `spotCategory: "hotel"`、`hotelCheckinTime`、`hotelCheckoutTime`、`sourceNightId` を持つスポットを追加/更新する。
-- 公共交通優先時は車ルートへフォールバックして採用しない。API取得失敗時は `failed` として通常の既定移動時間表示に留める。
-
-### 2026-04-29 Codex
-
-- 行きたい場所ページのスポットメニューで、集合/解散ボタンに `data-role` と `aria-pressed` を付け、押下状態が見えるようにした。保存時は `spotRole` へ反映し、同じ役割の既存スポットは解除する。
-- スポットメニューの営業時間は「任意」を明記し、日曜始まりに変更。入力は曜日ごとに開始時刻/終了時刻の `type="time"` 2欄へ分離した。
-- 既存データ互換のため、保存形式は引き続き `businessHours[day] = "HH:MM-HH:MM"`。旧文字列はメニュー表示時に開始/終了へ分解する。
-
-### 2026-04-29 Codex
-
-- スポットメニューの営業時間UIを、曜日ごとの使用チェックボックス + 両端ドラッグ式の横バーへ変更。保存形式は引き続き `businessHours[day] = "HH:MM-HH:MM"`。
-- 集合場所と解散場所は同じスポットにできるよう、`spotRoles: ["meet", "dismiss"]` を扱う実装へ拡張。旧 `spotRole` も互換で読む。
-- スケジュールページの解散日初期値は、集合日の翌日になるよう変更。集合日の初期値が明日なので、初期表示では解散日は現在の翌々日。
-- スケジュールページのSPOTS欄から上下矢印と営業時間入力を削除。営業時間は行きたい場所ページのスポットメニューから設定し、自動配置の制約に使う。
-
-### 2026-04-29 Codex
-
-- 集合/解散の両方を持つスポットは `category-meet-dismiss` と `map-pin-meet-dismiss` で緑/紫の両方が見えるようにした。
-- スポットメニューに滞在時間（時間/分）を追加し、スポットの `defaultStayMinutes` として保存。スケジュール側は `schedule.defaultStayTimes` がなければこの値を使う。
-- 空港専用の離陸/着陸予定時刻は横並びに変更。ハンバーガーメニュー内の「ホテルを見つける」はCSSで非表示。
-- スケジュールの宿泊先ボタンと主要文字サイズを強調。空港が集合/解散に指定された場合は「航空券を探す・登録する」ボタンを表示し、`flight.html` で検索/登録できる。
-- 経路取得は HERE API 通信失敗時のエラー理由を `transitCache` に残して画面表示するよう変更。ローカル検証では `transit.router.hereapi.com:443` に接続できず `HTTP:000`。
-
-### 2026-04-30 Claude Sonnet
-
-- HERE API を Google Maps JavaScript API に置き換え。`settings.html` → `Transit API` セクションで Google Maps API キーを保存すると有効になる（月$200まで無料）。未設定時は距離推定フォールバック。
-- 天気表示を改善：16日以上先は「天気情報がまだ公開されていません」、取得済みデータは ☀️🌤⛅🌦🌧 絵文字 + 気温 + 降水確率で表示。
-- タイムラインの各スポット行の左カラムに終了時刻（`.tl-end-time`）を追加。滞在終了時刻が一目でわかる。
-- スケジュール画面のSPOTSサイドバーから集合/解散役割スポットを除外。集合/解散目的以外の日程エントリとして誤配置されなくなった。
-- スポットメニューの営業時間UI：集合/解散ボタンを小型化、全日共通チェックボックスを廃止してデフォルトON状態に、曜日別モード以外では「一括ON/OFF」ボタン非表示。
-
-### 2026-04-30 Claude Sonnet（続き）
-
-- 日付ズレバグ修正：`toISOString().split("T")[0]` がJST環境で-1日になる問題を解消。`dateToYMD(d)` ヘルパー（ローカル時刻使用）を追加し、`ensureScheduleDefaults` / `autoFixDismissDate` / `syncDaysToDateRange` / `ensureDaysFromTripDates` の全6箇所を置換。
-- スケジュール画面SPOTSサイドバー改修：滞在時間入力と「スポットメニュー」ボタンを削除。スポット名（`.spot-chip-name`）クリックで `spots.html?editSpot=...` へ遷移するよう変更。
-- タイムライン改修：滞在時間入力（時間/分）・「編集」ボタンを削除。スポット名クリックで `spots.html?editSpot=...` へ遷移。
-- スポットメニュー営業時間UI：「一括ON/OFF」ボタンを「曜日を一括切り替え」チェックボックス（`#spotHoursToggleAllChk`）に変更。曜日別モード以外では `visibility: hidden`（スペース維持）で非表示にしてレイアウトシフト防止。
-
-### 2026-04-30 Claude Sonnet（続き2）
-
-- 開始日変更時の日付ラベルズレバグ修正：`syncDaysToDateRange` / `ensureDaysFromTripDates` で、既存ラベルが "X日目" パターンに一致する場合も新しいインデックスで上書きするよう変更。手動リネームしたラベルは保護される。
-- スポットメニュー遷移を新タブ開きに変更：SPOTSサイドバーのスポット名クリック・タイムライン行のスポット名クリック両方で `location.href` → `window.open(..., "_blank")` に変更。スケジュール画面が維持される。
-- ホテル登録フォームのチェックイン/アウト時刻を、スケジュール日程の終了/開始時刻と連動。既存ホテルデータがない場合に `day.endTime`（チェックイン）・`nextDay.startTime`（チェックアウト）をデフォルト値として使用。
-
-## 技術的に保留・後で見直す課題
-
-- Google Maps API は `settings.html` でユーザー自身がAPIキーを設定する必要がある。未設定時は距離ベース推定。将来はサーバー側プロキシで共有キー管理も検討可。
-- 天気連動は Open-Meteo の日次予報を座標ありスポットの代表点で取得する簡易版。旅行先が複数都市にまたがる場合は日ごとの代表地点を選ぶロジックが必要。
-- グルメ提案は静的候補の試作。将来は食べログ/Google Places/ホットペッパー等の利用規約とアフィリエイト可否を確認して正式連携する。
-- 印刷/PDFはブラウザ印刷の試作。背景表紙、地図画像、日程、ホテル/航空券/持ち物を統合した専用PDF生成は別途レイアウト調整が必要。
+- If the user still sees old broken map tiles, ask them to hard reload once; the bug was likely a cached copy of `print.html` with the bad Leaflet CSS integrity hash.
+- If adding more country-specific packing rules, extend `COUNTRY_RULES` in `checklist.html` and keep the strings browser-verified.
+- `tripplan.html` のウィッシュリストは `trip-basic-plan.v1` に保存される。印刷ページ（print.html）に未連携なので、将来的に組み込むなら render() で `trip-basic-plan.v1` を読み込む必要がある。

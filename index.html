@@ -16,7 +16,7 @@
       --muted: #5f6d73;
       --accent: #ff7a45;
       --accent-deep: #ce5428;
-      --accent-light: var(--accent-light);
+      --accent-light: #ff9a52;
       --accent-soft: rgba(255, 122, 69, 0.14);
       --accent-yellow: #ffd257;
       --accent-pink: #ff8fb1;
@@ -24,6 +24,7 @@
       --shadow: 0 24px 50px rgba(149, 90, 48, 0.16);
       --radius-xl: 30px;
       --radius-lg: 22px;
+      --shadow-base-rgb: 149, 90, 48;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -269,11 +270,11 @@
           gray:     "radial-gradient(circle at 8% 10%, rgba(200,210,220,.45), transparent 22%), radial-gradient(circle at 92% 14%, rgba(180,190,200,.28), transparent 20%), radial-gradient(circle at 80% 80%, rgba(190,200,210,.22), transparent 18%), linear-gradient(180deg,#f2f4f6 0%,#e4e8ec 100%)",
         };
         const CS = {
-          warm:     ["#ff7a45","#ce5428","#ff9a52","rgba(255,122,69,0.12)","rgba(166,97,54,0.2)","rgba(255,252,245,0.88)","0 24px 50px rgba(149,90,48,0.16)","255,122,69"],
-          sky:      ["#3b8fd4","#1a6aad","#60aee8","rgba(59,143,212,0.12)","rgba(59,120,200,0.22)","rgba(240,248,255,0.88)","0 24px 50px rgba(30,90,160,0.14)","59,143,212"],
-          mint:     ["#2da868","#1a7a48","#52c485","rgba(45,168,104,0.12)","rgba(45,150,90,0.22)","rgba(240,255,248,0.88)","0 24px 50px rgba(30,110,60,0.14)","45,168,104"],
-          lavender: ["#8b64cc","#6a45a8","#a884e0","rgba(139,100,204,0.12)","rgba(120,80,200,0.22)","rgba(248,244,255,0.88)","0 24px 50px rgba(90,60,150,0.14)","139,100,204"],
-          gray:     ["#7a8a98","#5a6a78","#96a6b4","rgba(122,138,152,0.12)","rgba(100,120,140,0.22)","rgba(245,247,250,0.88)","0 24px 50px rgba(60,80,100,0.14)","122,138,152"],
+          warm:     ["#ff7a45","#ce5428","#ff9a52","rgba(255,122,69,0.12)","rgba(166,97,54,0.2)","rgba(255,252,245,0.88)","0 24px 50px rgba(149,90,48,0.16)","255,122,69","149,90,48"],
+          sky:      ["#3b8fd4","#1a6aad","#60aee8","rgba(59,143,212,0.12)","rgba(59,120,200,0.22)","rgba(240,248,255,0.88)","0 24px 50px rgba(30,90,160,0.14)","59,143,212","30,90,160"],
+          mint:     ["#2da868","#1a7a48","#52c485","rgba(45,168,104,0.12)","rgba(45,150,90,0.22)","rgba(240,255,248,0.88)","0 24px 50px rgba(30,110,60,0.14)","45,168,104","30,110,60"],
+          lavender: ["#8b64cc","#6a45a8","#a884e0","rgba(139,100,204,0.12)","rgba(120,80,200,0.22)","rgba(248,244,255,0.88)","0 24px 50px rgba(90,60,150,0.14)","139,100,204","90,60,150"],
+          gray:     ["#7a8a98","#5a6a78","#96a6b4","rgba(122,138,152,0.12)","rgba(100,120,140,0.22)","rgba(245,247,250,0.88)","0 24px 50px rgba(60,80,100,0.14)","122,138,152","60,80,100"],
         };
         document.body.style.background = BGS[k] || BGS.warm;
         const c = CS[k] || CS.warm;
@@ -286,6 +287,7 @@
         r.style.setProperty("--panel",        c[5]);
         r.style.setProperty("--shadow",       c[6]);
         r.style.setProperty("--accent-rgb",   c[7]);
+        r.style.setProperty("--shadow-base-rgb", c[8]);
       } catch {}
     })();
   </script>
