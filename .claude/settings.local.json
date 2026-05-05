@@ -3,7 +3,10 @@
     "allow": [
       "Bash(node --input-type=module)",
       "Bash(node *)",
-      "Bash(start *)"
+      "Bash(start *)",
+      "Bash(grep -v \"^\\\\s*//\")",
+      "PowerShell(\\(Get-Content \"D:\\\\Documents\\\\Claude\\\\projects\\\\travel-itinerary-app\\\\spots.html\"\\).Count; \\(Get-Content \"D:\\\\Documents\\\\Claude\\\\projects\\\\travel-itinerary-app\\\\schedule.html\"\\).Count; \\(Get-Content \"D:\\\\Documents\\\\Claude\\\\projects\\\\travel-itinerary-app\\\\print.html\"\\).Count)",
+      "PowerShell(Get-Content *)"
     ]
   }
 }

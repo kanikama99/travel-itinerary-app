@@ -1,23 +1,14 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>旅行計画 - Trip Pop Map</title>
+  <title>優先順位入力 - Trip Pop Map</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./styles.css" />
   <style>
-    .spotset-notice {
-      background: rgba(255, 210, 87, 0.18);
-      border: 1px solid rgba(255, 210, 87, 0.5);
-      border-radius: var(--radius-md);
-      padding: 13px 18px;
-      font-size: 0.88rem;
-      line-height: 1.7;
-      color: var(--text);
-    }
     .spotset-empty {
       text-align: center;
       padding: 48px 20px;
@@ -46,11 +37,13 @@
       flex: 1;
       min-width: 0;
     }
-    .spotset-name-link {
-      color: inherit;
+    .spotset-name-btn {
+      background: none; border: none; padding: 0;
+      font: inherit; font-weight: 700; color: inherit;
+      cursor: pointer; text-align: left;
       text-decoration: underline dotted;
     }
-    .spotset-name-link:hover { color: var(--accent); }
+    .spotset-name-btn:hover { color: var(--accent); }
     .spotset-cat-badge {
       display: inline-flex;
       align-items: center;
@@ -118,6 +111,28 @@
     }
     .spotset-saved.visible { opacity: 1; }
 
+.shared-spot-menu-overlay {
+      position: fixed; inset: 0; z-index: 1500;
+      background: rgba(16,28,42,.38);
+      display: flex; align-items: center; justify-content: center; padding: 18px;
+    }
+    .shared-spot-menu-overlay.hidden { display: none; }
+    .shared-spot-menu-frame-wrap {
+      width: min(980px, 100%);
+      height: min(760px, calc(100vh - 36px));
+      background: var(--panel); border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 24px 80px rgb(var(--shadow-base-rgb,149,90,48) / .28);
+      overflow: hidden; position: relative;
+    }
+    .shared-spot-menu-close {
+      position: absolute; top: 10px; right: 10px; z-index: 2;
+      border: 1px solid var(--line); border-radius: 999px;
+      width: 38px; height: 38px; background: rgba(255,255,255,.92);
+      color: var(--accent-deep); font-weight: 900; cursor: pointer;
+    }
+    .shared-spot-menu-frame { width: 100%; height: 100%; border: 0; background: transparent; }
+
     @media (max-width: 600px) {
       .spotset-grid { grid-template-columns: 1fr 1fr; }
     }
@@ -128,12 +143,35 @@
     <header class="hero">
       <div class="hero-copy-wrap">
         <p class="eyebrow">Trip Pop Map</p>
-        <h1>旅行計画</h1>
-        <p class="hero-copy">スケジュールを組む前に、各スポットの滞在時間・優先度・営業時間を確認しておきましょう。</p>
+        <h1>優先順位入力</h1>
+        <p class="hero-copy">スケジュールを組む前に、各スポットの優先度・滞在時間・営業時間をまとめて確認・設定しましょう。<br><span style="font-size:0.88rem;color:var(--muted)">※写真・カテゴリ・役割（集合/解散）・曜日別営業時間など詳細な設定は、どのページからでも<strong>スポットメニュー</strong>（スポット名をクリック）から変更できます。</span></p>
+        <nav class="progress-steps" aria-label="ステップ">
+          <a href="./spots.html" class="progress-step">①行きたい場所</a>
+          <span class="progress-sep">›</span>
+          <strong class="progress-step progress-step--current">②優先順位入力</strong>
+          <span class="progress-sep">›</span>
+          <a href="./schedule.html" class="progress-step">③スケジュール</a>
+          <span class="progress-sep">›</span>
+          <a href="./checklist.html" class="progress-step">④持ち物リスト</a>
+          <span class="progress-sep">›</span>
+          <a href="./print.html" class="progress-step">⑤印刷する</a>
+        </nav>
       </div>
     </header>
 
-    <nav class="page-nav-bar">
+    <div id="spotsetContainer">
+      <p id="spotsetEmpty" class="spotset-empty">スポットが登録されていません。先に「行きたい場所」でスポットを追加してください。</p>
+      <div id="spotsetList" class="spotset-list"></div>
+    </div>
+  </div>
+
+  <div id="sharedSpotMenuOverlay" class="shared-spot-menu-overlay hidden" role="dialog" aria-modal="true">
+    <div class="shared-spot-menu-frame-wrap">
+      <iframe id="sharedSpotMenuFrame" class="shared-spot-menu-frame" title="スポットメニュー"></iframe>
+    </div>
+  </div>
+
+  <nav class="page-nav-bar">
       <a href="./spots.html" class="page-nav-bar-btn page-nav-bar-btn--prev">
         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
         行きたい場所
@@ -143,17 +181,6 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
       </a>
     </nav>
-
-    <div class="spotset-notice">
-      ここでは各スポットの<strong>優先度・滞在時間・営業時間・予算</strong>をまとめて設定できます。<br>
-      写真・カテゴリ・役割（集合/解散）・曜日別営業時間など詳細な設定は、どのページからでも<strong>スポットメニュー</strong>（スポット名をクリック）から変更できます。
-    </div>
-
-    <div id="spotsetContainer">
-      <p id="spotsetEmpty" class="spotset-empty">スポットが登録されていません。先に「行きたい場所」でスポットを追加してください。</p>
-      <div id="spotsetList" class="spotset-list"></div>
-    </div>
-  </div>
 
   <button id="hamburgerBtn" class="hamburger-btn" type="button" aria-label="メニューを開く">
     <span class="hamburger-line"></span>
@@ -171,33 +198,9 @@
         <span class="drawer-nav-icon">📒</span>
         <span>しおりを選ぶ</span>
       </a>
-      <a href="./spots.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">📍</span>
-        <span>行きたい場所</span>
-      </a>
-      <a href="./tripplan.html" class="drawer-nav-item drawer-nav-item--active">
-        <span class="drawer-nav-icon">📝</span>
-        <span>旅行計画</span>
-      </a>
-      <a href="./schedule.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">📅</span>
-        <span>スケジュール</span>
-      </a>
       <a href="./hotel.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">🏨</span>
         <span>ホテルを見つける</span>
-      </a>
-      <a href="./tour.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">🗺</span>
-        <span>ツアーを見つける</span>
-      </a>
-      <a href="./checklist.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">📋</span>
-        <span>持ち物リスト</span>
-      </a>
-      <a href="./print.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">🖨</span>
-        <span>印刷する</span>
       </a>
       <a href="./howto.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">?</span>
@@ -235,8 +238,8 @@
 
     function splitDuration(mins) {
       const m = Number(mins);
-      if (!m || m <= 0) return { h: "", m: "" };
-      return { h: String(Math.floor(m / 60) || ""), m: String(m % 60 || "") };
+      if (!m || m <= 0) return { h: "0", m: "0" };
+      return { h: String(Math.floor(m / 60)), m: String(m % 60) };
     }
 
     function getDurationMinutes(hVal, mVal) {
@@ -270,17 +273,20 @@
       const list    = getActiveList(data);
       const listEl  = document.getElementById("spotsetList");
       const emptyEl = document.getElementById("spotsetEmpty");
-      const spots   = (list?.spots || []).filter(s => s.spotCategory !== "hotel" || !s.sourceType);
+      // ホテル（sourceType あり）は除外
+      const spots   = (list?.spots || []).filter(s =>
+        (s.spotCategory !== "hotel" || !s.sourceType)
+      );
 
       emptyEl.style.display = spots.length ? "none" : "";
       listEl.innerHTML = "";
       if (!spots.length) return;
 
       spots.forEach(spot => {
-        const dur = splitDuration(spot.defaultStayMinutes);
-        const hrs = getSimpleHours(spot.businessHours);
+        const dur      = splitDuration(spot.defaultStayMinutes ?? 60);
+        const hrs      = getSimpleHours(spot.businessHours);
         const catLabel = CAT_LABELS[spot.spotCategory] || "📍 その他";
-        const pri = spot.priority || 3;
+        const pri      = spot.priority || 3;
 
         const card = document.createElement("div");
         card.className = "spotset-card";
@@ -288,7 +294,7 @@
 
         card.innerHTML = `
           <div class="spotset-card-head">
-            <h3 class="spotset-name"><a href="./spots.html?editSpot=${esc(spot.id)}" class="spotset-name-link">${esc(spot.name)}</a></h3>
+            <h3 class="spotset-name"><button class="spotset-name-btn" data-spot-id="${esc(spot.id)}">${esc(spot.name)}</button></h3>
             <span class="spotset-cat-badge">${esc(catLabel)}</span>
           </div>
           <div class="spotset-grid">
@@ -305,9 +311,9 @@
             <div class="spotset-field">
               <label class="spotset-label">滞在時間</label>
               <div class="spotset-dur-row">
-                <input type="number" min="0" max="12" step="1" value="${esc(dur.h)}" class="spotset-input" data-field="stayH" placeholder="1" />
+                <input type="number" min="0" max="12" step="1" value="${esc(dur.h)}" class="spotset-input" data-field="stayH" />
                 <span class="spotset-unit">時間</span>
-                <input type="number" min="0" max="55" step="5" value="${esc(dur.m)}" class="spotset-input" data-field="stayM" placeholder="0" />
+                <input type="number" min="0" max="55" step="5" value="${esc(dur.m)}" class="spotset-input" data-field="stayM" />
                 <span class="spotset-unit">分</span>
               </div>
             </div>
@@ -335,6 +341,7 @@
 
         listEl.appendChild(card);
 
+        card.querySelector(".spotset-name-btn")?.addEventListener("click", () => openSpotMenu(spot.id));
         card.querySelectorAll("[data-field]").forEach(el => {
           const ev = el.tagName === "TEXTAREA" ? "input" : "change";
           el.addEventListener(ev, () => saveSpot(spot.id, card));
@@ -350,13 +357,13 @@
       if (idx < 0) return;
 
       const g = f => card.querySelector(`[data-field="${f}"]`);
-      const priority          = parseInt(g("priority")?.value) || 3;
+      const priority           = parseInt(g("priority")?.value) || 3;
       const defaultStayMinutes = getDurationMinutes(g("stayH")?.value, g("stayM")?.value);
-      const budget            = showBudget() ? (parseInt(g("budget")?.value) || 0) : list.spots[idx].budget;
-      const hoursOpen         = g("hoursOpen")?.value || "";
-      const hoursClose        = g("hoursClose")?.value || "";
-      const description       = g("notes")?.value?.trim() || "";
-      const businessHours     = (hoursOpen && hoursClose)
+      const budget             = showBudget() ? (parseInt(g("budget")?.value) || 0) : list.spots[idx].budget;
+      const hoursOpen          = g("hoursOpen")?.value || "";
+      const hoursClose         = g("hoursClose")?.value || "";
+      const description        = g("notes")?.value?.trim() || "";
+      const businessHours      = (hoursOpen && hoursClose)
         ? applyAllDayHours(hoursOpen, hoursClose)
         : (hoursOpen || hoursClose ? list.spots[idx].businessHours : null);
 
@@ -371,11 +378,36 @@
       }
     }
 
+    function openSpotMenu(spotId) {
+      const overlay = document.getElementById("sharedSpotMenuOverlay");
+      const frame   = document.getElementById("sharedSpotMenuFrame");
+      if (!overlay || !frame) return;
+      frame.src = `./spots.html?editSpot=${encodeURIComponent(spotId)}&embedded=1`;
+      overlay.classList.remove("hidden");
+    }
+
+    function closeSpotMenu() {
+      const overlay = document.getElementById("sharedSpotMenuOverlay");
+      const frame   = document.getElementById("sharedSpotMenuFrame");
+      overlay?.classList.add("hidden");
+      if (frame) frame.src = "about:blank";
+      renderSpots();
+    }
+
     const hb = document.getElementById("hamburgerBtn");
     const sd = document.getElementById("sideDrawer");
     const db = document.getElementById("drawerBackdrop");
     hb.onclick = () => { const o = !sd.classList.contains("hidden"); sd.classList.toggle("hidden", o); db.classList.toggle("hidden", o); };
     db.onclick  = () => { sd.classList.add("hidden"); db.classList.add("hidden"); };
+
+    document.getElementById("sharedSpotMenuOverlay")?.addEventListener("click", e => {
+      if (e.target.id === "sharedSpotMenuOverlay") closeSpotMenu();
+    });
+    document.getElementById("sharedSpotMenuClose")?.addEventListener("click", closeSpotMenu);
+    window.addEventListener("message", event => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type === "spot-menu-saved" || event.data?.type === "spot-menu-closed") closeSpotMenu();
+    });
 
     renderSpots();
   </script>

@@ -245,6 +245,7 @@ const areaSuggestDrawToggle  = document.getElementById("areaSuggestDrawToggle");
 const areaSuggestFilterClear = document.getElementById("areaSuggestFilterClear");
 const areaSuggestMapWrap     = document.getElementById("areaSuggestMapWrap");
 const areaSuggestMapEl       = document.getElementById("areaSuggestMapEl");
+const areaSuggestCountInline = document.getElementById("areaSuggestCountInline");
 
 // 地図絞り込みの状態
 let geoFilterBounds    = null;
@@ -308,7 +309,7 @@ categoryNameInput.addEventListener("keydown", (e) => {
 });
 
 listManageBtn.addEventListener("click", openListModal);
-listManageDrawerBtn.addEventListener("click", openListModal);
+if (listManageDrawerBtn) listManageDrawerBtn.addEventListener("click", openListModal);
 listModalBackdrop.addEventListener("click", closeListModal);
 listModalClose.addEventListener("click", closeListModal);
 listAddBtn.addEventListener("click", addNewList);
@@ -348,6 +349,20 @@ if (areaSuggestSearchBtn) areaSuggestSearchBtn.addEventListener("click", handleA
 if (areaSuggestInput) areaSuggestInput.addEventListener("keydown", (e) => { if (e.key === "Enter") handleAreaSuggest(); });
 if (areaSuggestDrawToggle) areaSuggestDrawToggle.addEventListener("click", toggleAreaSuggestDrawMap);
 if (areaSuggestFilterClear) areaSuggestFilterClear.addEventListener("click", clearGeoFilter);
+if (areaSuggestCountInline) {
+  const saved = loadAppSettings();
+  areaSuggestCountInline.value = saved.areaSuggestCount ?? 10;
+  areaSuggestCountInline.addEventListener("change", () => {
+    const val = parseInt(areaSuggestCountInline.value, 10);
+    const s = loadAppSettings();
+    if (val >= 1 && val <= 50) {
+      s.areaSuggestCount = val;
+    } else {
+      areaSuggestCountInline.value = s.areaSuggestCount ?? 10;
+    }
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+  });
+}
 
 document.addEventListener("click", (e) => {
   if (!e.target.closest(".autocomplete-wrap")) {
@@ -367,7 +382,11 @@ requestAnimationFrame(() => {
 
 function loadAppState() {
   const d = ensureListsData();
-  return { spots: getActiveList(d)?.spots ?? [] };
+  const active = getActiveList(d);
+  return {
+    spots: active?.spots ?? [],
+    clusterLabelDeltas: active?.clusterLabelDeltas ?? {},
+  };
 }
 
 function defaultState() {
@@ -410,6 +429,7 @@ function persistState() {
   const active = getActiveList(d);
   if (!active) return;
   active.spots = state.spots;
+  active.clusterLabelDeltas = state.clusterLabelDeltas || {};
   saveListsData();
 }
 
@@ -483,6 +503,10 @@ async function saveLocation() {
       spotCategory,
     };
     await maybeAttachGoogleBusinessHours(location);
+    const duplicate = state.spots.find(s => s.name === location.name);
+    if (duplicate) {
+      if (!window.confirm(`「${location.name}」はすでに登録されています。\n同じ名前で追加しますか？`)) return;
+    }
     state.spots = [...state.spots, location];
     persistState();
     form.reset();
@@ -668,6 +692,16 @@ function renderSpotList() {
     fragment.querySelector(".spot-name").textContent = `${index + 1}. ${spot.name}`;
     fragment.querySelector(".spot-meta").textContent = buildSpotMeta(spot);
     nameButton.addEventListener("click", () => openSpotMenu(spot.id));
+    const inlineDeleteBtn = fragment.querySelector(".spot-inline-delete");
+    if (inlineDeleteBtn) {
+      inlineDeleteBtn.addEventListener("click", () => {
+        if (!window.confirm(`「${spot.name}」を削除しますか？`)) return;
+        state.spots = state.spots.filter(s => s.id !== spot.id);
+        persistState();
+        setFeedback(`「${spot.name}」を削除しました。`, false);
+        render();
+      });
+    }
     spotList.appendChild(fragment);
   });
 
@@ -677,14 +711,16 @@ function renderSpotList() {
 function updateBulkDeleteButton() {
   const checkboxes = spotList.querySelectorAll(".spot-checkbox");
   const checked = spotList.querySelectorAll(".spot-checkbox:checked");
-  bulkDeleteButton.classList.toggle("hidden", checked.length === 0);
 
   if (checkboxes.length === 0) {
     spotListControls.classList.add("hidden");
+    bulkDeleteButton.style.display = "none";
     selectAllCheckbox.checked = false;
     selectAllCheckbox.indeterminate = false;
   } else {
     spotListControls.classList.remove("hidden");
+    bulkDeleteButton.style.display = "";
+    bulkDeleteButton.disabled = checked.length === 0;
     if (checked.length === 0) {
       selectAllCheckbox.checked = false;
       selectAllCheckbox.indeterminate = false;
@@ -1400,6 +1436,20 @@ function renderMaps() {
     saveBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
     saveBtn.addEventListener("click", () => saveMapAsImage(card, group.title));
     head.appendChild(saveBtn);
+    if (loadAppSettings().labelDragEnabled) {
+      const resetLabelBtn = document.createElement("button");
+      resetLabelBtn.type = "button";
+      resetLabelBtn.className = "ghost-button icon-btn";
+      resetLabelBtn.title = "吹き出し位置をリセット";
+      resetLabelBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>`;
+      resetLabelBtn.addEventListener("click", () => {
+        state.spots.forEach(s => { delete s.labelDeltaX; delete s.labelDeltaY; });
+        state.clusterLabelDeltas = {};
+        persistState();
+        renderMaps();
+      });
+      head.appendChild(resetLabelBtn);
+    }
 
     const mapContainer = document.createElement("div");
     mapContainer.className = "leaflet-map";
@@ -1533,28 +1583,137 @@ function chooseLabelPlacements(map, points, options = {}) {
 }
 
 function addMarkerToMap(map, point, placement = null) {
-  const offsets = {
-    right: placement ? [placement.distance, 0] : [LABEL_GAP, 0],
-    left: placement ? [-placement.distance, 0] : [-LABEL_GAP, 0],
-    top: placement ? [0, -placement.distance] : [0, -LABEL_GAP],
-    bottom: placement ? [0, placement.distance] : [0, LABEL_GAP]
+  const dx = Number(point.labelDeltaX) || 0;
+  const dy = Number(point.labelDeltaY) || 0;
+  const base = {
+    right:  placement ? [placement.distance + dx,  dy] : [LABEL_GAP + dx,  dy],
+    left:   placement ? [-placement.distance + dx, dy] : [-LABEL_GAP + dx, dy],
+    top:    placement ? [dx, -placement.distance + dy] : [dx, -LABEL_GAP + dy],
+    bottom: placement ? [dx,  placement.distance + dy] : [dx,  LABEL_GAP + dy],
   };
   const roles = getSpotRoles(point);
   const markerRole = roles.includes("meet") && roles.includes("dismiss") ? "meet-dismiss" : getSpotRole(point);
   const marker = L.marker([point.lat, point.lng], { icon: createMarkerIcon(point.type, point.spotCategory, markerRole) }).addTo(map);
-  if (placement) {
-    marker.bindTooltip(escapeHtml(point.name), {
-      permanent: true,
-      direction: placement.direction,
-      offset: offsets[placement.direction] || [16, 0],
-      className: `spot-label spot-label-gap-${placement.distance}`,
-    });
-  }
+  const dir = placement ? placement.direction : "right";
+  marker.bindTooltip(escapeHtml(point.name), {
+    permanent: true,
+    direction: dir,
+    offset: base[dir] || [16 + dx, dy],
+    className: `spot-label spot-label-gap-${placement ? placement.distance : LABEL_GAP}`,
+  });
   marker.on("click", () => openSpotMenu(point.id));
   setTimeout(() => {
-    marker.getTooltip()?.getElement()?.addEventListener("click", () => openSpotMenu(point.id));
+    const tipEl = marker.getTooltip()?.getElement();
+    if (tipEl) {
+      tipEl.addEventListener("click", () => openSpotMenu(point.id));
+      if (loadAppSettings().labelDragEnabled) attachLabelDrag(tipEl, point.id, map);
+    }
   }, 0);
   return marker;
+}
+
+function attachLabelDrag(el, spotId, map) {
+  el.style.pointerEvents = "auto";
+  el.style.cursor = "grab";
+  el.title = "ドラッグで位置を調整";
+
+  let dragging = false;
+  let startX, startY, startDx, startDy;
+  // Leaflet が _updatePosition で設定する marginLeft/Top の基準値
+  let baseMl = 0, baseMt = 0;
+
+  // マウスが tooltip 上にある間はマップドラッグを無効化し、tooltip の mousedown を受け取れるようにする
+  el.addEventListener("mouseenter", () => map.dragging.disable());
+  el.addEventListener("mouseleave", () => { if (!dragging) map.dragging.enable(); });
+
+  const onMove = e => {
+    // Leaflet のベース margin に drag delta を加算（上書きではなく加算）
+    el.style.marginLeft = `${baseMl + (e.clientX - startX)}px`;
+    el.style.marginTop  = `${baseMt + (e.clientY - startY)}px`;
+  };
+
+  const onUp = e => {
+    dragging = false;
+    map.dragging.enable();
+    el.style.cursor = "grab";
+    // ベース margin を復元してから renderMaps で再構築
+    el.style.marginLeft = `${baseMl}px`;
+    el.style.marginTop  = `${baseMt}px`;
+    const ndx = startDx + (e.clientX - startX);
+    const ndy = startDy + (e.clientY - startY);
+    const spot = state.spots.find(s => s.id === spotId);
+    if (spot) {
+      spot.labelDeltaX = ndx;
+      spot.labelDeltaY = ndy;
+      persistState();
+    }
+    document.removeEventListener("mousemove", onMove);
+    document.removeEventListener("mouseup", onUp);
+    renderMaps();
+  };
+
+  el.addEventListener("mousedown", e => {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    e.preventDefault();
+    dragging = true;
+    el.style.cursor = "grabbing";
+    // Leaflet が設定している現在の margin を基準値として保存（リセットしない）
+    baseMl = parseFloat(el.style.marginLeft) || 0;
+    baseMt = parseFloat(el.style.marginTop)  || 0;
+    startX = e.clientX;
+    startY = e.clientY;
+    const sp = state.spots.find(s => s.id === spotId);
+    startDx = Number(sp?.labelDeltaX) || 0;
+    startDy = Number(sp?.labelDeltaY) || 0;
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  });
+}
+
+function attachClusterLabelDrag(el, clusterKey, currentDelta, map) {
+  el.style.pointerEvents = "auto";
+  el.style.cursor = "grab";
+  el.title = "ドラッグで位置を調整";
+
+  let dragging = false;
+  let startX, startY, startDx, startDy;
+
+  el.addEventListener("mouseenter", () => map.dragging.disable());
+  el.addEventListener("mouseleave", () => { if (!dragging) map.dragging.enable(); });
+
+  const onMove = e => {
+    el.style.transform = `translate(${e.clientX - startX}px, ${e.clientY - startY}px)`;
+  };
+
+  const onUp = e => {
+    dragging = false;
+    map.dragging.enable();
+    el.style.cursor = "grab";
+    el.style.transform = "";
+    const ndx = startDx + (e.clientX - startX);
+    const ndy = startDy + (e.clientY - startY);
+    if (!state.clusterLabelDeltas) state.clusterLabelDeltas = {};
+    state.clusterLabelDeltas[clusterKey] = { dx: ndx, dy: ndy };
+    persistState();
+    document.removeEventListener("mousemove", onMove);
+    document.removeEventListener("mouseup", onUp);
+    renderMaps();
+  };
+
+  el.addEventListener("mousedown", e => {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    e.preventDefault();
+    dragging = true;
+    el.style.cursor = "grabbing";
+    startX = e.clientX;
+    startY = e.clientY;
+    startDx = currentDelta.dx || 0;
+    startDy = currentDelta.dy || 0;
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  });
 }
 
 function renderOverviewLayer(map, items, bounds) {
@@ -1629,15 +1788,25 @@ function renderOverviewLayer(map, items, bounds) {
     if (!placement) return;
     const size = estimateClusterLabelSize(item);
     const anchor = clusterIconAnchor(placement.direction, placement.distance, size);
+    const clusterKey = item.points.map(p => p.id).sort().join(":");
+    const delta = (state.clusterLabelDeltas || {})[clusterKey] || { dx: 0, dy: 0 };
+    const adjustedAnchor = [anchor[0] - delta.dx, anchor[1] - delta.dy];
 
-    L.marker([item.center.lat, item.center.lng], {
+    const clusterMarker = L.marker([item.center.lat, item.center.lng], {
       icon: L.divIcon({
         className: "",
         html: `<div class="cluster-label">${labelHtml}</div>`,
         iconSize: [size.w, size.h],
-        iconAnchor: anchor,
+        iconAnchor: adjustedAnchor,
       }),
     }).addTo(map);
+
+    if (loadAppSettings().labelDragEnabled) {
+      setTimeout(() => {
+        const el = clusterMarker.getElement()?.querySelector(".cluster-label");
+        if (el) attachClusterLabelDrag(el, clusterKey, delta, map);
+      }, 0);
+    }
   });
 }
 
@@ -2227,8 +2396,13 @@ function toggleAreaSuggestDrawMap() {
 }
 
 function getAreaSuggestCount() {
+  const el = document.getElementById("areaSuggestCountInline");
+  if (el) {
+    const val = parseInt(el.value, 10);
+    if (val >= 1 && val <= 50) return val;
+  }
   const s = loadAppSettings();
-  return (typeof s.areaSuggestCount === "number" && s.areaSuggestCount >= 1) ? s.areaSuggestCount : 6;
+  return (typeof s.areaSuggestCount === "number" && s.areaSuggestCount >= 1) ? s.areaSuggestCount : 10;
 }
 
 function toggleAreaSuggestPanel() {
@@ -2271,43 +2445,60 @@ function normalizeAreaText(value) {
 function findLocalAreaData(areaName) {
   const data = window.LOCAL_AREA_SUGGESTIONS || {};
   const needle = normalizeAreaText(areaName);
-  return Object.entries(data).find(([pref, entry]) =>
-    [pref, ...(entry.keys || [])].some(key => {
+  if (!needle) return undefined;
+  let bestEntry = null;
+  let bestScore = 0;
+  for (const [pref, entry] of Object.entries(data)) {
+    for (const key of [pref, ...(entry.keys || [])]) {
       const normalized = normalizeAreaText(key);
-      return normalized && (needle.includes(normalized) || normalized.includes(needle));
-    })
-  );
+      if (!normalized) continue;
+      let score = 0;
+      if (needle === normalized) score = 1000 + normalized.length;
+      else if (needle.includes(normalized)) score = 100 + normalized.length;
+      else if (normalized.includes(needle)) score = 1 + normalized.length;
+      if (score > bestScore) { bestScore = score; bestEntry = [pref, entry]; }
+    }
+  }
+  return bestScore > 0 ? bestEntry : undefined;
 }
 
 function fetchAreaSuggestions(areaName, count) {
   const found = findLocalAreaData(areaName);
   if (!found) return [];
   const [pref, entry] = found;
-  const foods = (entry.foods || []).map(name => ({
-    name: `${pref}名物 ${name}`,
-    display: "ご当地フード",
-    spotCategory: "restaurant",
-    osmCategory: "amenity",
-    osmType: "restaurant",
-    sourceType: "local-suggestion",
-    description: `${pref}で食べたいご当地フード候補です。具体的なお店は現地で調整してください。`,
-  }));
-  const spots = (entry.spots || []).map(name => ({
+
+  // サブエリアはメインエリア名で検索したときだけ表示する
+  // （「パリ」で検索したときに「リヨン」「マルセイユ」が出ないようにする）
+  const needle = normalizeAreaText(areaName);
+  const mainKey = normalizeAreaText(pref);
+  const isSearchingMainArea = needle.includes(mainKey) || mainKey.includes(needle);
+
+  const subAreaNames = isSearchingMainArea
+    ? (entry.subareas || (entry.keys || []).filter(k => normalizeAreaText(k) !== mainKey))
+    : [];
+  const subareas = subAreaNames.map(name => ({
     name,
-    display: "おすすめスポット",
-    spotCategory: "tourist",
-    osmCategory: "tourism",
-    osmType: "attraction",
+    display: "候補エリア",
     sourceType: "local-suggestion",
-    description: `${pref}のローカル候補から追加したおすすめスポットです。`,
   }));
+
+  const foods = (entry.foods || []).map(name => ({
+    name,
+    display: "ご当地フード",
+    sourceType: "local-suggestion",
+  }));
+  // メインエリア名で検索したときだけスポットを表示する
+  // （「釜山」で検索して景福宮など離れた都市のスポットが出ないようにする）
+  const spots = isSearchingMainArea
+    ? (entry.spots || []).map(name => ({ name, display: "おすすめスポット", sourceType: "local-suggestion" }))
+    : [];
   const mixed = [];
   const max = Math.max(count, 1);
   for (let i = 0; i < Math.max(foods.length, spots.length); i++) {
     if (spots[i]) mixed.push(spots[i]);
     if (foods[i]) mixed.push(foods[i]);
   }
-  return mixed.slice(0, max);
+  return [...subareas, ...mixed].slice(0, max);
 }
 
 function setAreaSuggestStatus(msg, isError) {
@@ -2322,34 +2513,45 @@ function renderAreaSuggestions(suggestions) {
     const card = document.createElement("div");
     card.className = "area-suggest-item";
 
-    const hasCoords = Number.isFinite(Number(item.lat)) && Number.isFinite(Number(item.lng));
-    const alreadyAdded = state.spots.some(s => {
-      if (hasCoords && Number.isFinite(Number(s.lat)) && Number.isFinite(Number(s.lng))) {
-        return Math.abs(Number(s.lat) - Number(item.lat)) < 0.0001 && Math.abs(Number(s.lng) - Number(item.lng)) < 0.0001;
-      }
-      return String(s.name || "") === String(item.name || "");
-    });
+    const fillSpotInput = () => {
+      placeInput.value = item.name;
+      placeInput.focus();
+      placeInput.scrollIntoView({ behavior: "smooth", block: "center" });
+    };
 
     const nameSpan = document.createElement("span");
     nameSpan.className = "area-suggest-item-name";
-    nameSpan.innerHTML = `${escapeHtml(item.name)}<small>${escapeHtml(item.display || (hasCoords ? "座標あり" : "座標未設定"))}</small>`;
+    nameSpan.innerHTML = `${escapeHtml(item.name)}<small>${escapeHtml(item.display || "")}</small>`;
 
-    const addBtn = document.createElement("button");
-    addBtn.type = "button";
-    addBtn.className = `area-suggest-add-btn${alreadyAdded ? " added" : ""}`;
-    addBtn.textContent = alreadyAdded ? "追加済" : "追加";
-    addBtn.disabled = alreadyAdded;
+    const googleBtn = document.createElement("button");
+    googleBtn.type = "button";
+    googleBtn.className = "area-suggest-google-btn";
+    googleBtn.textContent = "Google検索";
+    googleBtn.addEventListener("click", () => {
+      window.open(`https://www.google.com/search?q=${encodeURIComponent(item.name)}`, "_blank", "noopener,noreferrer");
+    });
 
-    if (!alreadyAdded) {
-      addBtn.addEventListener("click", () => {
-        addSpotFromSuggestion(item);
-        addBtn.textContent = "追加済";
-        addBtn.classList.add("added");
-        addBtn.disabled = true;
+    const useBtn = document.createElement("button");
+    useBtn.type = "button";
+    useBtn.className = "area-suggest-add-btn";
+    useBtn.textContent = "スポットを追加欄に入力";
+    useBtn.addEventListener("click", fillSpotInput);
+
+    if (item.display === "候補エリア") {
+      const subareaBtn = document.createElement("button");
+      subareaBtn.type = "button";
+      subareaBtn.className = "area-suggest-subarea-btn";
+      subareaBtn.textContent = "提案を見る";
+      subareaBtn.addEventListener("click", () => {
+        if (areaSuggestInput) {
+          areaSuggestInput.value = item.name;
+          handleAreaSuggest();
+        }
       });
+      card.append(nameSpan, googleBtn, subareaBtn, useBtn);
+    } else {
+      card.append(nameSpan, googleBtn, useBtn);
     }
-
-    card.append(nameSpan, addBtn);
     areaSuggestResults.appendChild(card);
   });
 }

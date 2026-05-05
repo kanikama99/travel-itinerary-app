@@ -52,72 +52,33 @@
     </section>
 
     <section class="panel settings-section">
-      <div class="panel-head">
-        <div>
-          <p class="panel-kicker">Area Suggest</p>
-          <h2>エリアから提案</h2>
-        </div>
-      </div>
-      <div class="settings-row">
-        <label class="settings-label" for="areaSuggestCountInput">
-          提案候補数
-          <span class="settings-desc">ローカル候補から表示する観光スポット・ご当地フードの最大数（1〜50）</span>
-        </label>
-        <input id="areaSuggestCountInput" type="number" min="1" max="50" value="10" class="settings-number-input" />
-      </div>
-    </section>
-
-    <section class="panel settings-section">
-      <div class="panel-head">
-        <div>
-          <p class="panel-kicker">Transit API</p>
-          <h2>交通経路API（Google Maps）</h2>
-        </div>
-      </div>
-      <p class="settings-desc" style="margin-bottom:10px">
-        APIキーは画面には保存しません。プロジェクト直下の <code>.env</code> に
-        <code>GOOGLE_MAPS_API_KEY</code> として置くと、車移動はローカルサーバー経由でGoogle Routes APIを使います。
-        公共交通は日本の乗換API制限を避けるため、いったん電車移動の概算時間を表示します。
-      </p>
-    </section>
-
-    <section class="panel settings-section">
-      <div class="panel-head">
-        <div>
-          <p class="panel-kicker">Places API</p>
-          <h2>営業時間の自動取得</h2>
-        </div>
-      </div>
-      <label class="settings-row" style="justify-content:flex-start; gap:12px">
-        <input id="googlePlaceHoursEnabled" type="checkbox" />
-        <span class="settings-label">
-          スポット追加時にGoogle Places APIから営業時間を取得する
-          <span class="settings-desc">プロジェクト直下の <code>.env</code> に <code>GOOGLE_MAPS_API_KEY</code> が必要です。取得できない場合もスポット保存は続行します。</span>
+      <label class="settings-check-row" for="googlePlaceHoursEnabled">
+        <input id="googlePlaceHoursEnabled" type="checkbox" class="settings-check-box" />
+        <span class="settings-check-content">
+          <span class="settings-check-title">営業時間の自動取得</span>
+          <span class="settings-desc">スポット追加時にGoogle Places APIから営業時間を取得します。プロジェクト直下の <code>.env</code> に <code>GOOGLE_MAPS_API_KEY</code> が必要です。取得できない場合もスポット保存は続行します。</span>
         </span>
       </label>
     </section>
 
     <section class="panel settings-section">
-      <div class="panel-head">
-        <div>
-          <p class="panel-kicker">Display</p>
-          <h2>表示項目</h2>
-        </div>
-      </div>
-      <label class="settings-row" style="justify-content:flex-start; gap:12px">
-        <input id="showBudgetEnabled" type="checkbox" />
-        <span class="settings-label">
-          予算機能を表示する
+      <label class="settings-check-row" for="showBudgetEnabled">
+        <input id="showBudgetEnabled" type="checkbox" class="settings-check-box" />
+        <span class="settings-check-content">
+          <span class="settings-check-title">予算機能を表示する</span>
           <span class="settings-desc">OFFにすると予算入力・現在の予算総額・金額表示を隠します。保存済みの金額は削除しません。</span>
         </span>
       </label>
     </section>
 
     <section class="panel settings-section">
-      <div class="settings-save-row" style="display:flex; align-items:center; gap:12px; justify-content:flex-end; flex-wrap:wrap">
-        <span id="settingsStatus" class="settings-desc" aria-live="polite">変更後は保存ボタンを押してください。</span>
-        <button id="settingsSaveBtn" class="primary-button" type="button">設定を保存</button>
-      </div>
+      <label class="settings-check-row" for="labelDragEnabled">
+        <input id="labelDragEnabled" type="checkbox" class="settings-check-box" />
+        <span class="settings-check-content">
+          <span class="settings-check-title">地図の吹き出しをドラッグで移動できるようにする</span>
+          <span class="settings-desc">ONにすると「行きたい場所」ページの地図でスポットの吹き出し（ラベル）をドラッグして位置を微調整できます。調整した位置はスポットごとに保存されます。</span>
+        </span>
+      </label>
     </section>
 
     <section class="panel settings-section">
@@ -152,7 +113,27 @@
       </div>
     </section>
 
-    <div class="settings-back-row">
+    <section class="panel settings-section">
+      <div class="panel-head">
+        <div>
+          <p class="panel-kicker">Debug</p>
+          <h2>AIに現状を伝える</h2>
+        </div>
+      </div>
+      <p class="settings-desc" style="margin-bottom:12px">現在のしおり・スポット・スケジュール情報をテキストとして出力します。AIへの問い合わせ時にコピーして貼り付けてください。</p>
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
+        <button id="generateDebugLogBtn" class="btn btn-outline" type="button">デバッグログを生成</button>
+        <button id="copyDebugLogBtn" class="btn btn-outline" type="button" style="display:none">クリップボードにコピー</button>
+      </div>
+      <textarea id="debugLogOutput" readonly style="display:none; margin-top:12px; width:100%; min-height:180px; font-family:monospace; font-size:0.78rem; border:1.5px solid var(--line); border-radius:10px; padding:10px; background:rgba(255,255,255,0.7); resize:vertical;"></textarea>
+    </section>
+
+    <div style="display:flex; align-items:center; gap:12px; justify-content:flex-end; flex-wrap:wrap; padding:4px 0">
+      <span id="settingsStatus" class="settings-desc" aria-live="polite">変更後は保存ボタンを押してください。</span>
+      <button id="settingsSaveBtn" class="primary-button" type="button">設定を保存</button>
+    </div>
+
+    <div id="settingsBackRow" class="settings-back-row" style="gap:12px">
       <a href="./index.html" class="btn btn-outline">← トップ画面へ戻る</a>
     </div>
   </div>
@@ -173,33 +154,9 @@
         <span class="drawer-nav-icon">📒</span>
         <span>しおりを選ぶ</span>
       </a>
-      <a href="./spots.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">📍</span>
-        <span>行きたい場所</span>
-      </a>
-      <a href="./tripplan.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">📝</span>
-        <span>旅行計画</span>
-      </a>
-      <a href="./schedule.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">📅</span>
-        <span>スケジュール</span>
-      </a>
       <a href="./hotel.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">🏨</span>
         <span>ホテルを見つける</span>
-      </a>
-      <a href="./tour.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">🗺</span>
-        <span>ツアーを見つける</span>
-      </a>
-      <a href="./checklist.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">📋</span>
-        <span>持ち物リスト</span>
-      </a>
-      <a href="./print.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">🖨</span>
-        <span>印刷する</span>
       </a>
       <a href="./howto.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">?</span>

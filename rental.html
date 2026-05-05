@@ -1,0 +1,232 @@
+﻿<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>レンタカーを手配する - Trip Pop Map</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+  <style>
+    .rental-shell { width: min(940px, calc(100% - 32px)); margin: 0 auto; padding: 40px 0 80px; display: flex; flex-direction: column; gap: 22px; }
+    .rental-eyebrow { font-size: 0.82rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-deep); font-weight: 700; margin: 0 0 4px; }
+    .rental-title { font-size: clamp(1.7rem, 4vw, 2.25rem); font-weight: 700; line-height: 1.2; margin: 0; }
+    .rental-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 20px; box-shadow: 0 5px 18px rgb(var(--shadow-base-rgb, 149,90,48) / 0.10); }
+    .rental-card-kicker { margin: 0 0 14px; font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-deep); font-weight: 700; }
+    .rental-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .rental-field { display: flex; flex-direction: column; gap: 6px; }
+    .rental-field-label { font-size: 0.86rem; font-weight: 700; color: var(--accent-deep); }
+    .rental-input { width: 100%; font: inherit; font-size: 0.94rem; color: var(--text); border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 12px; background: rgba(255,255,255,0.9); outline: none; }
+    .rental-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgb(var(--accent-rgb, 255,122,69) / 0.12); }
+    .rental-sites { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+    .rental-site-btn, .rental-save-btn { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border: 1.5px solid rgb(var(--accent-rgb, 255,122,69) / 0.24); border-radius: 12px; background: rgba(255,255,255,0.72); color: var(--text); font: inherit; font-weight: 800; padding: 12px; cursor: pointer; text-decoration: none; text-align: center; }
+    .rental-site-btn:hover, .rental-save-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
+    .rental-save-btn { width: 100%; margin-top: 14px; color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-light)); border: none; }
+    .rental-note { margin: 10px 0 0; font-size: 0.82rem; color: var(--muted); line-height: 1.6; }
+    .rental-divider { border: none; border-top: 1px solid var(--line); margin: 4px 0 14px; }
+    @media (max-width: 720px) { .rental-grid, .rental-sites { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="rental-shell">
+    <header>
+      <p class="rental-eyebrow">Car Rental</p>
+      <h1 class="rental-title">レンタカーを手配する</h1>
+    </header>
+
+    <section class="rental-card">
+      <p class="rental-card-kicker">Search - レンタカーサイトで探す</p>
+      <div class="rental-grid">
+        <div class="rental-field">
+          <label class="rental-field-label" for="rentalSearchArea">エリア・出発地</label>
+          <input id="rentalSearchArea" class="rental-input" type="text" placeholder="例：新千歳空港" />
+        </div>
+        <div class="rental-field">
+          <label class="rental-field-label" for="rentalSearchDate">出発日</label>
+          <input id="rentalSearchDate" class="rental-input" type="date" data-cal />
+        </div>
+      </div>
+      <div class="rental-sites">
+        <button class="rental-site-btn" type="button" onclick="searchTabirai()">旅楽（比較）</button>
+        <button class="rental-site-btn" type="button" onclick="searchJnet()">じゃらん</button>
+        <button class="rental-site-btn" type="button" onclick="searchTimes()">タイムズカー</button>
+      </div>
+    </section>
+
+    <section class="rental-card">
+      <p class="rental-card-kicker">Registration - レンタカー予約を登録</p>
+      <div class="rental-grid">
+        <div class="rental-field">
+          <label class="rental-field-label" for="rentalCompany">レンタカー会社</label>
+          <input id="rentalCompany" class="rental-input" type="text" placeholder="例：オリックスレンタカー" />
+        </div>
+        <div class="rental-field">
+          <label class="rental-field-label" for="rentalCarType">車種・クラス</label>
+          <input id="rentalCarType" class="rental-input" type="text" placeholder="例：コンパクト、SUV" />
+        </div>
+        <div class="rental-field">
+          <label class="rental-field-label" for="rentalPickupDate">受取日</label>
+          <input id="rentalPickupDate" class="rental-input" type="date" data-cal />
+        </div>
+        <div class="rental-field">
+          <label class="rental-field-label" for="rentalPickupTime">受取時刻</label>
+          <input id="rentalPickupTime" class="rental-input" type="time" step="300" />
+        </div>
+        <div class="rental-field">
+          <label class="rental-field-label" for="rentalReturnDate">返却日</label>
+          <input id="rentalReturnDate" class="rental-input" type="date" data-cal />
+        </div>
+        <div class="rental-field">
+          <label class="rental-field-label" for="rentalReturnTime">返却時刻</label>
+          <input id="rentalReturnTime" class="rental-input" type="time" step="300" />
+        </div>
+        <div class="rental-field">
+          <label class="rental-field-label" for="rentalPrice">料金（円・合計）</label>
+          <input id="rentalPrice" class="rental-input" type="number" min="0" step="500" placeholder="例：25000" />
+        </div>
+        <div class="rental-field">
+          <label class="rental-field-label" for="rentalMemo">メモ</label>
+          <input id="rentalMemo" class="rental-input" type="text" placeholder="受取場所、保険オプションなど" />
+        </div>
+      </div>
+      <button id="saveRentalBtn" class="rental-save-btn" type="button">レンタカー情報を保存してスケジュールに戻る</button>
+      <p id="rentalSaveStatus" class="rental-note"></p>
+    </section>
+  </div>
+
+  <nav class="page-nav-bar page-nav-bar--start">
+    <a href="./schedule.html" class="page-nav-bar-btn page-nav-bar-btn--prev">
+      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      スケジュール
+    </a>
+  </nav>
+
+  <button id="hamburgerBtn" class="hamburger-btn" type="button" aria-label="メニューを開く">
+    <span class="hamburger-line"></span>
+    <span class="hamburger-line"></span>
+    <span class="hamburger-line"></span>
+  </button>
+  <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
+  <aside id="sideDrawer" class="side-drawer hidden" aria-hidden="true">
+    <div class="drawer-head"><p class="drawer-kicker">Menu</p></div>
+    <nav class="drawer-nav">
+      <a href="./bookmarks.html" class="drawer-nav-item"><span class="drawer-nav-icon">📒</span><span>しおりを選ぶ</span></a>
+      <a href="./hotel.html" class="drawer-nav-item"><span class="drawer-nav-icon">🏨</span><span>ホテルを見つける</span></a>
+      <a href="./howto.html" class="drawer-nav-item"><span class="drawer-nav-icon">❔</span><span>使い方</span></a>
+      <a href="./settings.html" class="drawer-nav-item"><span class="drawer-nav-icon">⚙</span><span>設定</span></a>
+    </nav>
+  </aside>
+
+  <script>
+    const LISTS_KEY = "spot-map-lists.v1";
+    const SCHEDULE_KEY = "spot-map-schedule.v1";
+
+    function applyTheme() {
+      const saved = localStorage.getItem("spot-map-settings.v1");
+      if (!saved) return;
+      try {
+        const s = JSON.parse(saved);
+        const themes = [
+          ["#fff3dd","#fffaf0","rgba(166,97,54,0.18)","#233038","#5f6d73","#ff7a45","#ce5428","255,122,69","149,90,48"],
+          ["#e8f4fd","#f0f8ff","rgba(54,120,166,0.18)","#1a2a3a","#4a6070","#4a9ede","#2d7ab5","74,158,222","45,100,165"],
+          ["#f0fdf4","#f7fff9","rgba(54,166,97,0.18)","#1a3323","#3a6050","#34c97a","#1fa85e","52,201,122","30,140,80"],
+          ["#fdf0f8","#fff7fd","rgba(166,54,140,0.18)","#2a1a2a","#5f3a5a","#d44ab0","#a83285","212,74,176","140,50,120"],
+          ["#fff8f0","#fffaf5","rgba(200,120,40,0.18)","#2a1800","#6a4a20","#e08020","#b05a10","224,128,32","160,80,20"],
+          ["#f5f0ff","#faf7ff","rgba(120,80,200,0.18)","#180a2a","#4a3a6a","#8060d0","#6040a8","128,96,208","80,60,150"],
+          ["#fff0f0","#fff7f7","rgba(166,54,54,0.18)","#2a0a0a","#6a3a3a","#e05050","#b03030","224,80,80","160,40,40"],
+          ["#f0fff8","#f5fffb","rgba(40,160,120,0.18)","#001a12","#1a4a3a","#28c890","#10a870","40,200,144","20,140,90"]
+        ];
+        const c = themes[Math.max(0, Math.min(themes.length - 1, s.bgTheme ?? 0))];
+        const r = document.documentElement;
+        ["--bg","--panel","--line","--text","--muted","--accent","--accent-deep","--accent-rgb","--shadow-base-rgb"].forEach((k, i) => r.style.setProperty(k, c[i]));
+        r.style.setProperty("--panel-strong", c[1]);
+      } catch {}
+    }
+
+    function getActiveSchedule() {
+      const listsData = JSON.parse(localStorage.getItem(LISTS_KEY) || "{}");
+      const activeList = listsData.lists?.find(l => l.id === listsData.activeListId) || listsData.lists?.[0];
+      const all = JSON.parse(localStorage.getItem(SCHEDULE_KEY) || "{}");
+      const schedule = activeList ? (all[activeList.id] || {}) : {};
+      return { activeList, all, schedule };
+    }
+
+    function init() {
+      const { schedule } = getActiveSchedule();
+      const rental = schedule.rental || {};
+      const set = (id, val) => { if (val) document.getElementById(id).value = val; };
+      set("rentalCompany",    rental.company);
+      set("rentalCarType",    rental.carType);
+      set("rentalPickupDate", rental.pickupDate);
+      set("rentalPickupTime", rental.pickupTime);
+      set("rentalReturnDate", rental.returnDate);
+      set("rentalReturnTime", rental.returnTime);
+      set("rentalPrice",      rental.price);
+      set("rentalMemo",       rental.memo);
+      if (rental.pickupDate) {
+        document.getElementById("rentalSearchDate").value = rental.pickupDate;
+        window.CalendarPicker?.updateDisplay(document.getElementById("rentalPickupDate"));
+        window.CalendarPicker?.updateDisplay(document.getElementById("rentalReturnDate"));
+        window.CalendarPicker?.updateDisplay(document.getElementById("rentalSearchDate"));
+      }
+      if (rental.pickupDate) set("rentalSearchArea", rental.company);
+    }
+
+    function searchUrl(site) {
+      const area = document.getElementById("rentalSearchArea").value.trim();
+      const date = document.getElementById("rentalSearchDate").value;
+      const q = encodeURIComponent(`${area} ${date} レンタカー`);
+      if (site === "tabirai") return `https://www.tabirai.net/car/?keyword=${q}`;
+      if (site === "jnet")    return `https://www.jalan.net/rentacar/?keyword=${q}`;
+      return `https://times-car.com/?keyword=${q}`;
+    }
+    function searchTabirai() { window.open(searchUrl("tabirai"), "_blank"); }
+    function searchJnet()    { window.open(searchUrl("jnet"),    "_blank"); }
+    function searchTimes()   { window.open(searchUrl("times"),   "_blank"); }
+
+    document.getElementById("saveRentalBtn").addEventListener("click", () => {
+      const status = document.getElementById("rentalSaveStatus");
+      try {
+        const { activeList, all, schedule } = getActiveSchedule();
+        if (!activeList) throw new Error("しおりが見つかりません");
+        schedule.rental = {
+          company:    document.getElementById("rentalCompany").value.trim(),
+          carType:    document.getElementById("rentalCarType").value.trim(),
+          pickupDate: document.getElementById("rentalPickupDate").value,
+          pickupTime: document.getElementById("rentalPickupTime").value,
+          returnDate: document.getElementById("rentalReturnDate").value,
+          returnTime: document.getElementById("rentalReturnTime").value,
+          price:      parseInt(document.getElementById("rentalPrice").value, 10) || 0,
+          memo:       document.getElementById("rentalMemo").value.trim(),
+        };
+        all[activeList.id] = schedule;
+        localStorage.setItem(SCHEDULE_KEY, JSON.stringify(all));
+        location.href = "./schedule.html";
+      } catch (e) {
+        status.textContent = `保存に失敗しました: ${e.message}`;
+      }
+    });
+
+    const hamburgerBtn = document.getElementById("hamburgerBtn");
+    const sideDrawer = document.getElementById("sideDrawer");
+    const drawerBackdrop = document.getElementById("drawerBackdrop");
+    hamburgerBtn.addEventListener("click", () => {
+      const open = !sideDrawer.classList.contains("hidden");
+      sideDrawer.classList.toggle("hidden", open);
+      drawerBackdrop.classList.toggle("hidden", open);
+      sideDrawer.setAttribute("aria-hidden", String(open));
+    });
+    drawerBackdrop.addEventListener("click", () => {
+      sideDrawer.classList.add("hidden");
+      drawerBackdrop.classList.add("hidden");
+      sideDrawer.setAttribute("aria-hidden", "true");
+    });
+
+    applyTheme();
+    init();
+  </script>
+  <script src="./calendar.js"></script>
+  <script src="./theme.js"></script>
+</body>
+</html>

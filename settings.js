@@ -122,9 +122,9 @@ BG_THEMES.forEach((theme) => {
   bgThemeSwatches?.appendChild(btn);
 });
 
-const areaSuggestCountInput = document.getElementById("areaSuggestCountInput");
 const googlePlaceHoursEnabled = document.getElementById("googlePlaceHoursEnabled");
 const showBudgetEnabled = document.getElementById("showBudgetEnabled");
+const labelDragEnabled = document.getElementById("labelDragEnabled");
 const calStyleGroup = document.getElementById("calStyleGroup");
 const settingsSaveBtn = document.getElementById("settingsSaveBtn");
 const settingsStatus = document.getElementById("settingsStatus");
@@ -133,16 +133,9 @@ const cacheClearStatus = document.getElementById("cacheClearStatus");
 const clearSavedDataBtn = document.getElementById("clearSavedDataBtn");
 const savedDataClearStatus = document.getElementById("savedDataClearStatus");
 
-if (areaSuggestCountInput) areaSuggestCountInput.value = draftSettings.areaSuggestCount;
 if (googlePlaceHoursEnabled) googlePlaceHoursEnabled.checked = draftSettings.googlePlaceHoursEnabled !== false;
 if (showBudgetEnabled) showBudgetEnabled.checked = draftSettings.showBudget !== false;
-
-areaSuggestCountInput?.addEventListener("change", () => {
-  const value = parseInt(areaSuggestCountInput.value, 10);
-  if (value >= 1 && value <= 50) draftSettings.areaSuggestCount = value;
-  else areaSuggestCountInput.value = draftSettings.areaSuggestCount;
-  markDirty();
-});
+if (labelDragEnabled) labelDragEnabled.checked = draftSettings.labelDragEnabled === true;
 
 googlePlaceHoursEnabled?.addEventListener("change", () => {
   draftSettings.googlePlaceHoursEnabled = googlePlaceHoursEnabled.checked;
@@ -151,6 +144,11 @@ googlePlaceHoursEnabled?.addEventListener("change", () => {
 
 showBudgetEnabled?.addEventListener("change", () => {
   draftSettings.showBudget = showBudgetEnabled.checked;
+  markDirty();
+});
+
+labelDragEnabled?.addEventListener("change", () => {
+  draftSettings.labelDragEnabled = labelDragEnabled.checked;
   markDirty();
 });
 
@@ -164,9 +162,15 @@ calStyleGroup?.querySelectorAll("input[name=calStyle]").forEach((radio) => {
 
 settingsSaveBtn?.addEventListener("click", () => {
   saveSettings(draftSettings);
+  isDirty = false;
   if (settingsStatus) {
-    settingsStatus.textContent = "保存しました。";
+    settingsStatus.textContent = "✓ 設定を保存しました！";
     settingsStatus.classList.remove("settings-status--dirty");
+    settingsStatus.classList.add("settings-status--saved");
+    setTimeout(() => {
+      settingsStatus.classList.remove("settings-status--saved");
+      settingsStatus.textContent = "変更後は保存ボタンを押してください。";
+    }, 3000);
   }
 });
 
@@ -198,8 +202,188 @@ clearSavedDataBtn?.addEventListener("click", () => {
   }, 500);
 });
 
+let isDirty = false;
+
 function markDirty() {
+  isDirty = true;
   if (!settingsStatus) return;
   settingsStatus.textContent = "未保存の変更があります。";
   settingsStatus.classList.add("settings-status--dirty");
 }
+
+window.addEventListener("beforeunload", e => {
+  if (!isDirty) return;
+  e.preventDefault();
+  e.returnValue = "";
+});
+
+document.addEventListener("click", e => {
+  if (!isDirty) return;
+  const link = e.target.closest("a[href]");
+  if (!link) return;
+  const href = link.getAttribute("href");
+  if (!href || href.startsWith("#") || href.startsWith("javascript:")) return;
+  if (!window.confirm("未保存の変更があります。設定を保存せずにページを移動しますか？")) {
+    e.preventDefault();
+  }
+}, true);
+
+// 前のページへ戻るボタン（しおり編集など）
+const settingsBackRow = document.getElementById("settingsBackRow");
+const referrer = document.referrer;
+if (settingsBackRow && referrer && new URL(referrer).origin === window.location.origin) {
+  const backBtn = document.createElement("button");
+  backBtn.type = "button";
+  backBtn.className = "btn btn-outline";
+  backBtn.textContent = "← 前のページへ戻る";
+  backBtn.addEventListener("click", () => {
+    if (isDirty && !window.confirm("未保存の変更があります。設定を保存せずにページを移動しますか？")) return;
+    history.back();
+  });
+  settingsBackRow.prepend(backBtn);
+}
+
+// デバッグログ生成
+const LISTS_KEY_DBG    = "spot-map-lists.v1";
+const SCHEDULE_KEY_DBG = "trip-schedule.v1";
+const PACKING_KEY_DBG  = "trip-packing.v1";
+
+function buildDebugLog() {
+  const lines = [];
+  const now = new Date().toLocaleString("ja-JP");
+  lines.push(`=== Trip Pop Map デバッグログ (${now}) ===`);
+
+  try {
+    const listsRaw = localStorage.getItem(LISTS_KEY_DBG);
+    if (!listsRaw) { lines.push("[スポットリスト] データなし"); return lines.join("\n"); }
+    const listsData = JSON.parse(listsRaw);
+    const activeList = listsData.lists?.find(l => l.id === listsData.activeListId) || listsData.lists?.[0];
+    if (!activeList) { lines.push("[スポットリスト] アクティブリストなし"); return lines.join("\n"); }
+
+    lines.push(`\n[しおり] ${activeList.name || "(未設定)"} (id: ${activeList.id})`);
+    const spots = activeList.spots || [];
+    lines.push(`スポット数: ${spots.length}`);
+    spots.forEach((s, i) => {
+      const stay = s.defaultStayMinutes ? `滞在${s.defaultStayMinutes}分` : "";
+      const pri  = `優先度${s.priority || 3}`;
+      const cat  = s.spotCategory || "tourist";
+      const coords = (s.lat && s.lng) ? `(${Number(s.lat).toFixed(4)}, ${Number(s.lng).toFixed(4)})` : "座標なし";
+      lines.push(`  ${i + 1}. [${cat}] ${s.name} / ${pri} / ${stay} / ${coords}`);
+      if (s.description) lines.push(`     メモ: ${s.description.slice(0, 80)}`);
+    });
+
+    const schedRaw = localStorage.getItem(SCHEDULE_KEY_DBG);
+    if (schedRaw) {
+      const schedAll = JSON.parse(schedRaw);
+      const sched = schedAll[activeList.id];
+      if (sched) {
+        lines.push(`\n[スケジュール]`);
+        lines.push(`  移動手段: ${sched.travelMode || "transit"}`);
+        lines.push(`  集合: ${sched.tripMeetTime || "09:00"} ${sched.tripMeetPlace || ""}`);
+        lines.push(`  解散: ${sched.tripDismissTime || "18:00"} ${sched.tripDismissPlace || ""}`);
+        const days = sched.days || [];
+        lines.push(`  日数: ${days.length}日`);
+
+        // タイムライン計算用ヘルパー
+        const t2m = str => { const [h, m] = (str || "0:0").split(":").map(Number); return h * 60 + m; };
+        const m2t = min => `${String(Math.floor(Math.abs(min) / 60)).padStart(2, "0")}:${String(Math.abs(min) % 60).padStart(2, "0")}`;
+        const getStayMin = (spot, dayData) => {
+          if (dayData?.stayTimes?.[spot.id]) return dayData.stayTimes[spot.id];
+          if (sched.defaultStayTimes?.[spot.id]) return sched.defaultStayTimes[spot.id];
+          if (spot.defaultStayMinutes) return spot.defaultStayMinutes;
+          const cat = spot.spotCategory || "tourist";
+          if (cat === "restaurant") return 60;
+          if (cat === "airport") return 90;
+          if (cat === "hotel") return 0;
+          return 90;
+        };
+
+        const scheduledIds = new Set();
+        days.forEach(d => (d.entries || []).forEach(en => scheduledIds.add(en.spotId)));
+
+        days.forEach((d, di) => {
+          const isFirst = di === 0;
+          const isLast  = di === days.length - 1;
+          const startStr = isFirst ? (sched.tripMeetTime || "09:00") : (d.startTime || "09:00");
+          const endStr   = isLast  ? (sched.tripDismissTime || "18:00") : (d.endTime || "21:00");
+          const endT = t2m(endStr);
+          let t = t2m(startStr);
+
+          lines.push(`\n  Day${di + 1} (${d.date || "日付未設定"}) ${startStr}〜${endStr}`);
+          const entries = d.entries || [];
+          if (entries.length === 0) {
+            lines.push(`    (スポットなし)`);
+          } else {
+            entries.forEach(en => {
+              const sp = spots.find(s => s.id === en.spotId);
+              if (!sp) { lines.push(`    (不明スポット: ${en.spotId})`); return; }
+              const stay = getStayMin(sp, d);
+              const timeStr = m2t(t);
+              const isOver    = t >= endT;
+              const willOver  = !isOver && (t + stay > endT);
+              const marker = isOver ? " ← ⚠赤字（終了時刻超過）" : (willOver ? " ← ⚠赤字（終了時刻を超えます）" : "");
+              lines.push(`    ${timeStr} ${sp.name}（${stay}分）${marker}`);
+              t += stay;
+            });
+            if (t > endT) {
+              lines.push(`    ⚠ 合計終了見込み ${m2t(t)}（終了時刻 ${endStr} を ${m2t(t - endT)} 超過）`);
+            }
+          }
+          const hotel = sched.hotels?.[d.id];
+          if (hotel) lines.push(`    🏨 ホテル: ${hotel.name || "(未設定)"}`);
+        });
+
+        // 未配置スポット
+        const unscheduled = spots.filter(s =>
+          !scheduledIds.has(s.id) &&
+          s.spotCategory !== "hotel" &&
+          s.spotCategory !== "meet" &&
+          s.spotCategory !== "dismiss" &&
+          s.spotCategory !== "airport"
+        );
+        if (unscheduled.length > 0) {
+          lines.push(`\n  未配置スポット（${unscheduled.length}件）:`);
+          unscheduled.forEach(s => {
+            const stay = getStayMin(s, null);
+            lines.push(`    - ${s.name}（優先度${s.priority || 3}・滞在${stay}分）`);
+          });
+        } else {
+          lines.push(`\n  未配置スポット: なし`);
+        }
+      }
+    }
+
+    const packRaw = localStorage.getItem(PACKING_KEY_DBG);
+    if (packRaw) {
+      const packing = JSON.parse(packRaw);
+      const itemCount = packing.reduce((n, g) => n + (g.items || []).length, 0);
+      lines.push(`\n[持ち物] グループ${packing.length}個・アイテム${itemCount}件`);
+    }
+  } catch (e) {
+    lines.push(`[エラー] ${e.message}`);
+  }
+  return lines.join("\n");
+}
+
+const generateDebugLogBtn = document.getElementById("generateDebugLogBtn");
+const copyDebugLogBtn     = document.getElementById("copyDebugLogBtn");
+const debugLogOutput      = document.getElementById("debugLogOutput");
+
+generateDebugLogBtn?.addEventListener("click", () => {
+  const log = buildDebugLog();
+  debugLogOutput.value = log;
+  debugLogOutput.style.display = "block";
+  copyDebugLogBtn.style.display = "inline-flex";
+});
+
+copyDebugLogBtn?.addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(debugLogOutput.value);
+    const orig = copyDebugLogBtn.textContent;
+    copyDebugLogBtn.textContent = "コピーしました！";
+    setTimeout(() => { copyDebugLogBtn.textContent = orig; }, 2000);
+  } catch {
+    debugLogOutput.select();
+    document.execCommand("copy");
+  }
+});

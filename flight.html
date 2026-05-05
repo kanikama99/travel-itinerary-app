@@ -25,6 +25,7 @@
     .flight-save-btn { width: 100%; margin-top: 14px; color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-light)); border: none; }
     .flight-note { margin: 10px 0 0; font-size: 0.82rem; color: var(--muted); line-height: 1.6; }
     .flight-registration.hidden { display: none; }
+    .flight-divider { border: none; border-top: 1px solid var(--line); margin: 4px 0 14px; }
     @media (max-width: 720px) { .flight-grid, .flight-sites { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -34,44 +35,6 @@
       <p class="flight-eyebrow">Flight Search</p>
       <h1 class="flight-title">飛行機を見つける</h1>
     </header>
-    <nav class="page-nav-bar page-nav-bar--start">
-      <a href="./schedule.html" class="page-nav-bar-btn page-nav-bar-btn--prev">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-        スケジュール
-      </a>
-    </nav>
-
-    <section id="flightRegistrationCard" class="flight-card flight-registration hidden">
-      <p class="flight-card-kicker">Flight Registration - 空港予定に紐づけ</p>
-      <div class="flight-grid">
-        <div class="flight-field">
-          <label class="flight-field-label" for="flightAirport">対象空港</label>
-          <input id="flightAirport" class="flight-input" type="text" />
-        </div>
-        <div class="flight-field">
-          <label class="flight-field-label" for="flightDate">搭乗日</label>
-          <input id="flightDate" class="flight-input" type="date" data-cal />
-        </div>
-        <div class="flight-field">
-          <label class="flight-field-label" for="flightTime">予定時刻</label>
-          <input id="flightTime" class="flight-input" type="time" />
-        </div>
-        <div class="flight-field">
-          <label class="flight-field-label" for="flightNumber">便名</label>
-          <input id="flightNumber" class="flight-input" type="text" placeholder="例：JL123" />
-        </div>
-        <div class="flight-field" data-budget-ui>
-          <label class="flight-field-label" for="flightPrice">1名あたり予約金額（円）</label>
-          <input id="flightPrice" class="flight-input" type="number" min="0" step="500" placeholder="例：18000" />
-        </div>
-        <div class="flight-field">
-          <label class="flight-field-label" for="flightMemo">メモ</label>
-          <input id="flightMemo" class="flight-input" type="text" placeholder="航空会社、ターミナルなど" />
-        </div>
-      </div>
-      <button id="saveFlightBtn" class="flight-save-btn" type="button">この航空券情報を保存してスケジュールに戻る</button>
-      <p id="flightSaveStatus" class="flight-note"></p>
-    </section>
 
     <section class="flight-card">
       <p class="flight-card-kicker">Search - 航空券サイトで探す</p>
@@ -101,7 +64,54 @@
       <p class="flight-note">将来アフィリエイト化しやすいよう、予約サイト別の検索ボタンに分けています。提携先が決まったら各URLにアフィリエイトIDを付与できます。</p>
     </section>
 
+    <section id="flightRegistrationCard" class="flight-card flight-registration hidden">
+      <p class="flight-card-kicker">Flight Registration - 空港予定に紐づけ</p>
+      <div class="flight-grid">
+        <div class="flight-field">
+          <label class="flight-field-label" for="flightAirport">出発空港</label>
+          <input id="flightAirport" class="flight-input" type="text" placeholder="例：関西国際空港" />
+        </div>
+        <div class="flight-field">
+          <label class="flight-field-label" for="flightArrivalAirport">到着空港</label>
+          <input id="flightArrivalAirport" class="flight-input" type="text" placeholder="例：羽田空港" />
+        </div>
+        <div class="flight-field">
+          <label class="flight-field-label" for="flightDate">搭乗日</label>
+          <input id="flightDate" class="flight-input" type="date" data-cal />
+        </div>
+        <div class="flight-field">
+          <label class="flight-field-label" for="flightNumber">便名</label>
+          <input id="flightNumber" class="flight-input" type="text" placeholder="例：JL123" />
+        </div>
+        <div class="flight-field">
+          <label class="flight-field-label" for="flightTime">離陸時刻</label>
+          <input id="flightTime" class="flight-input" type="time" step="300" />
+        </div>
+        <div class="flight-field">
+          <label class="flight-field-label" for="flightArrivalTime">着陸時刻</label>
+          <input id="flightArrivalTime" class="flight-input" type="time" step="300" />
+        </div>
+        <div class="flight-field" data-budget-ui>
+          <label class="flight-field-label" for="flightPrice">1名あたり予約金額（円）</label>
+          <input id="flightPrice" class="flight-input" type="number" min="0" step="500" placeholder="例：18000" />
+        </div>
+        <div class="flight-field">
+          <label class="flight-field-label" for="flightMemo">メモ</label>
+          <input id="flightMemo" class="flight-input" type="text" placeholder="航空会社、ターミナルなど" />
+        </div>
+      </div>
+      <button id="saveFlightBtn" class="flight-save-btn" type="button">この航空券情報を保存してスケジュールに戻る</button>
+      <p id="flightSaveStatus" class="flight-note"></p>
+    </section>
+
   </div>
+
+  <nav class="page-nav-bar page-nav-bar--start">
+      <a href="./schedule.html" class="page-nav-bar-btn page-nav-bar-btn--prev">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        スケジュール
+      </a>
+    </nav>
 
   <button id="hamburgerBtn" class="hamburger-btn" type="button" aria-label="メニューを開く">
     <span class="hamburger-line"></span>
@@ -114,13 +124,8 @@
     <div class="drawer-head"><p class="drawer-kicker">Menu</p></div>
     <nav class="drawer-nav">
       <a href="./bookmarks.html" class="drawer-nav-item"><span class="drawer-nav-icon">📒</span><span>しおりを選ぶ</span></a>
-      <a href="./spots.html" class="drawer-nav-item"><span class="drawer-nav-icon">📍</span><span>行きたい場所</span></a>
-      <a href="./tripplan.html" class="drawer-nav-item"><span class="drawer-nav-icon">📝</span><span>旅行計画</span></a>
-      <a href="./schedule.html" class="drawer-nav-item"><span class="drawer-nav-icon">📅</span><span>スケジュール</span></a>
-      <a href="./tour.html" class="drawer-nav-item"><span class="drawer-nav-icon">🗺</span><span>ツアーを見つける</span></a>
-      <a href="./checklist.html" class="drawer-nav-item"><span class="drawer-nav-icon">📋</span><span>持ち物リスト</span></a>
-      <a href="./print.html" class="drawer-nav-item"><span class="drawer-nav-icon">🖨</span><span>印刷する</span></a>
-      <a href="./howto.html" class="drawer-nav-item"><span class="drawer-nav-icon">❔</span><span>使い方</span></a><a href="./settings.html" class="drawer-nav-item"><span class="drawer-nav-icon">⚙</span><span>設定</span></a>
+      <a href="./howto.html" class="drawer-nav-item"><span class="drawer-nav-icon">❔</span><span>使い方</span></a>
+      <a href="./settings.html" class="drawer-nav-item"><span class="drawer-nav-icon">⚙</span><span>設定</span></a>
     </nav>
   </aside>
 
@@ -175,6 +180,17 @@
         window.CalendarPicker?.updateDisplay(document.getElementById("flightSearchDate"));
       }
       if (time) document.getElementById("flightTime").value = time;
+      const arrivalAirport = params.get("arrivalAirport") || "";
+      const arrivalTime    = params.get("arrivalTime")    || "";
+      const flightNumber   = params.get("flightNumber")   || "";
+      const price          = params.get("price")          || "";
+      const memo           = params.get("memo")           || "";
+      if (arrivalAirport) document.getElementById("flightArrivalAirport").value = arrivalAirport;
+      if (arrivalTime)    document.getElementById("flightArrivalTime").value    = arrivalTime;
+      if (flightNumber)   document.getElementById("flightNumber").value         = flightNumber;
+      if (price)          document.getElementById("flightPrice").value          = price;
+      if (memo)           document.getElementById("flightMemo").value           = memo;
+      if (arrivalAirport) document.getElementById("flightTo").value = arrivalAirport;
     }
 
     function searchUrl(site) {
@@ -186,15 +202,15 @@
       if (site === "skyscanner") return `https://www.skyscanner.jp/transport/flights/?preferdirects=false&adultsv2=${encodeURIComponent(document.getElementById("flightPassengers").value || "1")}&query=${q}`;
       return `https://www.tour.ne.jp/j_air/?keyword=${q}`;
     }
-    function searchGoogleFlights() { location.href = searchUrl("google"); }
-    function searchSkyscanner() { location.href = searchUrl("skyscanner"); }
-    function searchTravelko() { location.href = searchUrl("travelko"); }
+    function searchGoogleFlights() { window.open(searchUrl("google"), "_blank"); }
+    function searchSkyscanner() { window.open(searchUrl("skyscanner"), "_blank"); }
+    function searchTravelko() { window.open(searchUrl("travelko"), "_blank"); }
 
     document.getElementById("saveFlightBtn").addEventListener("click", () => {
       const status = document.getElementById("flightSaveStatus");
       const airport = document.getElementById("flightAirport").value.trim();
       const date = document.getElementById("flightDate").value;
-      if (!airport || !date) { status.textContent = "空港と搭乗日を入力してください"; return; }
+      if (!airport || !date) { status.textContent = "出発空港と搭乗日を入力してください"; return; }
       try {
         const params = new URLSearchParams(location.search);
         const { activeList, all, schedule } = getActiveListAndSchedule();
@@ -205,8 +221,10 @@
           role: params.get("role") || "",
           spotId: params.get("spotId") || "",
           airport,
+          arrivalAirport: document.getElementById("flightArrivalAirport").value.trim(),
           date,
           time: document.getElementById("flightTime").value || "",
+          arrivalTime: document.getElementById("flightArrivalTime").value || "",
           flightNumber: document.getElementById("flightNumber").value.trim(),
           pricePerPerson: parseInt(document.getElementById("flightPrice").value, 10) || 0,
           memo: document.getElementById("flightMemo").value.trim(),
@@ -241,6 +259,3 @@
   <script src="./theme.js"></script>
 </body>
 </html>
-
-
-

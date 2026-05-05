@@ -17,17 +17,6 @@
       flex-direction: column;
       gap: 28px;
     }
-    .schedule-header { display: flex; align-items: flex-end; gap: 20px; flex-wrap: wrap; }
-    .schedule-header-left { flex: 1; min-width: 0; }
-    .schedule-eyebrow {
-      font-size: 0.82rem;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: var(--accent-deep);
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-    .schedule-title { font-size: clamp(1.7rem, 4vw, 2.25rem); font-weight: 700; line-height: 1.2; }
     .schedule-list-badge {
       display: inline-flex;
       align-items: center;
@@ -95,9 +84,13 @@
     .trip-place-input::placeholder { color: #c0c8cc; }
     .trip-place-controls {
       margin-top: 4px;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 8px;
+    }
+    .trip-place-or {
+      margin: 6px 0 4px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-weight: 700;
+      text-align: center;
     }
     .trip-place-add-row {
       display: grid;
@@ -111,13 +104,12 @@
       padding: 6px 10px; background: rgba(255,255,255,0.85);
       outline: none;
     }
-    .trip-place-menu-btn {
-      min-width: 42px; min-height: 42px; padding: 0;
-      border: 1.5px solid var(--line); border-radius: 10px;
-      background: rgba(255,255,255,0.72); color: var(--accent-deep);
-      font: inherit; font-weight: 900; cursor: pointer;
+    .trip-budget-link {
+      background: none; border: none; padding: 0;
+      color: var(--accent-deep); font: inherit; font-size: 0.84rem; font-weight: 700;
+      cursor: pointer; text-decoration: underline dotted;
     }
-    .trip-place-menu-btn:disabled { opacity: 0.42; cursor: default; }
+    .trip-budget-link:hover { color: var(--accent); }
     .trip-place-add-btn {
       min-height: 38px;
       padding: 7px 12px;
@@ -755,6 +747,17 @@
       padding: 2px 6px;
       white-space: nowrap;
     }
+    .tl-overflow-warn {
+      flex-shrink: 0;
+      font-size: 0.76rem;
+      font-weight: 900;
+      color: #c62828;
+      background: rgba(211, 47, 47, 0.13);
+      border: 1.5px solid rgba(198, 40, 40, 0.38);
+      border-radius: 999px;
+      padding: 2px 9px;
+      white-space: nowrap;
+    }
     .tl-stay-input {
       width: 42px; flex-shrink: 0;
       font: inherit; font-size: 0.76rem; color: var(--text);
@@ -820,6 +823,15 @@
     }
     .tl-route-link:hover { background: rgb(var(--accent-rgb, 255,122,69) / 0.2); }
 
+    /* 移動行 手動時間設定 */
+    .tl-manual-travel { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; width: 100%; }
+    .tl-manual-time-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .tl-manual-time-label { font-size: 0.72rem; color: var(--muted); font-weight: 700; flex-shrink: 0; }
+    .tl-manual-time-input { width: 50px; font: inherit; font-size: 0.78rem; border: 1px solid var(--line); border-radius: 6px; padding: 2px 5px; background: rgba(255,255,255,0.9); outline: none; text-align: center; }
+    .tl-manual-time-input:focus { border-color: var(--accent); }
+    .tl-manual-memo { font: inherit; font-size: 0.76rem; border: 1px solid var(--line); border-radius: 6px; padding: 3px 7px; background: rgba(255,255,255,0.9); resize: none; outline: none; width: 100%; min-height: 32px; color: var(--text); }
+    .tl-manual-memo:focus { border-color: var(--accent); }
+
     /* 宿泊先ボタン */
     .tl-hotel-btn {
       display: inline-flex; align-items: center; gap: 7px;
@@ -837,10 +849,99 @@
     .tl-hotel-budget { font-size: 0.73rem; color: var(--accent-deep); font-weight: 700; flex-shrink: 0; background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; }
     .tl-hotel-chevron { color: var(--muted); flex-shrink: 0; font-size: 1rem; line-height: 1; }
     .tl-spot-budget { font-size: 0.73rem; color: var(--accent-deep); font-weight: 700; flex-shrink: 0; background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; }
+    .tl-hotel-row { display: flex; align-items: center; gap: 8px; }
+    .tl-hotel-name-btn { flex: 1; min-width: 0; }
+    .tl-hotel-name-btn:disabled { opacity: 0.55; cursor: default; }
+    .tl-hotel-name-btn:disabled:hover { background: var(--panel); border-color: var(--line); transform: none; }
+    .tl-hotel-change-btn {
+      flex-shrink: 0;
+      padding: 6px 13px;
+      border: 1.5px solid var(--accent);
+      border-radius: 8px;
+      background: var(--accent-soft);
+      color: var(--accent-deep);
+      font: inherit; font-size: 0.82rem; font-weight: 700;
+      cursor: pointer; white-space: nowrap;
+    }
+    .tl-hotel-change-btn:hover { background: var(--accent); color: #fff; }
+    .hotel-copy-backdrop {
+      position: fixed; inset: 0; z-index: 8998;
+    }
+    .hotel-copy-popover {
+      position: absolute; z-index: 8999;
+      background: var(--panel);
+      border: 1.5px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+      min-width: 200px;
+      max-width: 300px;
+    }
+    .hotel-copy-title {
+      margin: 0 0 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+    .hotel-copy-item-btn {
+      display: block;
+      width: 100%;
+      padding: 8px 10px;
+      margin-bottom: 4px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--accent-soft);
+      color: var(--accent-deep);
+      font: inherit; font-size: 0.85rem; font-weight: 700;
+      text-align: left; cursor: pointer;
+    }
+    .hotel-copy-item-btn:hover { background: var(--accent); color: #fff; }
+    .hotel-copy-sep { border: none; border-top: 1px solid var(--line); margin: 8px 0; }
+    .hotel-copy-search-btn {
+      display: block;
+      width: 100%;
+      padding: 8px 10px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--accent);
+      font: inherit; font-size: 0.85rem; font-weight: 700;
+      text-align: left; cursor: pointer;
+    }
+    .hotel-copy-search-btn:hover { background: var(--accent-soft); }
+    .budget-breakdown-overlay {
+      position: fixed; inset: 0; z-index: 9000;
+      background: rgba(0,0,0,0.42);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .budget-breakdown-overlay.hidden { display: none; }
+    .budget-breakdown-card {
+      background: var(--panel);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 12px 40px rgb(0 0 0 / 0.28);
+      max-width: 400px; width: calc(100% - 32px);
+      max-height: 80vh; overflow-y: auto;
+      padding: 22px 20px;
+    }
+    .budget-breakdown-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .budget-breakdown-head h3 { margin: 0; font-size: 1rem; }
+    .budget-breakdown-close { background: none; border: none; font-size: 1.4rem; line-height: 1; cursor: pointer; color: var(--muted); padding: 0 4px; }
+    .budget-breakdown-section { margin-bottom: 14px; }
+    .budget-breakdown-section-title { font-weight: 700; font-size: 0.76rem; color: var(--accent-deep); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+    .budget-breakdown-item { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--line); font-size: 0.88rem; gap: 8px; }
+    .budget-breakdown-item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .budget-breakdown-item-val { flex-shrink: 0; font-weight: 700; }
+    .budget-breakdown-total { display: flex; justify-content: space-between; padding: 10px 0 0; font-weight: 700; font-size: 1rem; border-top: 2px solid var(--accent); margin-top: 6px; }
     .tl-flight-btn {
       border-color: rgba(36, 113, 163, 0.34);
       background: linear-gradient(135deg, rgba(52,152,219,0.18), rgba(255,255,255,0.78));
     }
+    .tl-rental-btn {
+      border-color: rgba(39, 174, 96, 0.34);
+      background: linear-gradient(135deg, rgba(39,174,96,0.14), rgba(255,255,255,0.78));
+    }
+    .trip-rental-row { margin-top: 8px; }
+    .trip-rental-row.hidden { display: none; }
 
     .tl-over-warn {
       margin: 10px 0 6px; padding: 10px 13px;
@@ -868,28 +969,27 @@
 </head>
 <body>
   <div class="schedule-shell">
-    <header class="schedule-header">
-      <div class="schedule-header-left">
-        <p class="schedule-eyebrow">Schedule</p>
-        <h1 class="schedule-title">スケジュール</h1>
-        <div class="schedule-list-badge">
-          <span>📒</span>
-          <span id="listNameBadge">—</span>
-        </div>
+    <header class="hero">
+      <div class="hero-copy-wrap">
+        <p class="eyebrow">Trip Pop Map</p>
+        <h1>スケジュール</h1>
+        <p class="hero-copy">旅行日程に合わせてスポットを配置し、タイムラインで旅程を確認できます。</p>
+        <div class="schedule-list-badge"><span>📒</span><span id="listNameBadge">—</span></div>
+        <nav class="progress-steps" aria-label="ステップ">
+          <a href="./spots.html" class="progress-step">①行きたい場所</a>
+          <span class="progress-sep">›</span>
+          <a href="./tripplan.html" class="progress-step">②優先順位入力</a>
+          <span class="progress-sep">›</span>
+          <strong class="progress-step progress-step--current">③スケジュール</strong>
+          <span class="progress-sep">›</span>
+          <a href="./checklist.html" class="progress-step">④持ち物リスト</a>
+          <span class="progress-sep">›</span>
+          <a href="./print.html" class="progress-step">⑤印刷する</a>
+        </nav>
       </div>
     </header>
 
-    <nav class="page-nav-bar">
-      <a href="./tripplan.html" class="page-nav-bar-btn page-nav-bar-btn--prev">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-        旅行計画
-      </a>
-      <a href="./checklist.html" class="page-nav-bar-btn page-nav-bar-btn--next">
-        持ち物リスト
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </a>
-    </nav>
-
+    
     <!-- 旅程全体の集合・解散設定 -->
     <div class="trip-settings-card">
       <p class="trip-settings-kicker">Trip Period — 旅程全体の設定</p>
@@ -929,8 +1029,14 @@
         <label class="trip-transport-label" for="travelModeSelect">移動手段</label>
         <select id="travelModeSelect" class="trip-transport-select" title="移動手段の優先モード">
           <option value="transit">公共交通優先</option>
-          <option value="driving">車優先</option>
+          <option value="driving">マイカー利用</option>
+          <option value="rental">レンタカー・カーシェア</option>
         </select>
+      </div>
+      <div id="rentalRow" class="trip-rental-row hidden">
+        <button id="rentalBtn" class="tl-hotel-btn tl-rental-btn" type="button">
+          <span>🚗</span><span class="tl-hotel-find" id="rentalBtnLabel">レンタカーを手配する</span><span class="tl-hotel-chevron">›</span>
+        </button>
       </div>
       <p id="tripSummary" class="trip-summary hidden"></p>
     </div>
@@ -951,6 +1057,16 @@
           <button id="returnAllSpotsBtn" class="return-all-spots-btn" type="button">↩ 配置済みをSPOTSへ戻す</button>
         </div>
       </aside>
+    </div>
+  </div>
+
+  <div id="budgetBreakdownOverlay" class="budget-breakdown-overlay hidden" role="dialog" aria-modal="true">
+    <div class="budget-breakdown-card">
+      <div class="budget-breakdown-head">
+        <h3>予算内訳</h3>
+        <button id="budgetBreakdownClose" class="budget-breakdown-close" type="button" aria-label="閉じる">×</button>
+      </div>
+      <div id="budgetBreakdownBody"></div>
     </div>
   </div>
 
@@ -993,10 +1109,20 @@
 
   <div id="sharedSpotMenuOverlay" class="shared-spot-menu-overlay hidden" role="dialog" aria-modal="true">
     <div class="shared-spot-menu-frame-wrap">
-      <button id="sharedSpotMenuClose" class="shared-spot-menu-close" type="button" aria-label="閉じる">×</button>
       <iframe id="sharedSpotMenuFrame" class="shared-spot-menu-frame" title="スポットメニュー"></iframe>
     </div>
   </div>
+
+  <nav class="page-nav-bar">
+      <a href="./tripplan.html" class="page-nav-bar-btn page-nav-bar-btn--prev">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        優先順位入力
+      </a>
+      <a href="./checklist.html" class="page-nav-bar-btn page-nav-bar-btn--next">
+        持ち物リスト
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+    </nav>
 
   <button id="hamburgerBtn" class="hamburger-btn" type="button" aria-label="メニューを開く">
     <span class="hamburger-line"></span>
@@ -1014,33 +1140,9 @@
         <span class="drawer-nav-icon">📒</span>
         <span>しおりを選ぶ</span>
       </a>
-      <a href="./spots.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">📍</span>
-        <span>行きたい場所</span>
-      </a>
-      <a href="./tripplan.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">📝</span>
-        <span>旅行計画</span>
-      </a>
-      <a href="./schedule.html" class="drawer-nav-item drawer-nav-item--active">
-        <span class="drawer-nav-icon">📅</span>
-        <span>スケジュール</span>
-      </a>
       <a href="./hotel.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">🏨</span>
         <span>ホテルを見つける</span>
-      </a>
-      <a href="./tour.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">🗺</span>
-        <span>ツアーを見つける</span>
-      </a>
-      <a href="./checklist.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">📋</span>
-        <span>持ち物リスト</span>
-      </a>
-      <a href="./print.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">🖨</span>
-        <span>印刷する</span>
       </a>
       <a href="./howto.html" class="drawer-nav-item"><span class="drawer-nav-icon">❔</span><span>使い方</span></a><a href="./settings.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">⚙</span>
@@ -1509,7 +1611,8 @@
     // 取得に失敗した場合は距離推定にフォールバックします。
 
     function getTravelMode() {
-      return schedule?.travelMode === "driving" ? "driving" : "transit";
+      const m = schedule?.travelMode;
+      return (m === "driving" || m === "rental") ? "driving" : "transit";
     }
 
     function transitCacheKey(lat1, lng1, lat2, lng2, mode = getTravelMode()) {
@@ -1727,6 +1830,22 @@
       let t      = timeToMinutes(startTime);
       const endT = timeToMinutes(endTime);
 
+      // 集合場所が空港の場合：チェックイン時刻超過チェック
+      let meetOverflow = false, meetAirportCheckinWarning = false, meetAirportCheckinDeadlineStr = null;
+      if (isFirst && meetSpot?.spotCategory === "airport") {
+        const fKey = `meet:${meetSpot.id || meetSpot.name}:${day.date || ""}`;
+        const flt  = schedule.flights?.[fKey];
+        let deadlineT = null;
+        if (meetSpot.airportCheckinTime) {
+          deadlineT = timeToMinutes(meetSpot.airportCheckinTime);
+          meetAirportCheckinDeadlineStr = meetSpot.airportCheckinTime;
+        } else if (flt?.time) {
+          const off = meetSpot.airportCheckinOffsetMin || 0;
+          deadlineT = timeToMinutes(flt.time) - off;
+          meetAirportCheckinDeadlineStr = minutesToTime(deadlineT);
+        }
+        if (deadlineT !== null && t > deadlineT) { meetOverflow = true; meetAirportCheckinWarning = true; }
+      }
       steps.push({
         type: "meet", name: meetName, time: t,
         anchorSpot: meetSpot || null,
@@ -1734,6 +1853,9 @@
         hotelNightDayId: !isFirst ? (schedule.days[dayIdx - 1]?.id ?? null) : null,
         hotelCheckin:    !isFirst ? (schedule.days[dayIdx - 1]?.date ?? null) : null,
         hotelCheckout:   !isFirst ? (day.date ?? null) : null,
+        overflow: meetOverflow,
+        airportCheckinWarning: meetAirportCheckinWarning,
+        airportCheckinDeadlineStr: meetAirportCheckinDeadlineStr,
       });
       let prevSpot = meetSpot || null;
 
@@ -1756,12 +1878,14 @@
           travelInfo = schedule.transitCache?.[ckey] || null;
           if (travelInfo && !travelInfo.failed && travelInfo.durationMin) travelDuration = travelInfo.durationMin;
         }
+        const prevEntry = day.entries.find(en => en.spotId === prevSpot?.id);
+        if (prevEntry?.travelToNextMinutes) travelDuration = prevEntry.travelToNextMinutes;
 
         const stay    = getEntryStayMinutes(day, entry, spot);
         const arriveT = t + travelDuration;
         const leaveT  = arriveT + stay;
 
-        if (arriveT >= endT && strictCapacity) {
+        if ((arriveT >= endT || leaveT + travel > endT) && strictCapacity) {
           for (let j = i; j < day.entries.length; j++) {
             const s = getSpotById(day.entries[j].spotId);
             // 集合/解散アンカーはスキップ済みなので「収まらなかった」リストに入れない
@@ -1772,7 +1896,7 @@
           break;
         }
 
-        steps.push({ type: "travel", duration: travelDuration, travelInfo, fromSpot: prevSpot, toSpot: spot, noCoords: !hasCoords });
+        steps.push({ type: "travel", duration: travelDuration, travelInfo, fromSpot: prevSpot, toSpot: spot, noCoords: !hasCoords, missingHotel: !isFirst && i === 0 && !meetSpot });
         steps.push({
           type: "spot",
           name: spot.name,
@@ -1788,7 +1912,7 @@
         t = leaveT;
         prevSpot = spot;
 
-        if (t >= endT && strictCapacity) {
+        if ((t >= endT || t + travel > endT) && strictCapacity) {
           for (let j = i + 1; j < day.entries.length; j++) {
             const s = getSpotById(day.entries[j].spotId);
             if (s && !(isFirst && isMeetSpot(s)) && !(isLast && isDismissSpot(s))) {
@@ -1810,13 +1934,39 @@
           finalTravelDuration = finalTravelInfo.durationMin;
         }
       }
-      steps.push({ type: "travel", duration: finalTravelDuration, travelInfo: finalTravelInfo, fromSpot: prevSpot, toSpot: dismissSpot, noCoords: !finalHasCoords });
+      // 手動移動時間が設定されていれば上書き（最終移動も対象）
+      const finalPrevEntry = day.entries.find(en => en.spotId === prevSpot?.id);
+      if (finalPrevEntry?.travelToNextMinutes) finalTravelDuration = finalPrevEntry.travelToNextMinutes;
+      steps.push({ type: "travel", duration: finalTravelDuration, travelInfo: finalTravelInfo, fromSpot: prevSpot, toSpot: dismissSpot, noCoords: !finalHasCoords, missingHotel: !isLast && !dismissSpot });
+      // 解散場所が空港の場合：チェックイン時刻超過チェック
+      const dismissArrivalT = t + finalTravelDuration;
+      let dismissOverflow = dismissArrivalT > endT;
+      let dismissAirportCheckinWarning = false, dismissAirportCheckinDeadlineStr = null;
+      if (dismissSpot?.spotCategory === "airport") {
+        const fKey = `dismiss:${dismissSpot.id || dismissSpot.name}:${day.date || ""}`;
+        const flt  = schedule.flights?.[fKey];
+        let deadlineT = null;
+        if (dismissSpot.airportCheckinTime) {
+          deadlineT = timeToMinutes(dismissSpot.airportCheckinTime);
+          dismissAirportCheckinDeadlineStr = dismissSpot.airportCheckinTime;
+        } else if (flt?.time) {
+          const off = dismissSpot.airportCheckinOffsetMin || 0;
+          deadlineT = timeToMinutes(flt.time) - off;
+          dismissAirportCheckinDeadlineStr = minutesToTime(deadlineT);
+        }
+        if (deadlineT !== null && dismissArrivalT > deadlineT) {
+          dismissOverflow = true; dismissAirportCheckinWarning = true;
+        }
+      }
       steps.push({
-        type: "dismiss", name: dismissName, time: t + finalTravelDuration,
+        type: "dismiss", name: dismissName, time: dismissArrivalT,
         anchorSpot: dismissSpot || null,
         hotelNightDayId: !isLast ? (day.id ?? null) : null,
         hotelCheckin:    !isLast ? (day.date ?? null) : null,
         hotelCheckout:   !isLast ? (schedule.days[dayIdx + 1]?.date ?? null) : null,
+        overflow: dismissOverflow,
+        airportCheckinWarning: dismissAirportCheckinWarning,
+        airportCheckinDeadlineStr: dismissAirportCheckinDeadlineStr,
       });
 
       return { steps, skipped };
@@ -1989,9 +2139,13 @@
 
       const nights = Math.round((end - start) / 86400000);
       const days   = nights + 1;
-      const budgetText = shouldShowBudget() ? `　現在の予算総額：¥${calculateBudgetTotal().toLocaleString()}` : "";
-      el.textContent = `${formatDate(meetDate)} 〜 ${formatDate(dismissDate)}（${nights}泊${days}日）${budgetText}`;
+      const budgetHtml = shouldShowBudget()
+        ? `　<button id="tripBudgetBtn" class="trip-budget-link" type="button" title="内訳を見る">現在の予算総額：¥${calculateBudgetTotal().toLocaleString()}</button>`
+        : "";
+      el.innerHTML = `${formatDate(meetDate)} 〜 ${formatDate(dismissDate)}（${nights}泊${days}日）${budgetHtml}`;
       el.classList.remove("hidden");
+      const bb = document.getElementById("tripBudgetBtn");
+      if (bb) bb.onclick = showBudgetBreakdown;
     }
 
     function calculateBudgetTotal() {
@@ -2010,6 +2164,48 @@
       return entriesTotal + hotelsTotal + flightsTotal;
     }
 
+    function showBudgetBreakdown() {
+      const overlay = document.getElementById("budgetBreakdownOverlay");
+      const body    = document.getElementById("budgetBreakdownBody");
+      if (!overlay || !body) return;
+
+      const spotItems = [];
+      (schedule.days || []).forEach(day => {
+        (day.entries || []).forEach(entry => {
+          const spot = getSpotById(entry.spotId);
+          if (spot && Number(spot.budget) > 0) {
+            spotItems.push({ name: spot.name, value: Number(spot.budget) });
+          }
+        });
+      });
+      const hotelItems = Object.values(schedule.hotels || {})
+        .map(h => ({ name: h.name || "宿泊先", value: Number(h.pricePerPerson || h.budget) || 0 }))
+        .filter(h => h.value > 0);
+      const flightItems = Object.values(schedule.flights || {})
+        .map(f => ({ name: f.flightNumber ? `✈ ${f.flightNumber}` : "✈ 航空券", value: Number(f.pricePerPerson || f.budget) || 0 }))
+        .filter(f => f.value > 0);
+
+      const total = [...spotItems, ...hotelItems, ...flightItems].reduce((s, i) => s + i.value, 0);
+
+      const renderSection = (title, items) => {
+        if (!items.length) return "";
+        return `<div class="budget-breakdown-section">
+          <div class="budget-breakdown-section-title">${title}</div>
+          ${items.map(i => `<div class="budget-breakdown-item"><span class="budget-breakdown-item-name">${escHtml(i.name)}</span><span class="budget-breakdown-item-val">¥${i.value.toLocaleString()}</span></div>`).join("")}
+        </div>`;
+      };
+
+      body.innerHTML = renderSection("📍 スポット", spotItems)
+        + renderSection("🏨 宿泊", hotelItems)
+        + renderSection("✈ 航空券", flightItems)
+        + (!spotItems.length && !hotelItems.length && !flightItems.length
+          ? '<p style="color:var(--muted);text-align:center;padding:16px 0;font-size:0.9rem">予算が登録されていません</p>'
+          : "")
+        + `<div class="budget-breakdown-total"><span>合計</span><span>¥${total.toLocaleString()}</span></div>`;
+
+      overlay.classList.remove("hidden");
+    }
+
     // ── 描画 ───────────────────────────────────────────────────────
 
     function renderTripSettings() {
@@ -2024,7 +2220,15 @@
       document.getElementById("tripMeetPlace").value    = schedule.tripMeetPlace    || "";
       document.getElementById("tripDismissTime").value  = schedule.tripDismissTime  || "18:00";
       document.getElementById("tripDismissPlace").value = schedule.tripDismissPlace || "";
-      document.getElementById("travelModeSelect").value = getTravelMode();
+      document.getElementById("travelModeSelect").value = schedule.travelMode || "transit";
+      const rentalRow = document.getElementById("rentalRow");
+      const isRental = schedule.travelMode === "rental";
+      rentalRow?.classList.toggle("hidden", !isRental);
+      if (isRental) {
+        const rental = schedule.rental;
+        const lbl = document.getElementById("rentalBtnLabel");
+        if (lbl) lbl.textContent = rental?.company ? `${rental.company}（予約済み）` : "レンタカーを手配する";
+      }
       renderTripPlaceSelects();
     }
 
@@ -2041,14 +2245,6 @@
           select.appendChild(opt);
         });
         select.value = current;
-        const menuBtn = document.getElementById(category === "meet" ? "tripMeetSpotMenuBtn" : "tripDismissSpotMenuBtn");
-        if (menuBtn) {
-          menuBtn.disabled = !current;
-          menuBtn.onclick = () => {
-            const spotId = select.value || current;
-            if (spotId) openScheduleSpotMenu(spotId);
-          };
-        }
       };
       fill("tripMeetSpotSelect", "meet", "SPOTSから集合場所を選択");
       fill("tripDismissSpotSelect", "dismiss", "SPOTSから解散場所を選択");
@@ -2063,7 +2259,7 @@
       );
       const returnAllBtn = document.getElementById("returnAllSpotsBtn");
       if (returnAllBtn) returnAllBtn.disabled = scheduledIds.size === 0;
-      const unscheduled = getOrderedSpots().filter(s => !scheduledIds.has(s.id) && !isMeetSpot(s) && !isDismissSpot(s));
+      const unscheduled = getOrderedSpots().filter(s => !scheduledIds.has(s.id) && !isMeetSpot(s) && !isDismissSpot(s) && s.spotCategory !== "hotel");
       if (warn) {
         const visibleSkipped = autoPlaceSkippedNames.filter(name => unscheduled.some(s => s.name === name));
         warn.classList.toggle("hidden", visibleSkipped.length === 0);
@@ -2072,7 +2268,7 @@
           : "";
       }
 
-      const schedulableSpots = spots.filter(s => !isMeetSpot(s) && !isDismissSpot(s));
+      const schedulableSpots = spots.filter(s => !isMeetSpot(s) && !isDismissSpot(s) && s.spotCategory !== "hotel");
       if (unscheduled.length === 0) {
         el.innerHTML = schedulableSpots.length === 0
           ? '<p class="spot-chip-empty">「行きたい場所」でスポットを追加してください</p>'
@@ -2185,81 +2381,234 @@
           row.className = "tl-row tl-row--anchor";
           const leftEl = document.createElement("div");
           leftEl.className = "tl-left";
-          leftEl.innerHTML = `<span class="tl-time">${minutesToTime(step.time)}</span>${!isLast ? '<div class="tl-line"></div>' : ''}`;
+          const _anchorTimeStr = minutesToTime(step.time);
+          const _anchorTimeHtml = step.overflow
+            ? `<span class="tl-time" style="color:#c62828;font-weight:900">${_anchorTimeStr}</span>`
+            : `<span class="tl-time">${_anchorTimeStr}</span>`;
+          leftEl.innerHTML = `${_anchorTimeHtml}${!isLast ? '<div class="tl-line"></div>' : ''}`;
           const rightEl = document.createElement("div");
           rightEl.className = "tl-right";
 
           if (step.hotelNightDayId) {
-            // 宿泊先 → クリッカブルなホテルボタン
+            // 宿泊先 → 名前ボタン（スポットメニュー）＋変更ボタン（hotel.html）
             const hotel = schedule.hotels?.[step.hotelNightDayId];
-            const btn = document.createElement("button");
-            btn.type = "button";
-            btn.className = "tl-hotel-btn";
-            btn.title = "クリックしてホテルを探す・登録する";
+            const hotelSpot = (activeList?.spots || []).find(s =>
+              s.sourceNightId === step.hotelNightDayId ||
+              (Array.isArray(s.sourceNightIds) && s.sourceNightIds.includes(step.hotelNightDayId))
+            );
+            const hotelParams = new URLSearchParams({ nightId: step.hotelNightDayId });
+            if (step.hotelCheckin)  hotelParams.set("checkin",  step.hotelCheckin);
+            if (step.hotelCheckout) hotelParams.set("checkout", step.hotelCheckout);
+
+            const rowDiv = document.createElement("div");
+            rowDiv.className = "tl-hotel-row";
+
+            const nameBtn = document.createElement("button");
+            nameBtn.type = "button";
+            nameBtn.className = "tl-hotel-btn tl-hotel-name-btn";
 
             const iconSpan = document.createElement("span");
             iconSpan.textContent = "🏨";
-            btn.appendChild(iconSpan);
+            nameBtn.appendChild(iconSpan);
 
             if (hotel?.name) {
+              nameBtn.title = "スポットメニューを開く";
               const nameSpan = document.createElement("span");
               nameSpan.className = "tl-hotel-name";
               nameSpan.textContent = hotel.name;
-              btn.appendChild(nameSpan);
+              nameBtn.appendChild(nameSpan);
               if (shouldShowBudget() && (hotel.pricePerPerson || hotel.budget)) {
                 const budgetSpan = document.createElement("span");
                 budgetSpan.className = "tl-hotel-budget";
                 budgetSpan.textContent = `¥${Number(hotel.pricePerPerson || hotel.budget).toLocaleString()}/名`;
-                btn.appendChild(budgetSpan);
+                nameBtn.appendChild(budgetSpan);
               }
               if (hotel.checkinTime) {
                 const timeSpan = document.createElement("span");
                 timeSpan.className = "tl-hotel-budget";
                 timeSpan.textContent = `${hotel.checkinTime}IN`;
-                btn.appendChild(timeSpan);
+                nameBtn.appendChild(timeSpan);
+              }
+              const chevron = document.createElement("span");
+              chevron.className = "tl-hotel-chevron";
+              chevron.textContent = "›";
+              nameBtn.appendChild(chevron);
+              if (hotelSpot) {
+                nameBtn.addEventListener("click", () => openScheduleSpotMenu(hotelSpot.id));
+              } else {
+                nameBtn.disabled = true;
               }
             } else {
+              nameBtn.disabled = true;
+              nameBtn.title = "「変更」からホテルを登録してください";
               const findSpan = document.createElement("span");
               findSpan.className = "tl-hotel-find";
-              findSpan.textContent = "宿泊先を探す・登録する";
-              btn.appendChild(findSpan);
+              findSpan.textContent = "宿泊先未登録";
+              nameBtn.appendChild(findSpan);
             }
 
-            const chevron = document.createElement("span");
-            chevron.className = "tl-hotel-chevron";
-            chevron.textContent = "›";
-            btn.appendChild(chevron);
+            rowDiv.appendChild(nameBtn);
 
-            const p = new URLSearchParams({ nightId: step.hotelNightDayId });
-            if (step.hotelCheckin)  p.set("checkin",  step.hotelCheckin);
-            if (step.hotelCheckout) p.set("checkout", step.hotelCheckout);
-            btn.addEventListener("click", () => { location.href = `./hotel.html?${p}`; });
-            rightEl.appendChild(btn);
+            const changeBtn = document.createElement("button");
+            changeBtn.type = "button";
+            changeBtn.className = "tl-hotel-change-btn";
+            changeBtn.textContent = "変更";
+            changeBtn.addEventListener("click", () => {
+              // 他の日程に登録済みのホテルがあれば選択肢を表示する
+              const otherHotels = Object.entries(schedule.hotels || {})
+                .filter(([nid, h]) => nid !== step.hotelNightDayId && h?.name)
+                .map(([nid, h]) => ({ nid, hotel: h }));
+              if (otherHotels.length === 0) {
+                location.href = `./hotel.html?${hotelParams}`;
+                return;
+              }
+              // 既存ホテルのコピー選択ダイアログを表示
+              const existing = document.getElementById("hotelCopyPopover");
+              if (existing) existing.remove();
+              const pop = document.createElement("div");
+              pop.id = "hotelCopyPopover";
+              pop.className = "hotel-copy-popover";
+
+              const currentHotel = schedule.hotels?.[step.hotelNightDayId];
+
+              // ① 現在の宿泊先セクション（登録済みの場合のみ）
+              if (currentHotel?.name) {
+                const curTitle = document.createElement("p");
+                curTitle.className = "hotel-copy-title";
+                curTitle.textContent = "現在の宿泊先を編集する";
+                pop.appendChild(curTitle);
+                const curBtn = document.createElement("button");
+                curBtn.type = "button";
+                curBtn.className = "hotel-copy-item-btn";
+                curBtn.textContent = `🏨 ${currentHotel.name}`;
+                curBtn.addEventListener("click", () => {
+                  pop.remove();
+                  closeArea.remove();
+                  location.href = `./hotel.html?${hotelParams}`;
+                });
+                pop.appendChild(curBtn);
+              }
+
+              // ② 他の日のホテルを引き継ぐセクション（他のホテルが存在する場合のみ）
+              if (otherHotels.length > 0) {
+                if (currentHotel?.name) {
+                  const sep0 = document.createElement("hr");
+                  sep0.className = "hotel-copy-sep";
+                  pop.appendChild(sep0);
+                }
+                const inheritTitle = document.createElement("p");
+                inheritTitle.className = "hotel-copy-title";
+                inheritTitle.textContent = "他の日のホテルを引き継ぐ";
+                pop.appendChild(inheritTitle);
+                otherHotels.forEach(({ nid, hotel }) => {
+                  const copyBtn = document.createElement("button");
+                  copyBtn.type = "button";
+                  copyBtn.className = "hotel-copy-item-btn";
+                  copyBtn.textContent = `🏨 ${hotel.name}`;
+                  copyBtn.addEventListener("click", () => {
+                    if (!schedule.hotels) schedule.hotels = {};
+                    schedule.hotels[step.hotelNightDayId] = {
+                      ...hotel,
+                      checkin:  step.hotelCheckin  || hotel.checkin,
+                      checkout: step.hotelCheckout || hotel.checkout,
+                      sourceNightId: nid,
+                    };
+                    saveSchedule(schedule);
+                    pop.remove();
+                    closeArea.remove();
+                    renderDays();
+                  });
+                  pop.appendChild(copyBtn);
+                });
+              }
+
+              // ③ 新しく検索する
+              const sep = document.createElement("hr");
+              sep.className = "hotel-copy-sep";
+              pop.appendChild(sep);
+              const searchBtn = document.createElement("button");
+              searchBtn.type = "button";
+              searchBtn.className = "hotel-copy-search-btn";
+              searchBtn.textContent = "新しく検索する →";
+              searchBtn.addEventListener("click", () => {
+                pop.remove();
+                closeArea.remove();
+                location.href = `./hotel.html?${hotelParams}`;
+              });
+              pop.appendChild(searchBtn);
+              const closeArea = document.createElement("div");
+              closeArea.className = "hotel-copy-backdrop";
+              closeArea.addEventListener("click", () => { pop.remove(); closeArea.remove(); });
+              document.body.appendChild(closeArea);
+              const rect = changeBtn.getBoundingClientRect();
+              pop.style.top = `${rect.bottom + window.scrollY + 6}px`;
+              pop.style.left = `${rect.left + window.scrollX}px`;
+              document.body.appendChild(pop);
+            });
+            rowDiv.appendChild(changeBtn);
+
+            rightEl.appendChild(rowDiv);
           } else {
             // 集合/解散場所（通常アンカー）
             const dotColor = step.type === "meet" ? "var(--accent-teal, #70d6c5)" : "var(--accent-pink, #ff8fb1)";
             rightEl.innerHTML = `<span class="tl-anchor-dot" style="background:${dotColor}"></span><span class="tl-anchor-name">${escHtml(step.name)}</span>`;
             if (step.anchorSpot?.spotCategory === "airport") {
+              const anchorNameEl = rightEl.querySelector(".tl-anchor-name");
+              if (anchorNameEl && step.anchorSpot?.id) {
+                anchorNameEl.style.cursor = "pointer";
+                anchorNameEl.style.textDecoration = "underline dotted";
+                anchorNameEl.title = "スポットメニューを開く";
+                anchorNameEl.addEventListener("click", () => openScheduleSpotMenu(step.anchorSpot.id));
+              }
               const flightBtn = document.createElement("button");
               flightBtn.type = "button";
               flightBtn.className = "tl-hotel-btn tl-flight-btn";
               flightBtn.title = "クリックして航空券を探す・登録する";
               const flightKey = `${step.type}:${step.anchorSpot.id || step.anchorSpot.name}:${day.date || ""}`;
               const flight = schedule.flights?.[flightKey];
-              const flightLabel = flight?.flightNumber
-                ? `${flight.flightNumber}${flight.pricePerPerson ? ` ¥${Number(flight.pricePerPerson).toLocaleString()}/名` : ""}`
-                : "航空券を探す・登録する";
+              let flightLabel;
+              if (flight) {
+                const parts = [];
+                if (flight.flightNumber) parts.push(flight.flightNumber);
+                if (flight.time) parts.push(`離陸 ${flight.time}`);
+                if (flight.arrivalTime) parts.push(`着陸 ${flight.arrivalTime}`);
+                if (flight.arrivalAirport) parts.push(`→ ${flight.arrivalAirport}`);
+                if (flight.pricePerPerson) parts.push(`¥${Number(flight.pricePerPerson).toLocaleString()}/名`);
+                flightLabel = parts.length ? parts.join("  ") : "✈ 登録済み";
+              } else {
+                flightLabel = "航空券を探す・登録する";
+              }
               flightBtn.innerHTML = `<span>✈</span><span class="tl-hotel-find">${escHtml(flightLabel)}</span><span class="tl-hotel-chevron">›</span>`;
               const p = new URLSearchParams({
                 role: step.type,
                 airport: step.anchorSpot.name || step.name,
                 spotId: step.anchorSpot.id || "",
                 date: day.date || "",
-                time: minutesToTime(step.time),
+                time: flight?.time || minutesToTime(step.time),
               });
+              if (flight) {
+                if (flight.arrivalAirport) p.set("arrivalAirport", flight.arrivalAirport);
+                if (flight.arrivalTime) p.set("arrivalTime", flight.arrivalTime);
+                if (flight.flightNumber) p.set("flightNumber", flight.flightNumber);
+                if (flight.pricePerPerson) p.set("price", String(flight.pricePerPerson));
+                if (flight.memo) p.set("memo", flight.memo);
+              }
               flightBtn.addEventListener("click", () => { location.href = `./flight.html?${p}`; });
               rightEl.appendChild(flightBtn);
             }
+          }
+
+          // 空港チェックイン遅延 or 終了時刻超過の警告テキスト
+          if (step.airportCheckinWarning) {
+            const warnEl = document.createElement("span");
+            warnEl.className = "tl-overflow-warn";
+            warnEl.textContent = `チェックイン時刻（${step.airportCheckinDeadlineStr}）を過ぎています！`;
+            rightEl.appendChild(warnEl);
+          } else if (step.overflow) {
+            const warnEl = document.createElement("span");
+            warnEl.className = "tl-overflow-warn";
+            warnEl.textContent = "終了時刻を過ぎています!";
+            rightEl.appendChild(warnEl);
           }
 
           row.appendChild(leftEl);
@@ -2294,11 +2643,12 @@
             }
             wrapEl.appendChild(summarySpan);
             // セグメント（🚶3分 → 🚇銀座線 → 🚶2分）
+            // ドライブモードの場合は個別セグメントを表示しない（車アイコンが大量に並ぶのを防ぐ）
             const routeSegments = info.estimated
               ? (info.mode === "driving"
                 ? [`推定所要時間です。詳細な道路ルートは地図で確認してください${info.error ? `（${info.error}）` : ""}`]
                 : ["電車移動の概算です。駅まで/駅からの徒歩や待ち時間を含めた目安として見てください"])
-              : (info.segments || []);
+              : (info.mode === "driving" ? [] : (info.segments || []));
             if (routeSegments.length > 0) {
               const segsSpan = document.createElement("span");
               segsSpan.className = "tl-route-segs";
@@ -2313,7 +2663,9 @@
             wrapEl.appendChild(summarySpan);
           } else if (step.noCoords) {
             // 座標情報が欠けているため API 呼び出し不可
-            summarySpan.textContent = `📍 座標情報がないため経路を取得できません`;
+            summarySpan.textContent = step.missingHotel
+              ? `🏨 宿泊先が未登録です`
+              : `📍 座標情報がないため経路を取得できません`;
             summarySpan.style.color = "var(--muted)";
             wrapEl.appendChild(summarySpan);
           } else {
@@ -2335,6 +2687,39 @@
           }
 
           rightEl.appendChild(wrapEl);
+
+          // 手動移動時間・メモ入力欄
+          const fromEntry = day.entries.find(en => en.spotId === step.fromSpot?.id);
+          if (fromEntry) {
+            const manualDiv = document.createElement("div");
+            manualDiv.className = "tl-manual-travel";
+            const tH = fromEntry.travelToNextMinutes ? Math.floor(fromEntry.travelToNextMinutes / 60) : "";
+            const tM = fromEntry.travelToNextMinutes ? (fromEntry.travelToNextMinutes % 60) : "";
+            const timeRow = document.createElement("div");
+            timeRow.className = "tl-manual-time-row";
+            timeRow.innerHTML = `<span class="tl-manual-time-label">手動設定：</span><input type="number" min="0" max="23" step="1" value="${tH}" class="tl-manual-time-input" data-travel-h /><span class="tl-manual-time-label">時間</span><input type="number" min="0" max="55" step="5" value="${tM}" class="tl-manual-time-input" data-travel-m /><span class="tl-manual-time-label">分</span>`;
+            const memoEl = document.createElement("textarea");
+            memoEl.className = "tl-manual-memo";
+            memoEl.placeholder = "移動メモ（例：電車20分＋徒歩5分）";
+            memoEl.value = fromEntry.travelToNextMemo || "";
+            memoEl.rows = 1;
+            manualDiv.appendChild(timeRow);
+            manualDiv.appendChild(memoEl);
+            rightEl.appendChild(manualDiv);
+            const updateTime = () => {
+              const hv = parseInt(timeRow.querySelector("[data-travel-h]").value) || 0;
+              const mv = parseInt(timeRow.querySelector("[data-travel-m]").value) || 0;
+              const mins = hv * 60 + mv;
+              fromEntry.travelToNextMinutes = mins > 0 ? mins : null;
+              saveSchedule(schedule);
+              renderDays();
+            };
+            timeRow.querySelector("[data-travel-h]").addEventListener("change", updateTime);
+            timeRow.querySelector("[data-travel-m]").addEventListener("change", updateTime);
+            memoEl.addEventListener("input", () => { fromEntry.travelToNextMemo = memoEl.value.trim() || ""; saveSchedule(schedule); });
+            memoEl.addEventListener("click", e => e.stopPropagation());
+          }
+
           row.appendChild(leftEl);
           row.appendChild(rightEl);
 
@@ -2350,7 +2735,13 @@
           const leftEl = document.createElement("div");
           leftEl.className = "tl-left";
           const endTimeStr = minutesToTime(step.time + step.duration);
-          leftEl.innerHTML = `<span class="tl-time">${minutesToTime(step.time)}</span>${step.duration ? `<div class="tl-line"></div><span class="tl-end-time">${endTimeStr}</span>` : (!isLast ? '<div class="tl-line"></div>' : "")}`;
+          const endTimeHtml = step.overflow
+            ? `<span class="tl-end-time" style="color:#c62828;font-weight:900">${endTimeStr}</span>`
+            : `<span class="tl-end-time">${endTimeStr}</span>`;
+          const startTimeHtml = step.overflow
+            ? `<span class="tl-time" style="color:#c62828;font-weight:900">${minutesToTime(step.time)}</span>`
+            : `<span class="tl-time">${minutesToTime(step.time)}</span>`;
+          leftEl.innerHTML = `${startTimeHtml}${step.duration ? `<div class="tl-line"></div>${endTimeHtml}` : (!isLast ? '<div class="tl-line"></div>' : "")}`;
 
           const rightEl = document.createElement("div");
           rightEl.className = "tl-right";
@@ -2378,8 +2769,8 @@
           hoursWarnEl.textContent = "営業時間外";
 
           const overflowWarnEl = document.createElement("span");
-          overflowWarnEl.className = "tl-hours-warn";
-          overflowWarnEl.textContent = "時間外";
+          overflowWarnEl.className = "tl-overflow-warn";
+          overflowWarnEl.textContent = "終了時刻を過ぎています!";
 
           const noteInput = document.createElement("input");
           noteInput.className = "tl-note"; noteInput.type = "text";
@@ -2408,6 +2799,33 @@
           rightEl.appendChild(upBtn);
           rightEl.appendChild(downBtn);
           rightEl.appendChild(removeBtn);
+
+          // インライン滞在時間編集
+          const stayRow = document.createElement("div");
+          stayRow.className = "tl-manual-travel";
+          const sH = Math.floor(stayMin / 60);
+          const sM = stayMin % 60;
+          const stayTimeRow = document.createElement("div");
+          stayTimeRow.className = "tl-manual-time-row";
+          stayTimeRow.innerHTML = `<span class="tl-manual-time-label">滞在：</span><input type="number" min="0" max="23" step="1" value="${sH}" class="tl-manual-time-input" data-stay-h /><span class="tl-manual-time-label">時間</span><input type="number" min="0" max="55" step="5" value="${sM}" class="tl-manual-time-input" data-stay-m /><span class="tl-manual-time-label">分</span>`;
+          stayRow.appendChild(stayTimeRow);
+          rightEl.appendChild(stayRow);
+          const updateStay = () => {
+            const hv = parseInt(stayTimeRow.querySelector("[data-stay-h]").value) || 0;
+            const mv = parseInt(stayTimeRow.querySelector("[data-stay-m]").value) || 0;
+            const mins = hv * 60 + mv;
+            if (!schedule.defaultStayTimes) schedule.defaultStayTimes = {};
+            schedule.defaultStayTimes[entry.spotId] = mins;
+            if (!day.stayTimes) day.stayTimes = {};
+            day.stayTimes[entry.spotId] = mins;
+            saveSchedule(schedule);
+            renderDays();
+          };
+          stayTimeRow.querySelector("[data-stay-h]").addEventListener("change", updateStay);
+          stayTimeRow.querySelector("[data-stay-m]").addEventListener("change", updateStay);
+          stayTimeRow.querySelector("[data-stay-h]").addEventListener("click", e => e.stopPropagation());
+          stayTimeRow.querySelector("[data-stay-m]").addEventListener("click", e => e.stopPropagation());
+
           row.appendChild(leftEl);
           row.appendChild(rightEl);
 
@@ -2529,46 +2947,68 @@
       });
       card.appendChild(header);
 
-      // 中日（非初日・非最終日）の開始/終了時刻編集行
+      // 全日：開始/終了時刻編集行
       const isFirst = idx === 0;
       const isLast  = idx === schedule.days.length - 1;
-      if (!isFirst || !isLast) { // 1日のみ旅行では非表示
+      {
         const timeRow = document.createElement("div");
         timeRow.className = "day-time-row";
+
+        // 開始ラベル・入力（初日は集合時刻と連動）
         const startLabel = document.createElement("span");
         startLabel.className = "day-time-label";
-        startLabel.textContent = isFirst ? "終了" : "開始";
+        startLabel.textContent = "開始";
         const startInput = document.createElement("input");
         startInput.type  = "time";
         startInput.className = "day-time-input";
         if (isFirst) {
-          startInput.value = day.endTime || "21:00";
-          startInput.title = "1日目の終了時刻";
-          startInput.addEventListener("change", e => { day.endTime = e.target.value; saveSchedule(schedule); renderDays(); });
+          startInput.value = schedule.tripMeetTime || "09:00";
+          startInput.title = "集合時刻（1日目の開始時刻）";
+          startInput.addEventListener("change", e => {
+            schedule.tripMeetTime = e.target.value;
+            const el = document.getElementById("tripMeetTime");
+            if (el) el.value = e.target.value;
+            saveSchedule(schedule);
+            renderDays();
+          });
         } else {
           startInput.value = day.startTime || "09:00";
           startInput.title = "この日の開始時刻（前泊チェックアウト後）";
           startInput.addEventListener("change", e => { day.startTime = e.target.value; saveSchedule(schedule); renderDays(); });
         }
-        timeRow.appendChild(startLabel);
-        timeRow.appendChild(startInput);
-        if (!isFirst && !isLast) {
-          const sep = document.createElement("span");
-          sep.className = "day-time-sep";
-          sep.textContent = "〜";
-          const endLabel = document.createElement("span");
-          endLabel.className = "day-time-label";
-          endLabel.textContent = "終了";
-          const endInput = document.createElement("input");
-          endInput.type  = "time";
-          endInput.className = "day-time-input";
+
+        const sep = document.createElement("span");
+        sep.className = "day-time-sep";
+        sep.textContent = "〜";
+
+        // 終了ラベル・入力（最終日は解散時刻と連動）
+        const endLabel = document.createElement("span");
+        endLabel.className = "day-time-label";
+        endLabel.textContent = "終了";
+        const endInput = document.createElement("input");
+        endInput.type  = "time";
+        endInput.className = "day-time-input";
+        if (isLast) {
+          endInput.value = schedule.tripDismissTime || "18:00";
+          endInput.title = "解散時刻（最終日の終了時刻）";
+          endInput.addEventListener("change", e => {
+            schedule.tripDismissTime = e.target.value;
+            const el = document.getElementById("tripDismissTime");
+            if (el) el.value = e.target.value;
+            saveSchedule(schedule);
+            renderDays();
+          });
+        } else {
           endInput.value = day.endTime || "21:00";
           endInput.title = "この日の終了時刻（ホテルチェックイン前）";
           endInput.addEventListener("change", e => { day.endTime = e.target.value; saveSchedule(schedule); renderDays(); });
-          timeRow.appendChild(sep);
-          timeRow.appendChild(endLabel);
-          timeRow.appendChild(endInput);
         }
+
+        timeRow.appendChild(startLabel);
+        timeRow.appendChild(startInput);
+        timeRow.appendChild(sep);
+        timeRow.appendChild(endLabel);
+        timeRow.appendChild(endInput);
         card.appendChild(timeRow);
       }
 
@@ -2745,10 +3185,14 @@
       });
 
       document.getElementById("travelModeSelect").addEventListener("change", e => {
-        schedule.travelMode = e.target.value === "driving" ? "driving" : "transit";
+        schedule.travelMode = e.target.value;
         schedule.transitCache = {};
         saveSchedule(schedule);
         renderAll();
+      });
+
+      document.getElementById("rentalBtn")?.addEventListener("click", () => {
+        location.href = "./rental.html";
       });
 
       document.getElementById("tripMeetSpotSelect").addEventListener("change", e => {
@@ -2769,13 +3213,43 @@
       document.getElementById("tripDismissAddBtn").addEventListener("click", () => addTripPlaceSpot("dismiss"));
     }
 
-    function addTripPlaceSpot(category) {
+    async function addTripPlaceSpot(category) {
       if (!activeList) return;
       const inputId = category === "meet" ? "tripMeetPlace" : "tripDismissPlace";
       const key = category === "meet" ? "tripMeetPlace" : "tripDismissPlace";
       const input = document.getElementById(inputId);
       const name = input.value.trim();
       if (!name) { input.focus(); return; }
+
+      // 座標検索（Nominatim）
+      let lat = null, lng = null;
+      let spotCategory = "other";
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(name)}&format=json&limit=1`,
+          { headers: { "Accept-Language": "ja" } }
+        );
+        const data = await res.json();
+        if (data.length > 0) {
+          lat = parseFloat(data[0].lat);
+          lng = parseFloat(data[0].lon);
+          const osmCat  = data[0].class || "";
+          const osmType = data[0].type  || "";
+          if (osmCat === "aeroway") spotCategory = "airport";
+          else if (osmCat === "railway" || osmCat === "public_transport") spotCategory = "station";
+          else if (osmCat === "tourism" && ["hotel","hostel","motel","guest_house","chalet","apartment"].includes(osmType)) spotCategory = "hotel";
+          else if (osmCat === "amenity" && ["restaurant","cafe","bar","pub","fast_food","food_court","ice_cream"].includes(osmType)) spotCategory = "restaurant";
+          else if (/空港|airport|エアポート/i.test(name)) spotCategory = "airport";
+          else if (/駅|station/i.test(name)) spotCategory = "station";
+          else if (/ホテル|旅館|宿泊|リゾート|inn\b|hotel/i.test(name)) spotCategory = "hotel";
+          else if (/レストラン|食堂|居酒屋|カフェ|喫茶|ラーメン|寿司|焼肉/i.test(name)) spotCategory = "restaurant";
+        }
+      } catch {}
+
+      if (lat === null || lng === null) {
+        alert(`「${name}」の座標が見つかりませんでした。\nより具体的な名称（例：新千歳空港、東京駅）で入力してください。`);
+        return;
+      }
 
       if (!Array.isArray(activeList.spots)) activeList.spots = [];
       const spot = {
@@ -2784,11 +3258,11 @@
         description: "",
         budget: 0,
         type: "spot",
-        spotCategory: "other",
+        spotCategory,
         spotRole: category,
         spotRoles: [category],
-        lat: null,
-        lng: null,
+        lat,
+        lng,
         sourceType: "manual"
       };
       activeList.spots = activeList.spots.map(s => {
@@ -2804,14 +3278,13 @@
 
     // ── 自動配置 ──────────────────────────────────────────────────
 
-    function pickAutoPlaceDay(spot, fallbackIndex) {
+    function pickAutoPlaceDay(spot) {
       const totalDays = schedule.days.length;
       const candidates = schedule.days
         .map((day, idx) => ({ day, idx, count: (day.entries || []).length }))
         .filter(({ day, idx }) => canPlaceWithinHours(day, idx, totalDays, spot))
         .sort((a, b) => a.count - b.count || a.idx - b.idx);
-      if (candidates.length > 0) return candidates[0].idx;
-      return fallbackIndex % totalDays;
+      return candidates.length > 0 ? candidates[0].idx : null;
     }
 
     document.getElementById("autoPlaceBtn").addEventListener("click", () => {
@@ -2836,21 +3309,38 @@
         alert("配置できるスポットがありません。");
         return;
       }
-      const others      = unscheduled.filter(s => !isMeetSpot(s) && !isDismissSpot(s) && s.spotCategory !== "hotel");
-      others.forEach((spot, i) => {
-        const dayIdx = pickAutoPlaceDay(spot, i);
-        const day    = schedule.days[dayIdx];
+      const others = unscheduled.filter(s => !isMeetSpot(s) && !isDismissSpot(s) && s.spotCategory !== "hotel");
+      // 優先度の高い順（数値が小さいほど高優先、デフォルト3）で配置
+      others.sort((a, b) => (a.priority || 3) - (b.priority || 3));
+      others.forEach(spot => {
+        const dayIdx = pickAutoPlaceDay(spot);
+        if (dayIdx === null) {
+          autoPlaceSkippedNames.push(spot.name);
+          return;
+        }
+        const day = schedule.days[dayIdx];
         if (day.entries.some(en => en.spotId === spot.id)) return;
         day.entries.push({ id: makeId(), spotId: spot.id, time: "", note: "" });
         if (!day.stayTimes) day.stayTimes = {};
         day.stayTimes[spot.id] = (schedule.defaultStayTimes?.[spot.id]) ?? getSpotStayDefault(spot);
       });
+      // 終了時刻を超えるスポットを削除（ホテル到着含む）
       schedule.days.forEach((day, idx) => {
-        const plan = generatePlan(day, idx, schedule.days.length, { strictCapacity: true });
-        if (!plan.skipped.length) return;
-        autoPlaceSkippedNames.push(...plan.skipped);
-        const skippedNames = new Set(plan.skipped);
-        day.entries = (day.entries || []).filter(en => !skippedNames.has(getSpotById(en.spotId)?.name));
+        let maxRetry = (day.entries || []).length + 2;
+        while (maxRetry-- > 0) {
+          const plan = generatePlan(day, idx, schedule.days.length, { strictCapacity: true });
+          const toSkip = [...plan.skipped];
+          // ホテル到着（dismiss）が終了時刻を超えていたら最後のスポットも除去
+          const dismissStep = plan.steps.find(s => s.type === "dismiss");
+          if (dismissStep?.overflow && !toSkip.length) {
+            const lastSpotStep = [...plan.steps].reverse().find(s => s.type === "spot");
+            if (lastSpotStep) toSkip.push(lastSpotStep.name);
+          }
+          if (!toSkip.length) break;
+          autoPlaceSkippedNames.push(...toSkip);
+          const skippedNames = new Set(toSkip);
+          day.entries = (day.entries || []).filter(en => !skippedNames.has(getSpotById(en.spotId)?.name));
+        }
       });
       autoPlaceSkippedNames = [...new Set(autoPlaceSkippedNames)];
       saveSchedule(schedule);
@@ -2902,6 +3392,13 @@
     document.getElementById("dayPickerCancel").addEventListener("click", closeDayPicker);
     document.getElementById("dayPickerOverlay").addEventListener("click", e => {
       if (e.target === e.currentTarget) closeDayPicker();
+    });
+
+    document.getElementById("budgetBreakdownClose").addEventListener("click", () => {
+      document.getElementById("budgetBreakdownOverlay").classList.add("hidden");
+    });
+    document.getElementById("budgetBreakdownOverlay").addEventListener("click", e => {
+      if (e.target === e.currentTarget) document.getElementById("budgetBreakdownOverlay").classList.add("hidden");
     });
 
     // SPOTSリストへのドロップ（配置済みスポットを戻す）

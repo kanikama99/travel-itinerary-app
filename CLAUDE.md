@@ -62,6 +62,45 @@ addMarkerToMap(map, point, placements.get(point.id) || "right");
 
 ---
 
+## ⚠️ スポットメニューの開き方 — ページ遷移禁止
+
+**ルール:** スポットメニューは `spots.html?editSpot=SPOT_ID&embedded=1` を **iframeオーバーレイ** で開くこと。`<a href="./spots.html?editSpot=...">` でページ遷移させてはいけない。
+
+**理由:** ページ遷移するとユーザーが元のページ（旅行計画・スケジュール等）に戻れなくなる。
+
+**正しい実装パターン（schedule.html / tripplan.html 共通）:**
+```html
+<!-- HTML -->
+<div id="sharedSpotMenuOverlay" class="shared-spot-menu-overlay hidden" role="dialog" aria-modal="true">
+  <div class="shared-spot-menu-frame-wrap">
+    <button id="sharedSpotMenuClose" class="shared-spot-menu-close" type="button" aria-label="閉じる">×</button>
+    <iframe id="sharedSpotMenuFrame" class="shared-spot-menu-frame" title="スポットメニュー"></iframe>
+  </div>
+</div>
+```
+```js
+// JS
+function openSpotMenu(spotId) {
+  const overlay = document.getElementById("sharedSpotMenuOverlay");
+  const frame   = document.getElementById("sharedSpotMenuFrame");
+  frame.src = `./spots.html?editSpot=${encodeURIComponent(spotId)}&embedded=1`;
+  overlay.classList.remove("hidden");
+}
+function closeSpotMenu() {
+  document.getElementById("sharedSpotMenuOverlay")?.classList.add("hidden");
+  const frame = document.getElementById("sharedSpotMenuFrame");
+  if (frame) frame.src = "about:blank";
+  // ← ここで画面を再描画してスポット変更を反映
+}
+// postMessage で spots.html 側が "spot-menu-saved" / "spot-menu-closed" を送ってくる
+window.addEventListener("message", event => {
+  if (event.origin !== window.location.origin) return;
+  if (event.data?.type === "spot-menu-saved" || event.data?.type === "spot-menu-closed") closeSpotMenu();
+});
+```
+
+---
+
 ## カレンダーピッカー
 
 - `calendar.js` に共通カスタムカレンダー実装。

@@ -33,7 +33,7 @@
       padding: 4px 12px;
       border-radius: 999px;
       background: var(--accent-soft);
-      border: 1px solid rgba(255, 122, 69, 0.22);
+      border: 1px solid rgb(var(--accent-rgb, 255,122,69) / 0.22);
       font-size: 0.8rem;
       font-weight: 600;
       color: var(--accent-deep);
@@ -128,7 +128,7 @@
       margin-bottom: 14px;
     }
     .hotel-night-form { display: grid; grid-template-columns: 1fr 200px; gap: 12px; align-items: end; }
-    .hotel-night-form--booking { grid-template-columns: 1fr 150px 140px 130px 130px; }
+    .hotel-night-form--booking { grid-template-columns: 1fr 1fr; }
     .hotel-add-spot-option {
       display: inline-flex; align-items: center; gap: 8px;
       margin-top: 10px; font-size: 0.84rem; color: var(--text);
@@ -189,10 +189,8 @@
       .hotel-sites-grid { grid-template-columns: 1fr 1fr; }
       .hotel-night-form { grid-template-columns: 1fr; }
       .hotel-night-form--booking { grid-template-columns: 1fr 1fr; }
-    }
-    @media (min-width: 601px) and (max-width: 760px) {
-      .hotel-night-form--booking { grid-template-columns: 1fr 1fr 1fr; }
-    }
+      .hotel-night-form--booking .hotel-field--full { grid-column: 1 / -1; }
+}
     @media (min-width: 601px) and (max-width: 760px) {
       .hotel-sites-grid { grid-template-columns: 1fr 1fr; }
     }
@@ -200,21 +198,18 @@
 </head>
 <body>
   <div class="hotel-shell">
-    <header>
-      <p class="hotel-eyebrow">Hotel Search</p>
-      <h1 class="hotel-title">ホテルを見つける</h1>
-      <div class="hotel-list-badge">
-        <span>📒</span>
-        <span id="listNameBadge">—</span>
+    <header class="hero">
+      <div class="hero-copy-wrap">
+        <p class="eyebrow">Hotel Search</p>
+        <h1>ホテルを見つける</h1>
+        <p class="hero-copy">エリアと日程を入力して各サイトで検索できます。スケジュールページで日程を設定しておくと日付が自動入力されます。</p>
+        <div class="hotel-list-badge">
+          <span>📒</span>
+          <span id="listNameBadge">—</span>
+        </div>
       </div>
     </header>
-    <nav class="page-nav-bar page-nav-bar--start">
-      <a href="./schedule.html" class="page-nav-bar-btn page-nav-bar-btn--prev">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-        スケジュール
-      </a>
-    </nav>
-
+    
     <!-- 夜別登録カード（スケジュールページの宿泊先ボタンから遷移した時に表示） -->
     <div id="nightRegistrationCard" class="hotel-night-card hidden">
       <p class="hotel-card-kicker">Night Registration — この夜の宿泊先を登録</p>
@@ -229,16 +224,20 @@
           <input id="hotelBudgetInput" class="hotel-input" type="number" min="0" step="500" placeholder="例：12000" />
         </div>
         <div class="hotel-field">
+          <label class="hotel-field-label" for="hotelCheckinDateInput">チェックイン日</label>
+          <input id="hotelCheckinDateInput" class="hotel-input" type="date" data-cal />
+        </div>
+        <div class="hotel-field">
+          <label class="hotel-field-label" for="hotelCheckinTimeInput">チェックイン予定時刻</label>
+          <input id="hotelCheckinTimeInput" class="hotel-input" type="time" step="300" value="18:00" />
+        </div>
+        <div class="hotel-field">
           <label class="hotel-field-label" for="hotelCheckoutDateInput">チェックアウト日</label>
           <input id="hotelCheckoutDateInput" class="hotel-input" type="date" data-cal />
         </div>
         <div class="hotel-field">
-          <label class="hotel-field-label" for="hotelCheckinTimeInput">チェックイン予定時刻</label>
-          <input id="hotelCheckinTimeInput" class="hotel-input" type="time" step="900" value="18:00" />
-        </div>
-        <div class="hotel-field">
           <label class="hotel-field-label" for="hotelCheckoutTimeInput">チェックアウト予定時刻</label>
-          <input id="hotelCheckoutTimeInput" class="hotel-input" type="time" step="900" value="09:00" />
+          <input id="hotelCheckoutTimeInput" class="hotel-input" type="time" step="300" value="09:00" />
         </div>
       </div>
       <label class="hotel-add-spot-option">
@@ -335,6 +334,13 @@
 
   </div>
 
+  <nav class="page-nav-bar page-nav-bar--start">
+      <a href="./schedule.html" class="page-nav-bar-btn page-nav-bar-btn--prev">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        スケジュール
+      </a>
+    </nav>
+
   <button id="hamburgerBtn" class="hamburger-btn" type="button" aria-label="メニューを開く">
     <span class="hamburger-line"></span>
     <span class="hamburger-line"></span>
@@ -351,33 +357,9 @@
         <span class="drawer-nav-icon">📒</span>
         <span>しおりを選ぶ</span>
       </a>
-      <a href="./spots.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">📍</span>
-        <span>行きたい場所</span>
-      </a>
-      <a href="./tripplan.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">📝</span>
-        <span>旅行計画</span>
-      </a>
-      <a href="./schedule.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">📅</span>
-        <span>スケジュール</span>
-      </a>
       <a href="./hotel.html" class="drawer-nav-item drawer-nav-item--active">
         <span class="drawer-nav-icon">🏨</span>
         <span>ホテルを見つける</span>
-      </a>
-      <a href="./tour.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">🗺</span>
-        <span>ツアーを見つける</span>
-      </a>
-      <a href="./checklist.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">📋</span>
-        <span>持ち物リスト</span>
-      </a>
-      <a href="./print.html" class="drawer-nav-item">
-        <span class="drawer-nav-icon">🖨</span>
-        <span>印刷する</span>
       </a>
       <a href="./howto.html" class="drawer-nav-item"><span class="drawer-nav-icon">❔</span><span>使い方</span></a><a href="./settings.html" class="drawer-nav-item">
         <span class="drawer-nav-icon">⚙</span>
@@ -843,7 +825,9 @@
       if (checkin && checkout) label += "  →  ";
       if (checkout)           label += `チェックアウト ${fmtDate(checkout)}`;
       dateLabel.textContent = label;
+      const checkinDateInput  = document.getElementById("hotelCheckinDateInput");
       const checkoutDateInput = document.getElementById("hotelCheckoutDateInput");
+      if (checkinDateInput)  checkinDateInput.value  = checkin  || "";
       if (checkoutDateInput) checkoutDateInput.value = checkout || "";
 
       // 既存データがあれば復元、なければスケジュールの日程から時刻を取得
@@ -860,7 +844,9 @@
           if (existing) {
             document.getElementById("hotelNameInput").value   = existing.name   || "";
             document.getElementById("hotelBudgetInput").value = existing.pricePerPerson || existing.budget || "";
-            if (existing.checkout && checkoutDateInput) checkoutDateInput.value = existing.checkout;
+            // URLパラメータで日付が指定されている場合はそちらを優先する（引き継ぎ後の編集でも正しい日付を維持）
+            if (!checkin  && existing.checkin  && checkinDateInput)  checkinDateInput.value  = existing.checkin;
+            if (!checkout && existing.checkout && checkoutDateInput) checkoutDateInput.value = existing.checkout;
             document.getElementById("hotelCheckinTimeInput").value = existing.checkinTime || "18:00";
             document.getElementById("hotelCheckoutTimeInput").value = existing.checkoutTime || "09:00";
             if (existing.lat && existing.lng) {
@@ -881,13 +867,15 @@
       } catch {}
 
       function refreshNightDateLabel() {
+        const cin = checkinDateInput?.value  || checkin  || "";
         const out = checkoutDateInput?.value || checkout || "";
         let nextLabel = "";
-        if (checkin) nextLabel += `チェックイン ${fmtDate(checkin)}`;
-        if (checkin && out) nextLabel += "  →  ";
+        if (cin) nextLabel += `チェックイン ${fmtDate(cin)}`;
+        if (cin && out) nextLabel += "  →  ";
         if (out) nextLabel += `チェックアウト ${fmtDate(out)}`;
         dateLabel.textContent = nextLabel;
       }
+      checkinDateInput?.addEventListener("change",  refreshNightDateLabel);
       checkoutDateInput?.addEventListener("change", refreshNightDateLabel);
       refreshNightDateLabel();
 
@@ -918,6 +906,7 @@
       document.getElementById("saveNightBtn").addEventListener("click", async () => {
         const name   = nameInput.value.trim();
         const pricePerPerson = parseInt(document.getElementById("hotelBudgetInput").value) || 0;
+        const selectedCheckin  = document.getElementById("hotelCheckinDateInput")?.value  || checkin  || "";
         const selectedCheckout = document.getElementById("hotelCheckoutDateInput")?.value || checkout || "";
         const checkinTime = document.getElementById("hotelCheckinTimeInput").value || "";
         const checkoutTime = document.getElementById("hotelCheckoutTimeInput").value || "";
@@ -948,8 +937,8 @@
           const dayIdx = days.findIndex(d => d.id === nightId);
           const maxNights = dayIdx >= 0 ? Math.max(1, days.length - dayIdx - 1) : 1;
           let requestedNights = 1;
-          if (checkin && selectedCheckout) {
-            const start = new Date(`${checkin}T00:00:00`);
+          if (selectedCheckin && selectedCheckout) {
+            const start = new Date(`${selectedCheckin}T00:00:00`);
             const end = new Date(`${selectedCheckout}T00:00:00`);
             const diff = Math.round((end - start) / 86400000);
             requestedNights = diff > 0 ? diff : 1;
@@ -966,8 +955,8 @@
             nights,
             checkinTime,
             checkoutTime,
-            checkin:  checkin  || null,
-            checkout: selectedCheckout || checkout || null,
+            checkin:  selectedCheckin  || null,
+            checkout: selectedCheckout || null,
             // affiliateProvider: null,  // 例: "booking" / "jalan" / "rakuten"
             // affiliateUrl: null,       // アフィリエイトリンクURL
           };
@@ -978,7 +967,7 @@
             all[activeList.id].hotels[targetNightId] = {
               ...hotelData,
               sourceNightId: nightId,
-              checkin: targetDay?.date || checkin || null,
+              checkin: targetDay?.date || selectedCheckin || null,
               checkout: offset === nights - 1 ? (selectedCheckout || targetCheckout) : targetCheckout,
             };
           }
