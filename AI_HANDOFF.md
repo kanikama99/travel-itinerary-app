@@ -19,6 +19,15 @@ Shared notes for Claude / Codex agents working on this repo.
 
 ## Recent Work Log
 
+### 2026-05-06 Codex airport stay/check-in linkage
+
+- Updated airport spot handling in `spots.html`, `app.js`, `schedule.html`, and `styles.css`.
+  - Airport spot stay time is now read-only in the spot menu with a note explaining that it is the time between takeoff and scheduled check-in.
+  - Airport check-in offset defaults to 90 minutes, and when takeoff is present with no explicit check-in time, check-in is filled as takeoff minus 90 minutes.
+  - Saving an airport stores `defaultStayMinutes` from takeoff/check-in, and schedule airport-stay rows use that same derived duration.
+  - Schedule-side airport stay inputs for return-flight rows are disabled because they are now derived from the airport spot settings.
+- Checks: `spots.html` and `schedule.html` inline scripts parse OK; `app.js` parses OK; mojibake scan OK for touched files.
+
 ### 2026-05-06 Codex mobile area suggestions
 
 - Updated the mobile layout for the "エリアからキーワードを提案" panel on `spots.html`.

@@ -327,13 +327,15 @@ spotCategorySelect.addEventListener("change", () => {
   } else {
     spotCategoryAddForm.classList.add("hidden");
     updateSpotCategoryFields(spotCategorySelect.value, null);
-    const stayParts = splitSpotDuration(defaultStayMinutesForCategory(spotCategorySelect.value));
+    const isAirport = spotCategorySelect.value === "airport";
+    const stayParts = splitSpotDuration(isAirport ? syncAirportStayInputs() : defaultStayMinutesForCategory(spotCategorySelect.value));
     const stayHoursInput = document.getElementById("spotStayHoursInput");
     const stayMinutesInput = document.getElementById("spotStayMinutesInput");
     if (stayHoursInput && stayMinutesInput) {
       stayHoursInput.value = stayParts.hours;
       stayMinutesInput.value = stayParts.minutes;
     }
+    setStayInputsForCategory(spotCategorySelect.value);
   }
 });
 
@@ -343,6 +345,11 @@ spotCategoryNewName.addEventListener("keydown", (e) => {
 });
 
 setupBusinessHoursControls();
+["spotTakeoffTime", "spotAirportCheckinTime", "spotAirportCheckinOffset"].forEach(id => {
+  document.getElementById(id)?.addEventListener("change", () => {
+    if (spotCategorySelect?.value === "airport") syncAirportStayInputs();
+  });
+});
 
 if (areaSuggestToggle) areaSuggestToggle.addEventListener("click", toggleAreaSuggestPanel);
 if (areaSuggestSearchBtn) areaSuggestSearchBtn.addEventListener("click", handleAreaSuggest);
@@ -783,6 +790,60 @@ function defaultStayMinutesForCategory(category) {
 function splitSpotDuration(value) {
   const mins = Math.max(0, Number(value) || 0);
   return { hours: Math.floor(mins / 60), minutes: mins % 60 };
+}
+
+function spotTimeToMinutes(value) {
+  const m = String(value || "").match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  return Math.min(23 * 60 + 59, Math.max(0, Number(m[1]) * 60 + Number(m[2])));
+}
+
+function spotMinutesToTime(value) {
+  const mins = Math.max(0, Math.min(23 * 60 + 59, Math.round(Number(value) || 0)));
+  return `${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}`;
+}
+
+function getAirportStayMinutesFromTimes(takeoffTime, checkinTime, offsetMin = 90) {
+  const takeoff = spotTimeToMinutes(takeoffTime);
+  if (takeoff === null) return Math.max(0, Number(offsetMin) || 90);
+  const checkin = spotTimeToMinutes(checkinTime);
+  if (checkin !== null && checkin <= takeoff) return Math.max(0, takeoff - checkin);
+  return Math.max(0, Number(offsetMin) || 90);
+}
+
+function syncAirportStayInputs() {
+  const stayHoursInput = document.getElementById("spotStayHoursInput");
+  const stayMinutesInput = document.getElementById("spotStayMinutesInput");
+  const takeoffInput = document.getElementById("spotTakeoffTime");
+  const checkinInput = document.getElementById("spotAirportCheckinTime");
+  const offsetInput = document.getElementById("spotAirportCheckinOffset");
+  const takeoff = spotTimeToMinutes(takeoffInput?.value);
+  const offset = Math.max(0, parseInt(offsetInput?.value, 10) || 90);
+  if (offsetInput && !offsetInput.value) offsetInput.value = String(offset);
+  if (takeoff !== null && checkinInput && !checkinInput.value) {
+    checkinInput.value = spotMinutesToTime(Math.max(0, takeoff - offset));
+  }
+  const stay = getAirportStayMinutesFromTimes(takeoffInput?.value, checkinInput?.value, offset);
+  const parts = splitSpotDuration(stay);
+  if (stayHoursInput) stayHoursInput.value = parts.hours;
+  if (stayMinutesInput) stayMinutesInput.value = parts.minutes;
+  return stay;
+}
+
+function setStayInputsForCategory(category) {
+  const isAirport = category === "airport";
+  const stayHoursInput = document.getElementById("spotStayHoursInput");
+  const stayMinutesInput = document.getElementById("spotStayMinutesInput");
+  const stayRow = document.querySelector(".spot-duration-row");
+  const airportStayNote = document.getElementById("spotAirportStayNote");
+  [stayHoursInput, stayMinutesInput].forEach(input => {
+    if (!input) return;
+    input.disabled = isAirport;
+    input.readOnly = isAirport;
+  });
+  stayRow?.classList.toggle("is-readonly", isAirport);
+  airportStayNote?.classList.toggle("hidden", !isAirport);
+  if (isAirport) syncAirportStayInputs();
 }
 
 function readSpotDurationMinutes() {
@@ -1257,14 +1318,25 @@ function updateSpotCategoryFields(cat, spot) {
     const el = id => document.getElementById(id);
     if (el("spotTakeoffTime"))          el("spotTakeoffTime").value          = spot.takeoffTime          || "";
     if (el("spotLandingTime"))          el("spotLandingTime").value          = spot.landingTime          || "";
-    if (el("spotAirportCheckinTime"))   el("spotAirportCheckinTime").value   = spot.airportCheckinTime   || "";
-    if (el("spotAirportCheckinOffset")) el("spotAirportCheckinOffset").value = spot.airportCheckinOffsetMin || "";
+    if (el("spotAirportCheckinOffset")) el("spotAirportCheckinOffset").value = spot.airportCheckinOffsetMin || 90;
+    if (el("spotAirportCheckinTime")) {
+      el("spotAirportCheckinTime").value = spot.airportCheckinTime || "";
+      if (!el("spotAirportCheckinTime").value && spot.takeoffTime) {
+        el("spotAirportCheckinTime").value = spotMinutesToTime(Math.max(0, spotTimeToMinutes(spot.takeoffTime) - (Number(spot.airportCheckinOffsetMin) || 90)));
+      }
+    }
+    syncAirportStayInputs();
+  } else if (cat === "airport") {
+    const el = id => document.getElementById(id);
+    if (el("spotAirportCheckinOffset") && !el("spotAirportCheckinOffset").value) el("spotAirportCheckinOffset").value = "90";
+    syncAirportStayInputs();
   }
   if (cat === "hotel" && spot) {
     const el = id => document.getElementById(id);
     if (el("spotHotelCheckinTime"))  el("spotHotelCheckinTime").value  = spot.hotelCheckinTime  || "";
     if (el("spotHotelCheckoutTime")) el("spotHotelCheckoutTime").value = spot.hotelCheckoutTime || "";
   }
+  setStayInputsForCategory(cat);
 }
 
 function addCategoryFromSpotMenu() {
@@ -1362,13 +1434,19 @@ function saveSpotDescription() {
 
   // カテゴリ固有フィールド
   const extraFields = {};
+  let nextDefaultStayMinutes = readSpotDurationMinutes();
   if (newCategory === "airport") {
     const g = id => document.getElementById(id);
     extraFields.takeoffTime          = g("spotTakeoffTime")?.value          || null;
     extraFields.landingTime          = g("spotLandingTime")?.value          || null;
+    if (!g("spotAirportCheckinTime")?.value && extraFields.takeoffTime) {
+      const offForDefault = parseInt(g("spotAirportCheckinOffset")?.value, 10) || 90;
+      g("spotAirportCheckinTime").value = spotMinutesToTime(Math.max(0, spotTimeToMinutes(extraFields.takeoffTime) - offForDefault));
+    }
     extraFields.airportCheckinTime   = g("spotAirportCheckinTime")?.value   || null;
     const off = parseInt(g("spotAirportCheckinOffset")?.value);
-    extraFields.airportCheckinOffsetMin = Number.isFinite(off) && off > 0 ? off : null;
+    extraFields.airportCheckinOffsetMin = Number.isFinite(off) && off > 0 ? off : 90;
+    nextDefaultStayMinutes = syncAirportStayInputs();
   }
   if (newCategory === "hotel") {
     const g = id => document.getElementById(id);
@@ -1386,7 +1464,7 @@ function saveSpotDescription() {
     spotRole: newRoles[0] || "",
     spotRoles: newRoles,
     priority: parseInt(document.getElementById("spotPriorityInput")?.value) || 3,
-    defaultStayMinutes: readSpotDurationMinutes(),
+    defaultStayMinutes: nextDefaultStayMinutes,
     businessHours: Object.keys(businessHours).length > 0 ? businessHours : null,
     ...extraFields,
   };

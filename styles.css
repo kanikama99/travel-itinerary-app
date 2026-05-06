@@ -1539,6 +1539,17 @@ textarea:focus {
   flex-wrap: wrap;
 }
 
+.spot-airport-stay-note {
+  margin: 4px 0 8px;
+  line-height: 1.55;
+}
+
+.spot-duration-row.is-readonly input {
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.45);
+  cursor: not-allowed;
+}
+
 .spot-time-field {
   padding: 5px 8px;
   border-radius: 8px;

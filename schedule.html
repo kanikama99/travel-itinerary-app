@@ -1268,6 +1268,23 @@
       return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
     }
 
+    function getAirportStayMinutes(airportSpot, flight = null, fallback = 90) {
+      const takeoffTime = flight?.time || airportSpot?.takeoffTime || "";
+      const takeoffT = takeoffTime ? timeToMinutes(takeoffTime) : null;
+      if (takeoffT === null) {
+        const saved = Number(airportSpot?.defaultStayMinutes);
+        return Number.isFinite(saved) && saved > 0 ? saved : fallback;
+      }
+      if (airportSpot?.airportCheckinTime) {
+        const checkinT = timeToMinutes(airportSpot.airportCheckinTime);
+        if (checkinT !== null && checkinT <= takeoffT) return Math.max(0, takeoffT - checkinT);
+      }
+      const off = Number(airportSpot?.airportCheckinOffsetMin);
+      if (Number.isFinite(off) && off > 0) return off;
+      const saved = Number(airportSpot?.defaultStayMinutes);
+      return Number.isFinite(saved) && saved > 0 ? saved : fallback;
+    }
+
     // ── カテゴリ補助 ───────────────────────────────────────────────
 
     const CAT_EMOJI = {
@@ -1896,7 +1913,7 @@
         dismissName = dismissSpot?.name || schedule.tripDismissPlace || "解散場所";
         // 解散場所が空港＋フライト登録済みの場合: 離陸時刻 - 空港滞在時間 をendTimeに
         if (dismissFlightForDay?.time) {
-            const _stayMin = schedule.dismissAirportStayMin ?? 90;
+            const _stayMin = getAirportStayMinutes(dismissFlightDepartureSpot || dismissSpot, dismissFlightForDay, 90);
             const _target  = timeToMinutes(dismissFlightForDay.time) - _stayMin;
             if (_target < timeToMinutes(endTime)) endTime = minutesToTime(_target);
         }
@@ -1918,7 +1935,7 @@
           deadlineT = timeToMinutes(meetSpot.airportCheckinTime);
           meetAirportCheckinDeadlineStr = meetSpot.airportCheckinTime;
         } else if (meetFlight?.time) {
-          const off = meetSpot.airportCheckinOffsetMin || 0;
+          const off = meetSpot.airportCheckinOffsetMin || 90;
           deadlineT = timeToMinutes(meetFlight.time) - off;
           meetAirportCheckinDeadlineStr = minutesToTime(deadlineT);
         }
@@ -1940,9 +1957,9 @@
       if (meetFlight || implicitMeetArrivalSpot) {
         const departT = meetFlight?.time ? timeToMinutes(meetFlight.time) : t;
         const arriveT = meetFlight?.arrivalTime ? timeToMinutes(meetFlight.arrivalTime) : departT;
-        const meetStayMin = schedule.meetAirportStayMin ?? (Math.max(0, departT - t) || 90);
+        const meetStayMin = getAirportStayMinutes(meetSpot, meetFlight, Math.max(0, departT - t) || 90);
         if (meetSpot?.spotCategory === "airport") {
-          steps.push({ type: "airportStay", duration: meetStayMin, role: "meet", airport: meetSpot, editable: true });
+          steps.push({ type: "airportStay", duration: meetStayMin, role: "meet", airport: meetSpot, editable: false });
         }
         if (meetFlight) {
           steps.push({
@@ -2074,7 +2091,7 @@
           deadlineT = timeToMinutes(checkinSpot.airportCheckinTime);
           dismissAirportCheckinDeadlineStr = checkinSpot.airportCheckinTime;
         } else if (dismissFlight?.time) {
-          const off = checkinSpot.airportCheckinOffsetMin || 0;
+          const off = checkinSpot.airportCheckinOffsetMin || 90;
           deadlineT = timeToMinutes(dismissFlight.time) - off;
           dismissAirportCheckinDeadlineStr = minutesToTime(deadlineT);
         }
@@ -2093,7 +2110,7 @@
         airportCheckinWarning: dismissAirportCheckinWarning,
         airportCheckinDeadlineStr: dismissAirportCheckinDeadlineStr,
         dismissFlight: isLast ? (dismissFlight || null) : null,
-        dismissAirportStayMin: (isLast && dismissFlight) ? (schedule.dismissAirportStayMin ?? 90) : null,
+        dismissAirportStayMin: (isLast && dismissFlight) ? getAirportStayMinutes(dismissFlightDepartureSpot || dismissSpot, dismissFlight, 90) : null,
       });
 
       return { steps, skipped };
@@ -2519,10 +2536,10 @@
       if (checkinSpot.airportCheckinTime) {
         checkinT = timeToMinutes(checkinSpot.airportCheckinTime);
       } else {
-        const off = checkinSpot.airportCheckinOffsetMin || 0;
+        const off = checkinSpot.airportCheckinOffsetMin || 90;
         checkinT = timeToMinutes(flight.time) - off;
       }
-      const stayStartT = timeToMinutes(flight.time) - (schedule.dismissAirportStayMin ?? 90);
+      const stayStartT = timeToMinutes(flight.time) - getAirportStayMinutes(departureSpot || dismissSpot, flight, 90);
       return Math.min(checkinT, stayStartT);
     }
 
@@ -2596,7 +2613,7 @@
       const target = getFlightDepartureSpot(flight) || getTripSideAirport(day, "dismiss") || dismissSpot;
       const fromSpot = schedule.hotels?.[schedule.days[dayIdx - 1]?.id] || null;
       const travelDuration = estimateScheduleTravelDuration(fromSpot, target, day.travelMinutes || 20);
-      const stayMin = schedule.dismissAirportStayMin ?? 90;
+      const stayMin = getAirportStayMinutes(target, flight, 90);
       return Math.max(0, timeToMinutes(flight.time) - stayMin - travelDuration);
     }
 
@@ -3665,7 +3682,8 @@
           stayInput.step = "5";
           stayInput.value = String(stayMin);
           stayInput.className = "tl-manual-mins";
-          stayInput.title = "空港での滞在時間（分）";
+          stayInput.disabled = true;
+          stayInput.title = "スポットメニューの離陸予定時刻とチェックイン予定時刻から自動計算されます";
           const stayUnit = document.createElement("span");
           stayUnit.className = "tl-mins-label";
           stayUnit.textContent = "分";
@@ -3676,13 +3694,6 @@
           stayRow.appendChild(stayLeft);
           stayRow.appendChild(stayRight);
           wrap.appendChild(stayRow);
-          stayInput.addEventListener("change", () => {
-            const v = Math.max(5, Math.min(360, Number(stayInput.value) || 90));
-            stayInput.value = String(v);
-            schedule.dismissAirportStayMin = v;
-            saveSchedule(schedule);
-            renderAll();
-          });
 
           // 離陸行
           const deptRow = document.createElement("div");
