@@ -19,6 +19,12 @@ Shared notes for Claude / Codex agents working on this repo.
 
 ## Recent Work Log
 
+### 2026-05-06 Codex sandbox auto-push rule
+
+- Updated `AGENTS.md` and `CLAUDE.md` so AI agents may automatically commit and push completed, checked work on the `sandbox` branch without asking for extra approval every time.
+- Other branches still require explicit user approval for commit/push unless the user says otherwise.
+- `.gitignore` contains `.env` and `__pycache__/`; it should be tracked because it defines repo-wide ignore rules.
+
 ### 2026-05-06 Codex schedule airport auto-placement
 
 - Updated `schedule.html` auto-placement for return flights.

@@ -9,7 +9,9 @@ Use this workflow for Claude Code, Codex, Codespaces, and local PC work.
 - If there are uncommitted changes, do not run `pull`, `stash`, `merge`, `reset`, or checkout another branch without asking the user first.
 - Do not push directly to `develop` unless the user explicitly asks. Treat `develop` as the branch for reviewed/stable changes.
 - Prefer working in `sandbox` or a short-lived branch from `develop`.
-- Before switching devices or handing work to another AI, commit and push the current work when the user has approved commit/push.
+- On the `sandbox` branch, after requested work is complete and relevant checks pass, AI agents may commit and push to `origin/sandbox` without asking for an extra approval each time.
+- Before switching devices or handing work to another AI, commit and push the current `sandbox` work after checks pass.
+- On branches other than `sandbox`, commit/push still requires an explicit user request unless the user says otherwise.
 - Before committing, review `git diff` and run the relevant syntax checks/tests for the touched files.
 - Before pushing, run `git pull --ff-only`; if it fails or reports divergence/conflict, stop and ask the user.
 - Use clear commit messages that describe the user-visible change.
