@@ -271,6 +271,26 @@ Shared notes for Claude / Codex agents working on this repo.
   - 離陸行: フライト情報ボタン + 警告
 - `.tl-airport-arrive-label` CSS 追加
 
+### 2026-05-06 Claude スケジュール・印刷ページ改修
+
+**スケジュールページ (schedule.html)**
+- **2日目以降のホテル出発時刻**: `generatePlan` で非初日の `startTime` 計算を変更。`day.startTime` 未設定時、前泊ホテルの `checkoutTime` を使用（なければ従来通り09:00）。ホテルチェックアウト時刻が遅い場合にタイムラインが正しい出発時刻を表示する。
+- **解散空港チェックイン締め切りチェック**: `getDismissAirportCheckinDeadline(dayIdx)` と `checkDismissAirportDeadline(dayIdx, spot)` を追加。最終日に解散空港＋フライト登録済みの場合、スポットをドロップまたは日程ピッカーで追加する際に締め切り超過をアラートでエラー表示。
+
+**印刷ページ (print.html)**
+- **別の場所クリックで選択解除**: `#book` に click ハンドラを追加。`.print-element` `.cover-layer` 以外をクリックすると選択解除。
+- **オブジェクト分離**: 
+  - 地図ページ: タイトル (`map-title` print-element) と各マップカード (`map-card-N` print-element) を分離。
+  - スポット写真・紹介: タイトル (`spots-title`) と各スポット (`spot-{id}`) を別 print-element に分離。
+  - 持ち物リスト: タイトル (`packing-title`) とリスト (`packing-list`) を別 print-element に分離。
+- **新規ページ追加**: ツールバーに「新規ページ追加」ボタン。クリックでタイトル入力→カスタムページを追加。
+- **ページ並び替え**: ツールバーにページ順序チップ列を追加。ドラッグで並び替え可能。カスタムページは×ボタンで削除。ページ順序は `cover.pageOrder`、カスタムページは `cover.customPages` に保存。
+
+**確認したこと**
+- `schedule.html` / `print.html` インラインスクリプト構文チェック OK。
+- 文字化けパターン検索 OK。
+- HTTP 200 確認済み。
+
 ## Next Things To Watch
 
 ### 2026-05-06 Codex 追記（営業時間・空港・チェックリスト）
