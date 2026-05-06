@@ -52,6 +52,7 @@
     }
     .item:hover { background: rgba(255,255,255,0.5); }
     .item.dragging { opacity: 0.4; }
+    .item.drag-over { outline: 2px solid var(--accent); outline-offset: 2px; }
     .item-name { word-break: keep-all; overflow-wrap: normal; }
     .delete-item {
       border: 0; border-radius: 999px;
@@ -78,13 +79,15 @@
         <nav class="progress-steps" aria-label="ステップ">
           <a href="./spots.html" class="progress-step">①行きたい場所</a>
           <span class="progress-sep">›</span>
-          <a href="./tripplan.html" class="progress-step">②優先順位入力</a>
+          <a href="./tripplan.html" class="progress-step">②スポット詳細入力</a>
           <span class="progress-sep">›</span>
           <a href="./schedule.html" class="progress-step">③スケジュール</a>
           <span class="progress-sep">›</span>
           <strong class="progress-step progress-step--current">④持ち物リスト</strong>
           <span class="progress-sep">›</span>
-          <a href="./print.html" class="progress-step">⑤印刷する</a>
+          <a href="./travelchecklist.html" class="progress-step">⑤チェックリスト</a>
+          <span class="progress-sep">›</span>
+          <a href="./print.html" class="progress-step">⑥印刷する</a>
         </nav>
       </div>
     </header>
@@ -104,8 +107,8 @@
       <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
       スケジュール
     </a>
-    <a href="./print.html" class="page-nav-bar-btn page-nav-bar-btn--next">
-      印刷する
+    <a href="./travelchecklist.html" class="page-nav-bar-btn page-nav-bar-btn--next">
+      チェックリスト
       <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
     </a>
   </nav>
@@ -415,6 +418,29 @@
             row.classList.remove("dragging");
             dragState = null;
           });
+          row.addEventListener("dragover", e => {
+            if (!dragState) return;
+            e.preventDefault();
+            e.stopPropagation();
+            row.classList.add("drag-over");
+          });
+          row.addEventListener("dragleave", e => {
+            if (!row.contains(e.relatedTarget)) row.classList.remove("drag-over");
+          });
+          row.addEventListener("drop", e => {
+            e.preventDefault();
+            e.stopPropagation();
+            row.classList.remove("drag-over");
+            if (!dragState) return;
+            const { groupIdx: fromGi, itemIdx: fromIi } = dragState;
+            const [moved] = d[fromGi].items.splice(fromIi, 1);
+            let insertAt = ii;
+            if (fromGi === gi && fromIi < ii) insertAt -= 1;
+            d[gi].items.splice(Math.max(0, insertAt), 0, moved);
+            dragState = null;
+            save(d);
+            render(d);
+          });
 
           card.appendChild(row);
         });
@@ -433,7 +459,7 @@
           card.classList.remove("drag-over");
           if (!dragState) return;
           const { groupIdx: fromGi, itemIdx: fromIi } = dragState;
-          if (fromGi === gi) return; // 同じカード内は無視
+          if (fromGi === gi) return; // 同じカード内の並べ替えは行の上で処理
           const [moved] = d[fromGi].items.splice(fromIi, 1);
           d[gi].items.push(moved);
           dragState = null;

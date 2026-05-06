@@ -184,6 +184,15 @@
       text-align: right;
     }
 
+    .hotel-overseas-toggle {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-bottom: 12px; font-size: 0.85rem; font-weight: 600;
+      color: var(--accent-deep); cursor: pointer; user-select: none;
+    }
+    .hotel-overseas-toggle input[type="checkbox"] {
+      width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent);
+    }
+
     @media (max-width: 600px) {
       .hotel-search-grid { grid-template-columns: 1fr; }
       .hotel-sites-grid { grid-template-columns: 1fr 1fr; }
@@ -283,6 +292,10 @@
           <input id="hotelBudgetMax" class="hotel-input" type="number" min="0" step="500" placeholder="例：15000" />
         </div>
       </div>
+      <label class="hotel-overseas-toggle">
+        <input type="checkbox" id="hotelOverseasCheck" />
+        <span>海外のホテルを探す</span>
+      </label>
       <div class="hotel-sites-grid">
         <button class="hotel-site-btn" type="button" onclick="searchBooking()">
           <div class="hotel-site-icon">🏨</div>
@@ -291,14 +304,21 @@
             <div class="hotel-site-desc">海外対応・格安多数</div>
           </div>
         </button>
-        <button class="hotel-site-btn" type="button" onclick="searchJalan()">
+        <button id="agodaBtn" class="hotel-site-btn hidden" type="button" onclick="searchAgoda()">
+          <div class="hotel-site-icon">🌐</div>
+          <div>
+            <div class="hotel-site-name">Agoda</div>
+            <div class="hotel-site-desc">アジア・海外に強い</div>
+          </div>
+        </button>
+        <button id="jalanBtn" class="hotel-site-btn" type="button" onclick="searchJalan()">
           <div class="hotel-site-icon">🌸</div>
           <div>
             <div class="hotel-site-name">じゃらん</div>
             <div class="hotel-site-desc">国内旅行に強い</div>
           </div>
         </button>
-        <button class="hotel-site-btn" type="button" onclick="searchRakuten()">
+        <button id="rakutenBtn" class="hotel-site-btn" type="button" onclick="searchRakuten()">
           <div class="hotel-site-icon">🛍</div>
           <div>
             <div class="hotel-site-name">楽天トラベル</div>
@@ -624,6 +644,18 @@
       submitGetForm("https://www.jalan.net/uw/uwp2011/uww2011init.do", params, "Shift_JIS");
     }
 
+    function searchAgoda() {
+      const opts = getSearchOptions();
+      const url = new URL("https://www.agoda.com/search");
+      url.searchParams.set("city", opts.area);
+      url.searchParams.set("lang", "ja-jp");
+      url.searchParams.set("adults", opts.adults);
+      url.searchParams.set("rooms", opts.rooms);
+      if (opts.checkin)  url.searchParams.set("checkIn",  opts.checkin);
+      if (opts.checkout) url.searchParams.set("checkOut", opts.checkout);
+      window.open(url.toString(), "_blank");
+    }
+
     function searchRakuten() {
       const opts = getSearchOptions();
       const params = {
@@ -897,7 +929,7 @@
             currentGeo = result;
             geoStatus.textContent = `📍 座標取得: ${result.display.split(",")[0]}`;
           } else {
-            geoStatus.textContent = "⚠ 座標が見つかりませんでした（保存は可能です）";
+            geoStatus.textContent = "⚠ 座標が見つかりませんでした。ホテル名を確認してください。";
           }
         }, 600);
       });
@@ -922,6 +954,11 @@
         if (!currentGeo) {
           geoStatus.textContent = "📡 座標を取得中...";
           currentGeo = await geocodeHotelName(name);
+        }
+
+        if (!currentGeo) {
+          geoStatus.textContent = "⚠ 座標が見つかりませんでした。ホテル名を確認してから再度お試しください。";
+          return;
         }
 
         try {
@@ -1032,6 +1069,23 @@
       drawerBackdrop.classList.add("hidden");
       sideDrawer.setAttribute("aria-hidden", "true");
     });
+
+    // 海外トグル：じゃらん/楽天 ↔ Agoda 切り替え
+    (function () {
+      const check = document.getElementById("hotelOverseasCheck");
+      const agodaBtn   = document.getElementById("agodaBtn");
+      const jalanBtn   = document.getElementById("jalanBtn");
+      const rakutenBtn = document.getElementById("rakutenBtn");
+      if (!check) return;
+      function applyOverseas() {
+        const overseas = check.checked;
+        agodaBtn.classList.toggle("hidden", !overseas);
+        jalanBtn.classList.toggle("hidden",  overseas);
+        rakutenBtn.classList.toggle("hidden", overseas);
+      }
+      check.addEventListener("change", applyOverseas);
+      applyOverseas();
+    })();
 
     init();
     initNightRegistration();

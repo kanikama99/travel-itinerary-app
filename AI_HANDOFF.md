@@ -19,6 +19,16 @@ Shared notes for Claude / Codex agents working on this repo.
 
 ## Recent Work Log
 
+### 2026-05-06 Codex airport schedule follow-up
+
+- Updated `schedule.html` airport handling for cross-border trips.
+  - Arrival airport rows no longer prepend the label "到着空港".
+  - Meet-side airport stay can be edited with the same compact minutes input used for dismiss-side airport stay.
+  - Airport stay inputs are constrained so the minutes unit stays on the same line.
+  - Non-role airport spots are excluded from SPOTS sidebar auto-placement and normal visit routing; they are used as implicit trip-side flight/ground anchors instead.
+  - First/last day route prefetch and final-day reverse start calculation now use the trip-side airport when a flight endpoint is missing.
+- Checks: `schedule.html` inline script syntax OK. Browser Use verification was attempted but the in-app browser automation quota was unavailable in this session.
+
 ### 2026-05-01 Codex local area suggestions
 
 - Retired the gourmet page as an active workflow.
@@ -228,9 +238,123 @@ Shared notes for Claude / Codex agents working on this repo.
 - **1ページずつ表示**: `currentPrintPage` + `goPage(n)` でページ管理。6ページ（表紙/地図/スポット/日程/持ち物/裏表紙）を前後ボタンで切り替え。
 - **プレビューから編集**: 表紙ページに直接タイトル/サブタイトル入力欄・表紙写真ボタンを埋め込み。スポットページに表示切替トグルを埋め込み。ツールバーとも同期。
 
+### 2026-05-06 Claude 大規模改修（print.html・schedule.html・新ページ）
+
+**前セッションから継続（前セッションで実装済み）**
+- `howto.html` 全面書き直し（6ステップガイド）
+- `travelchecklist.html` 新規作成（⑤チェックリスト）
+- `local_area_suggestions.js` にキーワード追記（北海道・青森・秋田・山形・新潟・茨城・東京）
+- `spots.html` 営業時間デフォルト変更（0:00-24:00/全日共通/全曜日営業）、「曜日ごとに設定」ボタンを先頭に移動
+- `app.js` に全体図クラスタの「拡大図: MAPn」ラベル表示
+- `schedule.html` 集合場所→最初のスポット間の手動移動時間 (`day.meetTravelMinutes`) UI
+- 全ページのプログレスステップに⑤チェックリスト追加、印刷を⑥に変更
+
+**今セッションで実装**
+
+**`print.html`**
+- `@media print` に `.hero` を非表示追加（印刷時にヒーローブロックを消す）
+- `@page { size:A4; margin:10mm }` 追加
+- `.print-section { width:210mm; min-height:297mm; margin:0 auto }` でプレビューをA4サイズ化
+- `@media print` で `.print-section { display:block!important; width:auto; min-height:auto; margin:0 }` リセット
+- `.page { break-before:page }` で各ページを改ページ
+- `sec2` からプレビュー側の `.spot-visibility-inline` 表示切替ボタンを削除
+- `.visibility-panel` の `<strong>スポット写真・紹介の表示</strong>` ラベルを削除
+- `scheduleRows()` にフライト情報表示追加（集合・解散空港に飛行機情報がある場合）
+- `scheduleRows()` のホテルチェックアウト時刻を `h.checkoutTime` → `day.startTime` 優先に変更
+
+**`schedule.html`**
+- 解散場所が空港＋フライト登録済みの場合: 「到着→空港滞在→離陸」の3行スプリット表示
+  - `generatePlan()` の `endTime` を `フライト離陸時刻 - dismissAirportStayMin` に調整
+  - `dismissFlight` / `dismissAirportStayMin` を step データに追加
+  - 解散行: 「🛬 着」ラベルのみ（フライトボタンは離陸行に移動）
+  - 空港滞在行: 分数入力（`schedule.dismissAirportStayMin`、デフォルト90分）
+  - 離陸行: フライト情報ボタン + 警告
+- `.tl-airport-arrive-label` CSS 追加
+
 ## Next Things To Watch
+
+### 2026-05-06 Codex 追記（営業時間・空港・チェックリスト）
+
+**変更したファイル**
+- `app.js`: スポットメニューの定休日表示を「定休日」に変更。曜日別営業時間でチェックを外した曜日を必ず `closed` として保存するよう修正。埋め込みスポットメニュー保存時に `defaultStayMinutes` を親へ通知。
+- `schedule.html`: 営業時間判定で `closed` を明示的に除外。自動配置後の厳密チェックで営業時間外になったスポットをSPOTS警告へ戻す。スポットメニュー保存後に配置済みスポットの滞在時間も同期。滞在時間入力をコンパクト化。
+- `flight.html`: 航空券保存時に出発空港・到着空港をどちらも空港スポットとして登録/更新し、到着空港の `arrivalSpotId` も保存。
+- `checklist.html`: チェックリスト項目を同一グループ内でもドラッグ&ドロップで並べ替えられるよう修正。
+- `styles.css`: ヒーローブロックの高さを揃えるため `.hero-copy-wrap` に共通最小高さを追加。営業時間切替ボタンのブロック高さをON/OFFで固定。
+
+**確認したこと**
+- `node --check app.js` OK。
+- `schedule.html` / `flight.html` / `checklist.html` のインラインスクリプトを `vm.Script` で構文チェック OK。
+- 触った `app.js` / `schedule.html` / `flight.html` / `checklist.html` / `styles.css` で文字化けパターン検索 OK。
+- `http://127.0.0.1:8000/schedule.html` / `flight.html` / `checklist.html` は HTTP 200。
+
+**次のAIへの注意**
+- PowerShell プロファイルの conda エラーは毎回出るが、コマンド自体の終了コードと本文で判断する。
+- ブラウザ操作ツールはこのターンでは見つからなかったため目視確認は未実施。可能ならスポットメニューの曜日別切替、定休日スポットの自動配置、空港フライト保存、チェックリスト並べ替えをブラウザで確認する。
+
+### 2026-05-06 Codex 追記（追加UI・印刷表紙編集）
+
+**変更したファイル**
+- `spots.html`: 「現在選択中のリスト: リスト管理」表示を行きたい場所ページから非表示化。カテゴリ追加欄に「アイコン欄には好きな絵文字を設定できます。」の注釈を追加。
+- `theme.js`: ハンバーガーメニューに「現在のしおりのページに戻る」を自動挿入する処理を追加。
+- `howto.html`: 「前のページに戻る」ボタンを追加。履歴がない場合は `spots.html` へ戻る。
+- `print.html`: 表紙/背表紙をレイヤー式に変更。表紙・背表紙へ画像追加、選択要素の拡大縮小/回転/前面/背面/削除に対応。タイトル/サブタイトルはプレビュー上のテキストを直接編集する方式に変更し、プレビュー内の「写真を変更」ボタンと外部テキストボックスを削除。
+
+**確認したこと**
+- `spots.html` / `print.html` / `howto.html` / `schedule.html` / `flight.html` / `checklist.html` のインラインスクリプト構文チェック OK。
+- `app.js` / `theme.js` の `node --check` OK。
+- 触った主要ファイルの文字化けパターン検索 OK。
+- `http://127.0.0.1:8000/spots.html` / `print.html` / `howto.html` は HTTP 200。
+
+**次のAIへの注意**
+- `print.html` は既存どおり圧縮気味の単一HTML。表紙レイヤーは `trip-print-cover.v1` の `coverLayers` / `backCoverLayers` に保存される。旧 `coverImage` / `backCoverImage` は初回表示時にレイヤーへフォールバックする。
+- Playwright はこの環境で利用不可、ブラウザ操作ツールも見つからなかったため、表紙レイヤー操作の目視確認は未実施。
 
 - If the user still sees old broken map tiles, ask them to hard reload once; the bug was likely a cached copy of `print.html` with the bad Leaflet CSS integrity hash.
 - If adding more country-specific packing rules, extend `COUNTRY_RULES` in `checklist.html` and keep the strings browser-verified.
 - `tripplan.html` のウィッシュリストは `trip-basic-plan.v1` に保存される。印刷ページ（print.html）に未連携なので、将来的に組み込むなら render() で `trip-basic-plan.v1` を読み込む必要がある。
 - ラベルドラッグはドラッグ終了後に地図を再描画するため、ズーム/パン操作のたびに offset はリセットされる（Leaflet がツールチップを再配置するため）。将来的に Leaflet の pane 座標系で管理すると安定する。
+### 2026-05-06 Codex Browser Use print.html visual check
+
+- Checked `http://127.0.0.1:8000/print.html` with Browser Use.
+- No file changes besides this note.
+- Current local data showed no registered spots, so map/spot/schedule preview pages showed empty-state text.
+- Stepped through preview pages 1/6 to 6/6; no browser console warnings/errors were reported.
+- Visual note: on the narrow in-app viewport, the packing-list preview is wider than the visible area and the rightmost category is clipped by the viewport, consistent with the A4 preview being wider than the current browser pane.
+
+### 2026-05-06 Codex airport flight endpoint handling
+
+- Updated `flight.html` so saved flights keep the schedule anchor spot separate from the actual flight departure/arrival airport spots.
+  - Outbound meet flight: anchor/departure can both be Haneda.
+  - Return dismiss flight: anchor can stay Haneda while departure can be Taoyuan and arrival can be Haneda.
+  - Known airport coordinates are added for common airports including TPE so flight-created airport spots can participate in route estimates.
+- Updated `schedule.html` generated plans to use flight endpoints.
+  - After a registered meet flight, the next ground route starts at the arrival airport instead of the home airport.
+  - For a registered dismiss flight, the final ground route goes to the flight departure airport, then shows airport stay and flight back to the dismiss anchor.
+  - Return flight registration no longer defaults takeoff time to the computed airport-arrival time such as 14:43; blank unless a flight was already saved.
+- Checks: inline scripts in `schedule.html` and `flight.html` passed `vm.Script`; mojibake scan for touched files passed; Browser Use loaded `schedule.html` and a sample `flight.html?role=dismiss&airport=TPE&arrivalAirport=HND...` with no console warnings/errors.
+
+### 2026-05-06 Codex airport UX follow-up
+
+- Updated `schedule.html` again for airport trip planning.
+  - Trip meet/dismiss text inputs now show local suggestions immediately from registered spots and known airports, then append Nominatim results if available.
+  - Typing examples like `羽田` shows `羽田空港 (HND)` without waiting on network.
+  - Adding a typed known airport uses local coordinates and canonical airport name, so `羽田空港` becomes `羽田空港 (HND)`.
+  - Meet flight registration now pre-fills a likely arrival airport from trip spots/known nearby airports, instead of leaving destination blank.
+  - Empty final day with a registered dismiss flight now derives the start/leave time from `flight takeoff - airport stay - travel time` when the user has not manually set that day's start time.
+  - Route fetching was aligned to use flight endpoints: arrival airport for outbound first ground route, departure airport for return final ground route.
+- Checks: inline scripts in `schedule.html` / `flight.html` passed `vm.Script`; mojibake scan passed; Browser Use confirmed `羽田` suggestions render and console warnings/errors are empty.
+
+### 2026-05-06 Codex print controls and airport timeline follow-up
+
+- Updated `print.html`.
+  - Added numeric inputs for selected cover-layer scale and rotation.
+  - Added a text-layer button plus color, font, and font-size controls for text layers.
+  - Added print element selection/scaling for major body elements (`map`, `spots`, `schedule`, `packing`).
+  - Added visibility controls for those print elements, plus a hidden list on the right. Visible items can be dragged into the hidden list; hidden items can be restored by click or drag back.
+  - Existing spot hide/show controls now share the same visible/hidden lists.
+- Updated `schedule.html`.
+  - Trip meet/dismiss text input no longer saves to the schedule on plain text change; it is committed only by SPOTS select or the new-add button.
+  - Outbound flight arrival airport is shown as its own timeline row.
+  - Return flight arrival airport is shown after the flight row.
+- Checks: inline scripts in `schedule.html`, `print.html`, and `flight.html` passed `vm.Script`; mojibake scan passed; Browser Use loaded `print.html` and `schedule.html` with no console warnings/errors.

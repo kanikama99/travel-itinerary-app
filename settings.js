@@ -245,7 +245,7 @@ if (settingsBackRow && referrer && new URL(referrer).origin === window.location.
 
 // デバッグログ生成
 const LISTS_KEY_DBG    = "spot-map-lists.v1";
-const SCHEDULE_KEY_DBG = "trip-schedule.v1";
+const SCHEDULE_KEY_DBG = "spot-map-schedule.v1";
 const PACKING_KEY_DBG  = "trip-packing.v1";
 
 function buildDebugLog() {
@@ -297,6 +297,18 @@ function buildDebugLog() {
           if (cat === "hotel") return 0;
           return 90;
         };
+        const distKm = (a, b) => {
+          if (!a?.lat || !a?.lng || !b?.lat || !b?.lng) return null;
+          const R = 6371, dLat = (b.lat - a.lat) * Math.PI / 180, dLng = (b.lng - a.lng) * Math.PI / 180;
+          const h = Math.sin(dLat/2)**2 + Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2;
+          return 2 * R * Math.asin(Math.sqrt(h));
+        };
+        const estimateTravel = (from, to, defMin) => {
+          const d = distKm(from, to);
+          if (d === null) return defMin;
+          if (d < 1) return 10; if (d < 5) return 20; if (d < 20) return 30;
+          if (d < 80) return 60; return 90;
+        };
 
         const scheduledIds = new Set();
         days.forEach(d => (d.entries || []).forEach(en => scheduledIds.add(en.spotId)));
@@ -307,30 +319,48 @@ function buildDebugLog() {
           const startStr = isFirst ? (sched.tripMeetTime || "09:00") : (d.startTime || "09:00");
           const endStr   = isLast  ? (sched.tripDismissTime || "18:00") : (d.endTime || "21:00");
           const endT = t2m(endStr);
+          const defTravel = d.travelMinutes || 20;
           let t = t2m(startStr);
+          let prevSpot = null;
 
-          lines.push(`\n  Day${di + 1} (${d.date || "日付未設定"}) ${startStr}〜${endStr}`);
+          lines.push(`\n  ── Day${di + 1} (${d.date || "日付未設定"}) ${startStr}〜${endStr} ──`);
+
+          // 集合
+          const meetName = isFirst ? (sched.tripMeetPlace || "集合場所") : "前泊先";
+          lines.push(`    ${m2t(t)} 【集合】${meetName}`);
+
           const entries = d.entries || [];
           if (entries.length === 0) {
-            lines.push(`    (スポットなし)`);
+            lines.push(`    スポットなし`);
           } else {
             entries.forEach(en => {
               const sp = spots.find(s => s.id === en.spotId);
               if (!sp) { lines.push(`    (不明スポット: ${en.spotId})`); return; }
+              const travelMin = estimateTravel(prevSpot, sp, defTravel);
+              t += travelMin;
               const stay = getStayMin(sp, d);
-              const timeStr = m2t(t);
-              const isOver    = t >= endT;
-              const willOver  = !isOver && (t + stay > endT);
-              const marker = isOver ? " ← ⚠赤字（終了時刻超過）" : (willOver ? " ← ⚠赤字（終了時刻を超えます）" : "");
-              lines.push(`    ${timeStr} ${sp.name}（${stay}分）${marker}`);
+              const isOver   = t >= endT;
+              const willOver = !isOver && (t + stay > endT);
+              const warn = isOver ? " ⚠超過" : (willOver ? " ⚠終了時刻を超えます" : "");
+              lines.push(`    ${m2t(t)} 【移動${travelMin}分→】${sp.name}（滞在${stay}分）${warn}`);
               t += stay;
+              prevSpot = sp;
             });
-            if (t > endT) {
-              lines.push(`    ⚠ 合計終了見込み ${m2t(t)}（終了時刻 ${endStr} を ${m2t(t - endT)} 超過）`);
-            }
           }
+
+          // 解散 or ホテル
+          const dismissName = isLast ? (sched.tripDismissPlace || "解散場所") : "ホテル";
+          const finalTravel = estimateTravel(prevSpot, null, defTravel);
+          t += finalTravel;
+          const dismissOver = t > endT ? ` ⚠${m2t(t - endT)}超過` : "";
+          lines.push(`    ${m2t(t)} 【${isLast ? "解散" : "ホテル到着"}】${dismissName}【移動${finalTravel}分】${dismissOver}`);
+
+          if (t > endT) {
+            lines.push(`    → 終了時刻 ${endStr} を ${m2t(t - endT)} 超過`);
+          }
+
           const hotel = sched.hotels?.[d.id];
-          if (hotel) lines.push(`    🏨 ホテル: ${hotel.name || "(未設定)"}`);
+          if (hotel) lines.push(`    🏨 ${hotel.name || "(未設定)"}`);
         });
 
         // 未配置スポット

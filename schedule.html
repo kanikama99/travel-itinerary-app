@@ -747,6 +747,7 @@
       padding: 2px 6px;
       white-space: nowrap;
     }
+    .tl-airport-arrive-label { font-size: 0.78rem; color: var(--muted); font-weight: 600; }
     .tl-overflow-warn {
       flex-shrink: 0;
       font-size: 0.76rem;
@@ -828,9 +829,15 @@
     .tl-manual-time-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
     .tl-manual-time-label { font-size: 0.72rem; color: var(--muted); font-weight: 700; flex-shrink: 0; }
     .tl-manual-time-input { width: 50px; font: inherit; font-size: 0.78rem; border: 1px solid var(--line); border-radius: 6px; padding: 2px 5px; background: rgba(255,255,255,0.9); outline: none; text-align: center; }
+    .tl-stay-time-row { display: inline-flex; flex-wrap: nowrap; gap: 4px; max-width: 100%; }
+    .tl-stay-time-row .tl-manual-time-input { width: 38px; min-width: 38px; padding: 2px 4px; }
+    .tl-stay-time-row .tl-manual-time-label { white-space: nowrap; }
     .tl-manual-time-input:focus { border-color: var(--accent); }
     .tl-manual-memo { font: inherit; font-size: 0.76rem; border: 1px solid var(--line); border-radius: 6px; padding: 3px 7px; background: rgba(255,255,255,0.9); resize: none; outline: none; width: 100%; min-height: 32px; color: var(--text); }
     .tl-manual-memo:focus { border-color: var(--accent); }
+    .tl-airport-stay-wrap { display: inline-flex; align-items: center; gap: 6px; flex-wrap: nowrap; max-width: 100%; }
+    .tl-airport-stay-wrap .tl-manual-mins { width: 58px; min-width: 58px; max-width: 58px; font: inherit; font-size: 0.86rem; border: 1px solid var(--line); border-radius: 8px; padding: 4px 6px; background: rgba(255,255,255,0.9); outline: none; text-align: center; }
+    .tl-mins-label { white-space: nowrap; font-size: 0.78rem; color: var(--muted); font-weight: 700; }
 
     /* 宿泊先ボタン */
     .tl-hotel-btn {
@@ -951,6 +958,26 @@
       border: 2px solid rgba(204,68,68,0.28); border-radius: 10px;
     }
 
+    /* 空港サジェスト */
+    .trip-airport-row {
+      display: flex; align-items: flex-start; gap: 8px;
+      margin-top: 8px; flex-wrap: wrap;
+    }
+    .trip-airport-row.hidden { display: none; }
+    .trip-airport-label {
+      font-size: 0.76rem; color: var(--muted); font-weight: 700;
+      flex-shrink: 0; margin-top: 5px;
+    }
+    .trip-airport-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+    .trip-airport-btn {
+      padding: 3px 10px; border-radius: 999px;
+      border: 1.5px solid var(--accent); background: var(--accent-soft);
+      color: var(--accent-deep); font: inherit; font-size: 0.76rem; font-weight: 600;
+      cursor: pointer; white-space: nowrap;
+      transition: background 0.15s, color 0.15s;
+    }
+    .trip-airport-btn:hover { background: var(--accent); color: #fff; }
+
     @media (max-width: 760px) {
       .schedule-shell { padding: 28px 0 80px; }
       .schedule-layout { grid-template-columns: 1fr; }
@@ -978,13 +1005,15 @@
         <nav class="progress-steps" aria-label="ステップ">
           <a href="./spots.html" class="progress-step">①行きたい場所</a>
           <span class="progress-sep">›</span>
-          <a href="./tripplan.html" class="progress-step">②優先順位入力</a>
+          <a href="./tripplan.html" class="progress-step">②スポット詳細入力</a>
           <span class="progress-sep">›</span>
           <strong class="progress-step progress-step--current">③スケジュール</strong>
           <span class="progress-sep">›</span>
           <a href="./checklist.html" class="progress-step">④持ち物リスト</a>
           <span class="progress-sep">›</span>
-          <a href="./print.html" class="progress-step">⑤印刷する</a>
+          <a href="./travelchecklist.html" class="progress-step">⑤チェックリスト</a>
+          <span class="progress-sep">›</span>
+          <a href="./print.html" class="progress-step">⑥印刷する</a>
         </nav>
       </div>
     </header>
@@ -1002,10 +1031,17 @@
           </div>
           <div class="trip-place-controls">
             <select id="tripMeetSpotSelect" class="trip-place-select" title="SPOTSから集合場所を選択"></select>
+            <div id="tripMeetAirportRow" class="trip-airport-row hidden">
+              <span class="trip-airport-label">✈ 近くの空港</span>
+              <div id="tripMeetAirportBtns" class="trip-airport-btns"></div>
+            </div>
           </div>
           <p class="trip-place-or">または</p>
           <div class="trip-place-add-row">
-            <input id="tripMeetPlace" class="trip-place-input" type="text" placeholder="集合場所（例：東京駅）" />
+            <div class="autocomplete-wrap" style="flex:1;min-width:0">
+              <input id="tripMeetPlace" class="trip-place-input" type="text" placeholder="集合場所（例：東京駅）" />
+              <div id="tripMeetPlaceDropdown" class="suggest-dropdown hidden"></div>
+            </div>
             <button id="tripMeetAddBtn" class="trip-place-add-btn" type="button">新規追加</button>
           </div>
         </div>
@@ -1017,10 +1053,17 @@
           </div>
           <div class="trip-place-controls">
             <select id="tripDismissSpotSelect" class="trip-place-select" title="SPOTSから解散場所を選択"></select>
+            <div id="tripDismissAirportRow" class="trip-airport-row hidden">
+              <span class="trip-airport-label">✈ 近くの空港</span>
+              <div id="tripDismissAirportBtns" class="trip-airport-btns"></div>
+            </div>
           </div>
           <p class="trip-place-or">または</p>
           <div class="trip-place-add-row">
-            <input id="tripDismissPlace" class="trip-place-input" type="text" placeholder="解散場所（例：新宿駅）" />
+            <div class="autocomplete-wrap" style="flex:1;min-width:0">
+              <input id="tripDismissPlace" class="trip-place-input" type="text" placeholder="解散場所（例：新宿駅）" />
+              <div id="tripDismissPlaceDropdown" class="suggest-dropdown hidden"></div>
+            </div>
             <button id="tripDismissAddBtn" class="trip-place-add-btn" type="button">新規追加</button>
           </div>
         </div>
@@ -1116,7 +1159,7 @@
   <nav class="page-nav-bar">
       <a href="./tripplan.html" class="page-nav-bar-btn page-nav-bar-btn--prev">
         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-        優先順位入力
+        スポット詳細入力
       </a>
       <a href="./checklist.html" class="page-nav-bar-btn page-nav-bar-btn--next">
         持ち物リスト
@@ -1593,6 +1636,7 @@
       const stay = (schedule.defaultStayTimes?.[spot.id]) ?? getSpotStayDefault(spot);
       const dayWindow = getDayWindow(dayIdx, totalDays, day);
       return hours.some(range => {
+        if (range.closed) return false;
         const start = Math.max(dayWindow.start, range.open);
         const end = Math.min(dayWindow.end, range.close);
         return start + stay <= end;
@@ -1603,7 +1647,7 @@
       if (!day) day = schedule?.days?.find(d => (d.entries || []).some(en => en.spotId === spotId));
       const hours = getSpotHoursRange(spotId, day);
       if (!hours?.length) return false;
-      return !hours.some(range => arriveT >= range.open && arriveT + stay <= range.close);
+      return !hours.some(range => !range.closed && arriveT >= range.open && arriveT + stay <= range.close);
     }
 
     // ── Google Routes API ───────────────────────────────────────────────
@@ -1691,7 +1735,7 @@
         for (let i = 0; i < entries.length - 1; i++) {
           const a = getSpotById(entries[i].spotId);
           const b = getSpotById(entries[i + 1].spotId);
-          if (a?.lat && a?.lng && b?.lat && b?.lng) {
+          if (a?.lat && a?.lng && b?.lat && b?.lng && a.spotCategory !== "airport" && b.spotCategory !== "airport") {
             const key = transitCacheKey(a.lat, a.lng, b.lat, b.lng);
             if (shouldFetchRouteForKey(key)) {
               pairs.push({ key, fromLat: a.lat, fromLng: a.lng, toLat: b.lat, toLng: b.lng });
@@ -1705,21 +1749,31 @@
 
       const firstDay = schedule.days[0];
       if (firstDay && globalMeet?.lat && globalMeet?.lng) {
-        const firstNonMeet = firstDay.entries?.find(en => !isMeetSpot(getSpotById(en.spotId)));
+        const firstNonMeet = firstDay.entries?.find(en => {
+          const spot = getSpotById(en.spotId);
+          return isScheduleVisitSpot(spot, true, false);
+        });
         const firstSpot    = firstNonMeet ? getSpotById(firstNonMeet.spotId) : null;
-        if (firstSpot?.lat && firstSpot?.lng) {
-          const key = transitCacheKey(globalMeet.lat, globalMeet.lng, firstSpot.lat, firstSpot.lng);
-          if (shouldFetchRouteForKey(key)) pairs.push({ key, fromLat: globalMeet.lat, fromLng: globalMeet.lng, toLat: firstSpot.lat, toLng: firstSpot.lng });
+        const meetFlight = getFlightForAnchor("meet", globalMeet, firstDay.date);
+        const routeOrigin = getFlightArrivalSpot(meetFlight) || getTripSideAirport(firstDay, "meet") || globalMeet;
+        if (routeOrigin?.lat && routeOrigin?.lng && firstSpot?.lat && firstSpot?.lng) {
+          const key = transitCacheKey(routeOrigin.lat, routeOrigin.lng, firstSpot.lat, firstSpot.lng);
+          if (shouldFetchRouteForKey(key)) pairs.push({ key, fromLat: routeOrigin.lat, fromLng: routeOrigin.lng, toLat: firstSpot.lat, toLng: firstSpot.lng });
         }
       }
 
       const lastDay = schedule.days[schedule.days.length - 1];
       if (lastDay && globalDismiss?.lat && globalDismiss?.lng) {
-        const lastNonDismiss = [...(lastDay.entries || [])].reverse().find(en => !isDismissSpot(getSpotById(en.spotId)));
+        const lastNonDismiss = [...(lastDay.entries || [])].reverse().find(en => {
+          const spot = getSpotById(en.spotId);
+          return isScheduleVisitSpot(spot, false, true);
+        });
         const lastSpot       = lastNonDismiss ? getSpotById(lastNonDismiss.spotId) : null;
-        if (lastSpot?.lat && lastSpot?.lng) {
-          const key = transitCacheKey(lastSpot.lat, lastSpot.lng, globalDismiss.lat, globalDismiss.lng);
-          if (shouldFetchRouteForKey(key)) pairs.push({ key, fromLat: lastSpot.lat, fromLng: lastSpot.lng, toLat: globalDismiss.lat, toLng: globalDismiss.lng });
+        const dismissFlight = getFlightForAnchor("dismiss", globalDismiss, lastDay.date);
+        const routeDest = getFlightDepartureSpot(dismissFlight) || getTripSideAirport(lastDay, "dismiss") || globalDismiss;
+        if (lastSpot?.lat && lastSpot?.lng && routeDest?.lat && routeDest?.lng) {
+          const key = transitCacheKey(lastSpot.lat, lastSpot.lng, routeDest.lat, routeDest.lng);
+          if (shouldFetchRouteForKey(key)) pairs.push({ key, fromLat: lastSpot.lat, fromLng: lastSpot.lng, toLat: routeDest.lat, toLng: routeDest.lng });
         }
       }
 
@@ -1819,29 +1873,48 @@
         startTime  = day.startTime || "09:00";
         meetName   = "宿泊先";
       }
+      const meetFlight = (isFirst && meetSpot?.spotCategory === "airport")
+        ? getFlightForAnchor("meet", meetSpot, day.date)
+        : null;
+      const implicitMeetArrivalSpot = (isFirst && meetSpot?.spotCategory === "airport" && !meetFlight)
+        ? getTripSideAirport(day, "meet")
+        : null;
+      const meetFlightArrivalSpot = getFlightArrivalSpot(meetFlight) || implicitMeetArrivalSpot;
+      const dismissFlightForDay = (isLast && dismissSpot?.spotCategory === "airport")
+        ? getFlightForAnchor("dismiss", dismissSpot, day.date)
+        : null;
+      const dismissFlightDepartureSpot = getFlightDepartureSpot(dismissFlightForDay);
+      const implicitDismissDepartureSpot = (isLast && dismissSpot?.spotCategory === "airport" && !dismissFlightForDay)
+        ? getTripSideAirport(day, "dismiss")
+        : null;
+      const dismissTravelTarget = dismissFlightDepartureSpot || implicitDismissDepartureSpot || dismissSpot;
       if (isLast) {
         endTime     = schedule.tripDismissTime  || "18:00";
         dismissName = dismissSpot?.name || schedule.tripDismissPlace || "解散場所";
+        // 解散場所が空港＋フライト登録済みの場合: 離陸時刻 - 空港滞在時間 をendTimeに
+        if (dismissFlightForDay?.time) {
+            const _stayMin = schedule.dismissAirportStayMin ?? 90;
+            const _target  = timeToMinutes(dismissFlightForDay.time) - _stayMin;
+            if (_target < timeToMinutes(endTime)) endTime = minutesToTime(_target);
+        }
       } else {
         endTime     = day.endTime || "21:00";
         dismissName = "宿泊先";
       }
 
-      let t      = timeToMinutes(startTime);
+      let t    = timeToMinutes(startTime);
       const endT = timeToMinutes(endTime);
 
       // 集合場所が空港の場合：チェックイン時刻超過チェック
       let meetOverflow = false, meetAirportCheckinWarning = false, meetAirportCheckinDeadlineStr = null;
       if (isFirst && meetSpot?.spotCategory === "airport") {
-        const fKey = `meet:${meetSpot.id || meetSpot.name}:${day.date || ""}`;
-        const flt  = schedule.flights?.[fKey];
         let deadlineT = null;
         if (meetSpot.airportCheckinTime) {
           deadlineT = timeToMinutes(meetSpot.airportCheckinTime);
           meetAirportCheckinDeadlineStr = meetSpot.airportCheckinTime;
-        } else if (flt?.time) {
+        } else if (meetFlight?.time) {
           const off = meetSpot.airportCheckinOffsetMin || 0;
-          deadlineT = timeToMinutes(flt.time) - off;
+          deadlineT = timeToMinutes(meetFlight.time) - off;
           meetAirportCheckinDeadlineStr = minutesToTime(deadlineT);
         }
         if (deadlineT !== null && t > deadlineT) { meetOverflow = true; meetAirportCheckinWarning = true; }
@@ -1856,8 +1929,40 @@
         overflow: meetOverflow,
         airportCheckinWarning: meetAirportCheckinWarning,
         airportCheckinDeadlineStr: meetAirportCheckinDeadlineStr,
+        meetFlight: meetFlight || null,
+        meetFlightArrivalSpot: meetFlightArrivalSpot || null,
       });
-      let prevSpot = meetSpot || null;
+      if (meetFlight || implicitMeetArrivalSpot) {
+        const departT = meetFlight?.time ? timeToMinutes(meetFlight.time) : t;
+        const arriveT = meetFlight?.arrivalTime ? timeToMinutes(meetFlight.arrivalTime) : departT;
+        const meetStayMin = schedule.meetAirportStayMin ?? (Math.max(0, departT - t) || 90);
+        if (meetSpot?.spotCategory === "airport") {
+          steps.push({ type: "airportStay", duration: meetStayMin, role: "meet", airport: meetSpot, editable: true });
+        }
+        if (meetFlight) {
+          steps.push({
+            type: "flight",
+            role: "meet",
+            time: departT,
+            leaveTime: arriveT,
+            flight: meetFlight,
+            fromSpot: meetSpot,
+            toSpot: meetFlightArrivalSpot,
+          });
+        }
+        t = arriveT;
+        if (meetFlightArrivalSpot) {
+          steps.push({
+            type: "airportPoint",
+            role: "arrival",
+            name: meetFlightArrivalSpot.name,
+            time: arriveT,
+            anchorSpot: meetFlightArrivalSpot,
+            label: "",
+          });
+        }
+      }
+      let prevSpot = meetFlightArrivalSpot || meetSpot || null;
 
       for (let i = 0; i < day.entries.length; i++) {
         const entry  = day.entries[i];
@@ -1868,6 +1973,8 @@
         if (isFirst && isMeetSpot(spot)) { prevSpot = spot; continue; }
         // 解散場所（最終日）も同様（最後の移動先として後で使う）
         if (isLast && isDismissSpot(spot)) continue;
+        // 空港はフライト/到着地点として扱い、観光スポットの自動巡回には入れない
+        if (spot.spotCategory === "airport") continue;
 
         // キャッシュから移動時間を取得（なければ目安値）
         const hasCoords = !!(prevSpot?.lat && prevSpot?.lng && spot.lat && spot.lng);
@@ -1880,6 +1987,9 @@
         }
         const prevEntry = day.entries.find(en => en.spotId === prevSpot?.id);
         if (prevEntry?.travelToNextMinutes) travelDuration = prevEntry.travelToNextMinutes;
+        // 集合場所→最初のスポット間の手動移動時間（エントリーにない集合地点→最初のスポット）
+        const isMeetToFirst = isFirst && !prevEntry && day.meetTravelMinutes;
+        if (isMeetToFirst) travelDuration = day.meetTravelMinutes;
 
         const stay    = getEntryStayMinutes(day, entry, spot);
         const arriveT = t + travelDuration;
@@ -1889,14 +1999,16 @@
           for (let j = i; j < day.entries.length; j++) {
             const s = getSpotById(day.entries[j].spotId);
             // 集合/解散アンカーはスキップ済みなので「収まらなかった」リストに入れない
-            if (s && !(isFirst && isMeetSpot(s)) && !(isLast && isDismissSpot(s))) {
+            if (s && s.spotCategory !== "airport" && !(isFirst && isMeetSpot(s)) && !(isLast && isDismissSpot(s))) {
               skipped.push(s.name);
             }
           }
           break;
         }
 
-        steps.push({ type: "travel", duration: travelDuration, travelInfo, fromSpot: prevSpot, toSpot: spot, noCoords: !hasCoords, missingHotel: !isFirst && i === 0 && !meetSpot });
+        // isMeetTravel フラグ：集合場所からの最初の移動ステップかどうか
+        const isMeetTravelStep = isFirst && !prevEntry;
+        steps.push({ type: "travel", duration: travelDuration, travelInfo, fromSpot: prevSpot, toSpot: spot, noCoords: !hasCoords, missingHotel: !isFirst && i === 0 && !meetSpot, isMeetTravel: isMeetTravelStep });
         steps.push({
           type: "spot",
           name: spot.name,
@@ -1915,7 +2027,7 @@
         if ((t >= endT || t + travel > endT) && strictCapacity) {
           for (let j = i + 1; j < day.entries.length; j++) {
             const s = getSpotById(day.entries[j].spotId);
-            if (s && !(isFirst && isMeetSpot(s)) && !(isLast && isDismissSpot(s))) {
+            if (s && s.spotCategory !== "airport" && !(isFirst && isMeetSpot(s)) && !(isLast && isDismissSpot(s))) {
               skipped.push(s.name);
             }
           }
@@ -1924,11 +2036,11 @@
       }
 
       // 最終移動：解散場所スポットの座標があれば実ルーティングを適用
-      const finalHasCoords = !!(prevSpot?.lat && prevSpot?.lng && dismissSpot?.lat && dismissSpot?.lng);
+      const finalHasCoords = !!(prevSpot?.lat && prevSpot?.lng && dismissTravelTarget?.lat && dismissTravelTarget?.lng);
       let finalTravelInfo = null;
       let finalTravelDuration = travel;
       if (finalHasCoords) {
-        const ckey = transitCacheKey(prevSpot.lat, prevSpot.lng, dismissSpot.lat, dismissSpot.lng);
+        const ckey = transitCacheKey(prevSpot.lat, prevSpot.lng, dismissTravelTarget.lat, dismissTravelTarget.lng);
         finalTravelInfo = schedule.transitCache?.[ckey] || null;
         if (finalTravelInfo && !finalTravelInfo.failed && finalTravelInfo.durationMin) {
           finalTravelDuration = finalTravelInfo.durationMin;
@@ -1937,21 +2049,28 @@
       // 手動移動時間が設定されていれば上書き（最終移動も対象）
       const finalPrevEntry = day.entries.find(en => en.spotId === prevSpot?.id);
       if (finalPrevEntry?.travelToNextMinutes) finalTravelDuration = finalPrevEntry.travelToNextMinutes;
-      steps.push({ type: "travel", duration: finalTravelDuration, travelInfo: finalTravelInfo, fromSpot: prevSpot, toSpot: dismissSpot, noCoords: !finalHasCoords, missingHotel: !isLast && !dismissSpot });
+      if (isLast && dismissFlightForDay && !day.startTime && !hasVisitEntries(day, isFirst, isLast)) {
+        const autoStartT = Math.max(0, endT - finalTravelDuration);
+        if (autoStartT > t) {
+          t = autoStartT;
+          if (steps[0]?.type === "meet") steps[0].time = t;
+        }
+      }
+      steps.push({ type: "travel", duration: finalTravelDuration, travelInfo: finalTravelInfo, fromSpot: prevSpot, toSpot: dismissTravelTarget, noCoords: !finalHasCoords, missingHotel: !isLast && !dismissTravelTarget });
       // 解散場所が空港の場合：チェックイン時刻超過チェック
       const dismissArrivalT = t + finalTravelDuration;
       let dismissOverflow = dismissArrivalT > endT;
       let dismissAirportCheckinWarning = false, dismissAirportCheckinDeadlineStr = null;
+      let dismissFlight = dismissFlightForDay || null;
       if (dismissSpot?.spotCategory === "airport") {
-        const fKey = `dismiss:${dismissSpot.id || dismissSpot.name}:${day.date || ""}`;
-        const flt  = schedule.flights?.[fKey];
         let deadlineT = null;
-        if (dismissSpot.airportCheckinTime) {
-          deadlineT = timeToMinutes(dismissSpot.airportCheckinTime);
-          dismissAirportCheckinDeadlineStr = dismissSpot.airportCheckinTime;
-        } else if (flt?.time) {
-          const off = dismissSpot.airportCheckinOffsetMin || 0;
-          deadlineT = timeToMinutes(flt.time) - off;
+        const checkinSpot = dismissFlightDepartureSpot || dismissSpot;
+        if (checkinSpot.airportCheckinTime) {
+          deadlineT = timeToMinutes(checkinSpot.airportCheckinTime);
+          dismissAirportCheckinDeadlineStr = checkinSpot.airportCheckinTime;
+        } else if (dismissFlight?.time) {
+          const off = checkinSpot.airportCheckinOffsetMin || 0;
+          deadlineT = timeToMinutes(dismissFlight.time) - off;
           dismissAirportCheckinDeadlineStr = minutesToTime(deadlineT);
         }
         if (deadlineT !== null && dismissArrivalT > deadlineT) {
@@ -1959,14 +2078,17 @@
         }
       }
       steps.push({
-        type: "dismiss", name: dismissName, time: dismissArrivalT,
-        anchorSpot: dismissSpot || null,
+        type: "dismiss", name: (dismissTravelTarget?.name || dismissName), time: dismissArrivalT,
+        anchorSpot: dismissTravelTarget || null,
+        dismissAnchorSpot: dismissSpot || null,
         hotelNightDayId: !isLast ? (day.id ?? null) : null,
         hotelCheckin:    !isLast ? (day.date ?? null) : null,
         hotelCheckout:   !isLast ? (schedule.days[dayIdx + 1]?.date ?? null) : null,
         overflow: dismissOverflow,
         airportCheckinWarning: dismissAirportCheckinWarning,
         airportCheckinDeadlineStr: dismissAirportCheckinDeadlineStr,
+        dismissFlight: isLast ? (dismissFlight || null) : null,
+        dismissAirportStayMin: (isLast && dismissFlight) ? (schedule.dismissAirportStayMin ?? 90) : null,
       });
 
       return { steps, skipped };
@@ -2001,6 +2123,44 @@
               <div class="plan-step-left"><div class="plan-step-line"></div></div>
               <div class="plan-step-right">
                 <p class="plan-travel-label">${travelLabel}</p>
+              </div>
+            </div>`;
+        } else if (step.type === "airportStay") {
+          html += `
+            <div class="plan-step plan-step--travel">
+              <div class="plan-step-left"><div class="plan-step-line"></div></div>
+              <div class="plan-step-right">
+                <p class="plan-travel-label">→ ✈ 空港滞在 ${step.duration}分</p>
+              </div>
+            </div>`;
+        } else if (step.type === "flight") {
+          const flightName = [step.flight?.flightNumber || "航空券", step.flight?.arrivalAirport ? `→ ${step.flight.arrivalAirport}` : ""].filter(Boolean).join(" ");
+          html += `
+            <div class="plan-step plan-step--flight">
+              <div class="plan-step-left">
+                <span class="plan-step-time">${minutesToTime(step.time)}</span>
+                ${!isLast ? '<div class="plan-step-line"></div>' : ""}
+              </div>
+              <div class="plan-step-right">
+                <div class="plan-step-head">
+                  <span class="plan-step-dot" style="background:var(--accent-teal,#70d6c5)"></span>
+                  <span class="plan-step-name">✈ ${escHtml(flightName)}</span>
+                </div>
+                ${step.leaveTime ? `<p class="plan-step-duration">着陸 ${minutesToTime(step.leaveTime)}</p>` : ""}
+              </div>
+            </div>`;
+        } else if (step.type === "airportPoint") {
+          html += `
+            <div class="plan-step plan-step--airport">
+              <div class="plan-step-left">
+                <span class="plan-step-time">${minutesToTime(step.time)}</span>
+                ${!isLast ? '<div class="plan-step-line"></div>' : ""}
+              </div>
+              <div class="plan-step-right">
+                <div class="plan-step-head">
+                  <span class="plan-step-dot" style="background:var(--accent-teal,#70d6c5)"></span>
+                  <span class="plan-step-name">${step.label ? `${escHtml(step.label)} — ` : ""}${escHtml(step.name)}</span>
+                </div>
               </div>
             </div>`;
         } else {
@@ -2206,6 +2366,375 @@
       overlay.classList.remove("hidden");
     }
 
+    // ── 空港サジェスト ────────────────────────────────────────────
+    const AIRPORT_DATA = [
+      // 日本
+      { name: "成田国際空港 (NRT)", lat: 35.7719, lng: 140.3929 },
+      { name: "羽田空港 (HND)", lat: 35.5494, lng: 139.7798 },
+      { name: "関西国際空港 (KIX)", lat: 34.4270, lng: 135.2440 },
+      { name: "大阪伊丹空港 (ITM)", lat: 34.7855, lng: 135.4381 },
+      { name: "中部国際空港 (NGO)", lat: 34.8584, lng: 136.8054 },
+      { name: "新千歳空港 (CTS)", lat: 42.7752, lng: 141.6922 },
+      { name: "福岡空港 (FUK)", lat: 33.5863, lng: 130.4511 },
+      { name: "那覇空港 (OKA)", lat: 26.1959, lng: 127.6459 },
+      { name: "仙台空港 (SDJ)", lat: 38.1398, lng: 140.9169 },
+      { name: "広島空港 (HIJ)", lat: 34.4361, lng: 132.9194 },
+      { name: "長崎空港 (NGS)", lat: 32.9169, lng: 129.9135 },
+      { name: "熊本空港 (KMJ)", lat: 32.8373, lng: 130.8554 },
+      { name: "大分空港 (OIT)", lat: 33.4794, lng: 131.7369 },
+      { name: "宮崎空港 (KMI)", lat: 31.8772, lng: 131.4486 },
+      { name: "鹿児島空港 (KOJ)", lat: 31.8034, lng: 130.7194 },
+      { name: "松山空港 (MYJ)", lat: 33.8272, lng: 132.6996 },
+      { name: "高知空港 (KCZ)", lat: 33.5463, lng: 133.6692 },
+      { name: "岡山空港 (OKJ)", lat: 34.7569, lng: 133.8555 },
+      { name: "富山空港 (TOY)", lat: 36.6483, lng: 137.1883 },
+      { name: "小松空港 (KMQ)", lat: 36.3946, lng: 136.4072 },
+      { name: "新潟空港 (KIJ)", lat: 37.9559, lng: 139.1223 },
+      { name: "秋田空港 (AXT)", lat: 39.6156, lng: 140.2186 },
+      { name: "青森空港 (AOJ)", lat: 40.7347, lng: 140.6908 },
+      { name: "函館空港 (HKD)", lat: 41.7700, lng: 140.8220 },
+      { name: "旭川空港 (AKJ)", lat: 43.6708, lng: 142.4474 },
+      { name: "釧路空港 (KUH)", lat: 43.0413, lng: 144.1929 },
+      { name: "石垣空港 (ISG)", lat: 24.3965, lng: 124.1867 },
+      { name: "宮古空港 (MMY)", lat: 24.7828, lng: 125.2946 },
+      { name: "奄美空港 (ASJ)", lat: 28.4313, lng: 129.7125 },
+      { name: "山形空港 (GAJ)", lat: 38.4119, lng: 140.3719 },
+      { name: "花巻空港 (HNA)", lat: 39.4286, lng: 141.1350 },
+      { name: "山口宇部空港 (UBJ)", lat: 33.9300, lng: 131.2789 },
+      // 海外
+      { name: "仁川国際空港 (ICN)", lat: 37.4602, lng: 126.4407 },
+      { name: "金浦空港 (GMP)", lat: 37.5589, lng: 126.7950 },
+      { name: "金海国際空港・釜山 (PUS)", lat: 35.1795, lng: 128.9386 },
+      { name: "桃園国際空港・台北 (TPE)", lat: 25.0777, lng: 121.2327 },
+      { name: "香港国際空港 (HKG)", lat: 22.3080, lng: 113.9185 },
+      { name: "上海浦東国際空港 (PVG)", lat: 31.1434, lng: 121.8052 },
+      { name: "北京首都国際空港 (PEK)", lat: 40.0799, lng: 116.6031 },
+      { name: "シンガポール・チャンギ空港 (SIN)", lat: 1.3644, lng: 103.9915 },
+      { name: "バンコク・スワンナプーム空港 (BKK)", lat: 13.6900, lng: 100.7501 },
+      { name: "クアラルンプール国際空港 (KUL)", lat: 2.7456, lng: 101.7099 },
+      { name: "マニラ・ニノイアキノ国際空港 (MNL)", lat: 14.5086, lng: 121.0197 },
+      { name: "バリ・ングラライ空港 (DPS)", lat: -8.7482, lng: 115.1674 },
+      { name: "ジャカルタ・スカルノハッタ空港 (CGK)", lat: -6.1256, lng: 106.6559 },
+      { name: "ホーチミン・タンソンニャット空港 (SGN)", lat: 10.8188, lng: 106.6520 },
+      { name: "ハノイ・ノイバイ空港 (HAN)", lat: 21.2212, lng: 105.8072 },
+      { name: "ドバイ国際空港 (DXB)", lat: 25.2532, lng: 55.3657 },
+      { name: "パリ・シャルル・ド・ゴール空港 (CDG)", lat: 49.0097, lng: 2.5479 },
+      { name: "ロンドン・ヒースロー空港 (LHR)", lat: 51.4700, lng: -0.4543 },
+      { name: "フランクフルト空港 (FRA)", lat: 50.0379, lng: 8.5622 },
+      { name: "アムステルダム・スキポール空港 (AMS)", lat: 52.3086, lng: 4.7639 },
+      { name: "ローマ・フィウミチーノ空港 (FCO)", lat: 41.8003, lng: 12.2389 },
+      { name: "マドリード・バラハス空港 (MAD)", lat: 40.4936, lng: -3.5669 },
+      { name: "ウィーン国際空港 (VIE)", lat: 48.1103, lng: 16.5697 },
+      { name: "ニューヨーク・JFK空港 (JFK)", lat: 40.6413, lng: -73.7781 },
+      { name: "ロサンゼルス国際空港 (LAX)", lat: 33.9425, lng: -118.4081 },
+      { name: "シドニー空港 (SYD)", lat: -33.9399, lng: 151.1753 },
+      { name: "ムンバイ空港 (BOM)", lat: 19.0896, lng: 72.8656 },
+      { name: "デリー空港 (DEL)", lat: 28.5665, lng: 77.1031 },
+    ];
+
+    function schedDistKm(a, b) {
+      const R = 6371;
+      const dLat = (b.lat - a.lat) * Math.PI / 180;
+      const dLng = (b.lng - a.lng) * Math.PI / 180;
+      const h = Math.sin(dLat / 2) ** 2
+        + Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+      return 2 * R * Math.asin(Math.sqrt(h));
+    }
+
+    function getNearbyAirports(spots, count = 3) {
+      const withCoords = (spots || []).filter(s => s.lat && s.lng);
+      if (!withCoords.length) return [];
+      return AIRPORT_DATA
+        .map(ap => ({ ...ap, minDist: Math.min(...withCoords.map(s => schedDistKm(s, ap))) }))
+        .sort((a, b) => a.minDist - b.minDist)
+        .slice(0, count);
+    }
+
+    function normalizeAirportName(value) {
+      return String(value || "").trim().toLowerCase().replace(/\s+/g, "");
+    }
+
+    function findAirportData(name) {
+      const key = normalizeAirportName(name);
+      if (!key) return null;
+      return AIRPORT_DATA.find(ap => normalizeAirportName(ap.name) === key)
+        || AIRPORT_DATA.find(ap => {
+          const code = (ap.name.match(/\(([A-Z0-9]{3})\)/) || [])[1];
+          return code && key.includes(code.toLowerCase());
+        })
+        || AIRPORT_DATA.find(ap => {
+          const plain = normalizeAirportName(ap.name.replace(/（.*?）|\(.*?\)/g, ""));
+          return plain && (key.includes(plain) || plain.includes(key));
+        });
+    }
+
+    function findAirportSpotByName(name) {
+      const n = String(name || "").trim();
+      if (!n) return null;
+      return (activeList?.spots || []).find(s => String(s.name || "").trim() === n && s.spotCategory === "airport")
+        || (activeList?.spots || []).find(s => String(s.name || "").trim() === n)
+        || null;
+    }
+
+    function getFlightForAnchor(role, anchorSpot, date) {
+      if (!anchorSpot || !schedule.flights) return null;
+      const idKey = `${role}:${anchorSpot.id || anchorSpot.name}:${date || ""}`;
+      const nameKey = `${role}:${anchorSpot.name}:${date || ""}`;
+      return schedule.flights[idKey] || schedule.flights[nameKey] || null;
+    }
+
+    function getFlightDepartureSpot(flight) {
+      if (!flight) return null;
+      return getSpotById(flight.departureSpotId) || findAirportSpotByName(flight.airport);
+    }
+
+    function getFlightArrivalSpot(flight) {
+      if (!flight) return null;
+      return getSpotById(flight.arrivalSpotId) || findAirportSpotByName(flight.arrivalAirport);
+    }
+
+    function getTripSideAirport(day, role) {
+      const anchorPred = role === "meet" ? isMeetSpot : isDismissSpot;
+      const airports = (activeList?.spots || []).filter(s =>
+        s?.spotCategory === "airport" && !isMeetSpot(s) && !isDismissSpot(s) && s.lat && s.lng
+      );
+      if (!airports.length) return null;
+      const visitSpots = (day?.entries || [])
+        .map(en => getSpotById(en.spotId))
+        .filter(s => s && !anchorPred(s) && s.spotCategory !== "airport" && s.lat && s.lng);
+      if (!visitSpots.length) return airports[0];
+      return airports
+        .map(ap => ({ ap, score: Math.min(...visitSpots.map(s => schedDistKm(ap, s))) }))
+        .sort((a, b) => a.score - b.score)[0]?.ap || airports[0];
+    }
+
+    function hasVisitEntries(day, isFirst, isLast) {
+      return (day?.entries || []).some(en => {
+        const spot = getSpotById(en.spotId);
+        return spot && spot.spotCategory !== "airport" && !(isFirst && isMeetSpot(spot)) && !(isLast && isDismissSpot(spot));
+      });
+    }
+
+    function isScheduleVisitSpot(spot, isFirst = false, isLast = false) {
+      return !!spot
+        && spot.spotCategory !== "hotel"
+        && spot.spotCategory !== "airport"
+        && !(isFirst && isMeetSpot(spot))
+        && !(isLast && isDismissSpot(spot));
+    }
+
+    function estimateScheduleTravelDuration(fromSpot, toSpot, fallback) {
+      if (fromSpot?.lat && fromSpot?.lng && toSpot?.lat && toSpot?.lng) {
+        const ckey = transitCacheKey(fromSpot.lat, fromSpot.lng, toSpot.lat, toSpot.lng);
+        const cached = schedule.transitCache?.[ckey] || null;
+        if (cached && !cached.failed && cached.durationMin) return cached.durationMin;
+      }
+      return fallback;
+    }
+
+    function getAutoLastDayStartMinutes(day, dayIdx, totalDays) {
+      if (dayIdx !== totalDays - 1 || day?.startTime || hasVisitEntries(day, false, true)) return null;
+      const dismissSpot = (() => {
+        const e = (day.entries || []).find(en => isDismissSpot(getSpotById(en.spotId)));
+        return e ? getSpotById(e.spotId) : (activeList?.spots?.find(isDismissSpot) || null);
+      })();
+      if (dismissSpot?.spotCategory !== "airport") return null;
+      const flight = getFlightForAnchor("dismiss", dismissSpot, day.date);
+      if (!flight?.time) return null;
+      const target = getFlightDepartureSpot(flight) || getTripSideAirport(day, "dismiss") || dismissSpot;
+      const fromSpot = schedule.hotels?.[schedule.days[dayIdx - 1]?.id] || null;
+      const travelDuration = estimateScheduleTravelDuration(fromSpot, target, day.travelMinutes || 20);
+      const stayMin = schedule.dismissAirportStayMin ?? 90;
+      return Math.max(0, timeToMinutes(flight.time) - stayMin - travelDuration);
+    }
+
+    function suggestDismissFlightDepartureAirport(day, fallbackSpot) {
+      const daySpots = (day?.entries || [])
+        .map(en => getSpotById(en.spotId))
+        .filter(s => s && !isDismissSpot(s) && s.lat && s.lng);
+      const baseSpots = daySpots.length
+        ? daySpots
+        : (activeList?.spots || []).filter(s => s && !isDismissSpot(s) && s.lat && s.lng);
+      const suggestions = getNearbyAirports(baseSpots, 4).filter(ap => ap.name !== fallbackSpot?.name);
+      return suggestions[0] || null;
+    }
+
+    function suggestMeetFlightArrivalAirport(day, fallbackSpot) {
+      const daySpots = (day?.entries || [])
+        .map(en => getSpotById(en.spotId))
+        .filter(s => s && !isMeetSpot(s) && s.lat && s.lng);
+      const baseSpots = daySpots.length
+        ? daySpots
+        : (activeList?.spots || []).filter(s => s && !isMeetSpot(s) && !isDismissSpot(s) && s.lat && s.lng);
+      const suggestions = getNearbyAirports(baseSpots, 4).filter(ap => ap.name !== fallbackSpot?.name);
+      return suggestions[0] || null;
+    }
+
+    function renderAirportSuggestions() {
+      const spots = activeList?.spots || [];
+      const airports = getNearbyAirports(spots, 3);
+      for (const [cat, rowId, btnsId] of [
+        ["meet",    "tripMeetAirportRow",    "tripMeetAirportBtns"],
+        ["dismiss", "tripDismissAirportRow", "tripDismissAirportBtns"],
+      ]) {
+        const row  = document.getElementById(rowId);
+        const btns = document.getElementById(btnsId);
+        if (!row || !btns) continue;
+        btns.innerHTML = "";
+        if (!airports.length) { row.classList.add("hidden"); continue; }
+        row.classList.remove("hidden");
+        airports.forEach(ap => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "trip-airport-btn";
+          btn.textContent = ap.name;
+          btn.title = `登録スポットから約${Math.round(ap.minDist)}km`;
+          btn.addEventListener("click", () => addAirportSpot(cat, ap));
+          btns.appendChild(btn);
+        });
+      }
+    }
+
+    async function addAirportSpot(category, ap) {
+      if (!activeList) return;
+      if (!Array.isArray(activeList.spots)) activeList.spots = [];
+      const existing = activeList.spots.find(s => s.name === ap.name && s.spotCategory === "airport");
+      // 同カテゴリを他スポットから除去
+      activeList.spots = activeList.spots.map(s => {
+        const roles = getSpotRoles(s).filter(r => r !== category);
+        return { ...s, spotRoles: roles, spotRole: roles[0] || "" };
+      });
+      if (existing) {
+        // 同名空港が既存 → ロールだけ追加（重複スポット作成しない）
+        activeList.spots = activeList.spots.map(s => {
+          if (s.id !== existing.id) return s;
+          const roles = [...new Set([...getSpotRoles(s), category])];
+          return { ...s, spotRoles: roles, spotRole: roles[0] || category };
+        });
+      } else {
+        activeList.spots.push({
+          id: makeId(),
+          name: ap.name,
+          description: "",
+          budget: 0,
+          type: "spot",
+          spotCategory: "airport",
+          spotRole: category,
+          spotRoles: [category],
+          lat: ap.lat,
+          lng: ap.lng,
+          sourceType: "manual"
+        });
+      }
+      const key = category === "meet" ? "tripMeetPlace" : "tripDismissPlace";
+      schedule[key] = ap.name;
+      saveActiveList();
+      saveSchedule(schedule);
+      renderAll();
+    }
+
+    // ── 集合・解散場所テキストのオートコンプリート ─────────────────
+    function bindTripPlaceAutocomplete() {
+      [
+        { inputId: "tripMeetPlace",    dropId: "tripMeetPlaceDropdown" },
+        { inputId: "tripDismissPlace", dropId: "tripDismissPlaceDropdown" },
+      ].forEach(({ inputId, dropId }) => {
+        const input = document.getElementById(inputId);
+        const drop  = document.getElementById(dropId);
+        if (!input || !drop) return;
+        let timer = null;
+        input.addEventListener("input", () => {
+          clearTimeout(timer);
+          const q = input.value.trim();
+          if (!q || q.length < 2) { hideTripDrop(drop); return; }
+          timer = setTimeout(() => fetchTripPlaceSuggestions(q, drop, input), 350);
+        });
+        input.addEventListener("keydown", e => { if (e.key === "Escape") hideTripDrop(drop); });
+        input.addEventListener("blur",    () => { setTimeout(() => hideTripDrop(drop), 150); });
+      });
+    }
+
+    function hideTripDrop(drop) {
+      drop.classList.add("hidden");
+      drop.innerHTML = "";
+    }
+
+    function buildTripPlaceLocalSuggestions(query) {
+      const q = normalizeAirportName(query);
+      if (!q) return [];
+      const candidates = [];
+      (activeList?.spots || []).forEach(spot => {
+        const name = spot.name || "";
+        if (normalizeAirportName(name).includes(q)) {
+          candidates.push({
+            name,
+            detail: `${getSpotCatEmoji(spot.spotCategory)} 登録済みスポット`,
+            local: true,
+          });
+        }
+      });
+      AIRPORT_DATA.forEach(ap => {
+        const nameKey = normalizeAirportName(ap.name);
+        const code = (ap.name.match(/\(([A-Z0-9]{3})\)/) || [])[1]?.toLowerCase() || "";
+        const plain = normalizeAirportName(ap.name.replace(/（.*?）|\(.*?\)/g, ""));
+        if (nameKey.includes(q) || plain.includes(q) || (code && q.includes(code))) {
+          candidates.push({
+            name: ap.name,
+            detail: "✈ 既知の空港",
+            local: true,
+          });
+        }
+      });
+      const seen = new Set();
+      return candidates.filter(item => {
+        const key = item.name;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      }).slice(0, 8);
+    }
+
+    function renderTripPlaceSuggestions(items, drop, input) {
+      if (!items.length) { hideTripDrop(drop); return; }
+      drop.innerHTML = "";
+      items.forEach(item => {
+        const name = item.name || "";
+        const detail = item.detail || "";
+        const el = document.createElement("div");
+        el.className = "suggest-item";
+        el.innerHTML = `<span class="suggest-name">${escHtml(name)}</span><span class="suggest-detail">${escHtml(detail)}</span>`;
+        el.addEventListener("mousedown", e => {
+          e.preventDefault();
+          input.value = name;
+          input.dispatchEvent(new Event("change"));
+          hideTripDrop(drop);
+        });
+        drop.appendChild(el);
+      });
+      drop.classList.remove("hidden");
+    }
+
+    async function fetchTripPlaceSuggestions(query, drop, input) {
+      const localItems = buildTripPlaceLocalSuggestions(query);
+      renderTripPlaceSuggestions(localItems, drop, input);
+      try {
+        const params = new URLSearchParams({ q: query, format: "jsonv2", limit: "5" });
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
+          headers: { "Accept-Language": "ja,en" }
+        });
+        if (!res.ok) return;
+        const items = await res.json();
+        if (!Array.isArray(items) || !items.length) return;
+        const merged = [...localItems];
+        items.forEach(item => {
+          const name   = item.name || item.display_name?.split(",")[0] || "";
+          const detail = (item.display_name || "").slice(0, 70);
+          if (name && !merged.some(existing => existing.name === name)) merged.push({ name, detail });
+        });
+        renderTripPlaceSuggestions(merged.slice(0, 8), drop, input);
+      } catch {}
+    }
+
     // ── 描画 ───────────────────────────────────────────────────────
 
     function renderTripSettings() {
@@ -2230,6 +2759,7 @@
         if (lbl) lbl.textContent = rental?.company ? `${rental.company}（予約済み）` : "レンタカーを手配する";
       }
       renderTripPlaceSelects();
+      renderAirportSuggestions();
     }
 
     function renderTripPlaceSelects() {
@@ -2259,7 +2789,7 @@
       );
       const returnAllBtn = document.getElementById("returnAllSpotsBtn");
       if (returnAllBtn) returnAllBtn.disabled = scheduledIds.size === 0;
-      const unscheduled = getOrderedSpots().filter(s => !scheduledIds.has(s.id) && !isMeetSpot(s) && !isDismissSpot(s) && s.spotCategory !== "hotel");
+      const unscheduled = getOrderedSpots().filter(s => !scheduledIds.has(s.id) && !isMeetSpot(s) && !isDismissSpot(s) && s.spotCategory !== "hotel" && s.spotCategory !== "airport");
       if (warn) {
         const visibleSkipped = autoPlaceSkippedNames.filter(name => unscheduled.some(s => s.name === name));
         warn.classList.toggle("hidden", visibleSkipped.length === 0);
@@ -2268,7 +2798,7 @@
           : "";
       }
 
-      const schedulableSpots = spots.filter(s => !isMeetSpot(s) && !isDismissSpot(s) && s.spotCategory !== "hotel");
+      const schedulableSpots = spots.filter(s => !isMeetSpot(s) && !isDismissSpot(s) && s.spotCategory !== "hotel" && s.spotCategory !== "airport");
       if (unscheduled.length === 0) {
         el.innerHTML = schedulableSpots.length === 0
           ? '<p class="spot-chip-empty">「行きたい場所」でスポットを追加してください</p>'
@@ -2560,57 +3090,194 @@
                 anchorNameEl.title = "スポットメニューを開く";
                 anchorNameEl.addEventListener("click", () => openScheduleSpotMenu(step.anchorSpot.id));
               }
-              const flightBtn = document.createElement("button");
-              flightBtn.type = "button";
-              flightBtn.className = "tl-hotel-btn tl-flight-btn";
-              flightBtn.title = "クリックして航空券を探す・登録する";
-              const flightKey = `${step.type}:${step.anchorSpot.id || step.anchorSpot.name}:${day.date || ""}`;
-              const flight = schedule.flights?.[flightKey];
-              let flightLabel;
-              if (flight) {
-                const parts = [];
-                if (flight.flightNumber) parts.push(flight.flightNumber);
-                if (flight.time) parts.push(`離陸 ${flight.time}`);
-                if (flight.arrivalTime) parts.push(`着陸 ${flight.arrivalTime}`);
-                if (flight.arrivalAirport) parts.push(`→ ${flight.arrivalAirport}`);
-                if (flight.pricePerPerson) parts.push(`¥${Number(flight.pricePerPerson).toLocaleString()}/名`);
-                flightLabel = parts.length ? parts.join("  ") : "✈ 登録済み";
+              if (step.dismissFlight) {
+                // 解散空港+フライト登録済み: 到着ラベルのみ（フライトボタンは離陸行に表示）
+                const arrLabel = document.createElement("span");
+                arrLabel.className = "tl-airport-arrive-label";
+                arrLabel.textContent = "🛬 着";
+                rightEl.appendChild(arrLabel);
+                // 下に続く行があるため tl-line は常に表示
+                leftEl.innerHTML = `${_anchorTimeHtml}<div class="tl-line"></div>`;
+              } else if (step.meetFlight) {
+                const departLabel = document.createElement("span");
+                departLabel.className = "tl-airport-arrive-label";
+                departLabel.textContent = "🧳 搭乗前";
+                rightEl.appendChild(departLabel);
+                leftEl.innerHTML = `${_anchorTimeHtml}<div class="tl-line"></div>`;
               } else {
-                flightLabel = "航空券を探す・登録する";
+                const flightBtn = document.createElement("button");
+                flightBtn.type = "button";
+                flightBtn.className = "tl-hotel-btn tl-flight-btn";
+                flightBtn.title = "クリックして航空券を探す・登録する";
+                const flight = getFlightForAnchor(step.type, step.anchorSpot, day.date);
+                const suggestedDismissAirport = step.type === "dismiss"
+                  ? suggestDismissFlightDepartureAirport(day, step.anchorSpot)
+                  : null;
+                const suggestedMeetArrivalAirport = step.type === "meet"
+                  ? suggestMeetFlightArrivalAirport(day, step.anchorSpot)
+                  : null;
+                const departureAirportName = suggestedDismissAirport?.name || step.anchorSpot.name || step.name;
+                const arrivalAirportName = step.type === "dismiss"
+                  ? (step.anchorSpot.name || step.name)
+                  : (suggestedMeetArrivalAirport?.name || "");
+                let flightLabel;
+                if (flight) {
+                  const parts = [];
+                  if (flight.flightNumber) parts.push(flight.flightNumber);
+                  if (flight.time) parts.push(`離陸 ${flight.time}`);
+                  if (flight.arrivalTime) parts.push(`着陸 ${flight.arrivalTime}`);
+                  if (flight.arrivalAirport) parts.push(`→ ${flight.arrivalAirport}`);
+                  if (flight.pricePerPerson) parts.push(`¥${Number(flight.pricePerPerson).toLocaleString()}/名`);
+                  flightLabel = parts.length ? parts.join("  ") : "✈ 登録済み";
+                } else {
+                  flightLabel = "航空券を探す・登録する";
+                }
+                flightBtn.innerHTML = `<span>✈</span><span class="tl-hotel-find">${escHtml(flightLabel)}</span><span class="tl-hotel-chevron">›</span>`;
+                const p = new URLSearchParams({
+                  role: step.type,
+                  airport: flight?.airport || departureAirportName,
+                  spotId: step.anchorSpot.id || "",
+                  date: day.date || "",
+                  time: flight?.time || "",
+                });
+                if (!flight && arrivalAirportName) p.set("arrivalAirport", arrivalAirportName);
+                if (flight) {
+                  if (flight.arrivalAirport) p.set("arrivalAirport", flight.arrivalAirport);
+                  if (flight.arrivalTime) p.set("arrivalTime", flight.arrivalTime);
+                  if (flight.flightNumber) p.set("flightNumber", flight.flightNumber);
+                  if (flight.pricePerPerson) p.set("price", String(flight.pricePerPerson));
+                  if (flight.memo) p.set("memo", flight.memo);
+                }
+                flightBtn.addEventListener("click", () => { location.href = `./flight.html?${p}`; });
+                rightEl.appendChild(flightBtn);
               }
-              flightBtn.innerHTML = `<span>✈</span><span class="tl-hotel-find">${escHtml(flightLabel)}</span><span class="tl-hotel-chevron">›</span>`;
-              const p = new URLSearchParams({
-                role: step.type,
-                airport: step.anchorSpot.name || step.name,
-                spotId: step.anchorSpot.id || "",
-                date: day.date || "",
-                time: flight?.time || minutesToTime(step.time),
-              });
-              if (flight) {
-                if (flight.arrivalAirport) p.set("arrivalAirport", flight.arrivalAirport);
-                if (flight.arrivalTime) p.set("arrivalTime", flight.arrivalTime);
-                if (flight.flightNumber) p.set("flightNumber", flight.flightNumber);
-                if (flight.pricePerPerson) p.set("price", String(flight.pricePerPerson));
-                if (flight.memo) p.set("memo", flight.memo);
-              }
-              flightBtn.addEventListener("click", () => { location.href = `./flight.html?${p}`; });
-              rightEl.appendChild(flightBtn);
             }
           }
 
-          // 空港チェックイン遅延 or 終了時刻超過の警告テキスト
-          if (step.airportCheckinWarning) {
-            const warnEl = document.createElement("span");
-            warnEl.className = "tl-overflow-warn";
-            warnEl.textContent = `チェックイン時刻（${step.airportCheckinDeadlineStr}）を過ぎています！`;
-            rightEl.appendChild(warnEl);
-          } else if (step.overflow) {
-            const warnEl = document.createElement("span");
-            warnEl.className = "tl-overflow-warn";
-            warnEl.textContent = "終了時刻を過ぎています!";
-            rightEl.appendChild(warnEl);
+          // 空港チェックイン遅延 or 終了時刻超過の警告（split表示でない場合のみここに表示）
+          if (!step.dismissFlight) {
+            if (step.airportCheckinWarning) {
+              const warnEl = document.createElement("span");
+              warnEl.className = "tl-overflow-warn";
+              warnEl.textContent = `チェックイン時刻（${step.airportCheckinDeadlineStr}）を過ぎています！`;
+              rightEl.appendChild(warnEl);
+            } else if (step.overflow) {
+              const warnEl = document.createElement("span");
+              warnEl.className = "tl-overflow-warn";
+              warnEl.textContent = "終了時刻を過ぎています!";
+              rightEl.appendChild(warnEl);
+            }
           }
 
+          row.appendChild(leftEl);
+          row.appendChild(rightEl);
+
+        } else if (step.type === "airportStay") {
+          row.className = "tl-row tl-row--transit";
+          const leftEl = document.createElement("div");
+          leftEl.className = "tl-left";
+          leftEl.innerHTML = '<div class="tl-line"></div>';
+          const rightEl = document.createElement("div");
+          rightEl.className = "tl-right";
+          const wrapEl = document.createElement("div");
+          wrapEl.className = "tl-transit-wrap tl-airport-stay-wrap";
+          const label = document.createElement("span");
+          label.className = "tl-transit-label";
+          label.textContent = "✈ 空港滞在";
+          wrapEl.appendChild(label);
+          if (step.editable) {
+            const stayInput = document.createElement("input");
+            stayInput.type = "number";
+            stayInput.min = "0";
+            stayInput.max = "360";
+            stayInput.step = "5";
+            stayInput.value = String(step.duration || 0);
+            stayInput.className = "tl-manual-mins";
+            const unit = document.createElement("span");
+            unit.className = "tl-mins-label";
+            unit.textContent = "分";
+            wrapEl.appendChild(stayInput);
+            wrapEl.appendChild(unit);
+            stayInput.addEventListener("change", () => {
+              const v = Math.max(0, Math.min(360, Number(stayInput.value) || 0));
+              stayInput.value = String(v);
+              if (step.role === "meet") schedule.meetAirportStayMin = v;
+              else schedule.dismissAirportStayMin = v;
+              saveSchedule(schedule);
+              renderAll();
+            });
+          } else {
+            const unit = document.createElement("span");
+            unit.className = "tl-mins-label";
+            unit.textContent = `${step.duration || 0}分`;
+            wrapEl.appendChild(unit);
+          }
+          rightEl.appendChild(wrapEl);
+          row.appendChild(leftEl);
+          row.appendChild(rightEl);
+
+        } else if (step.type === "flight") {
+          row.className = "tl-row tl-row--anchor";
+          const leftEl = document.createElement("div");
+          leftEl.className = "tl-left";
+          const endHtml = step.leaveTime !== step.time ? `<div class="tl-line"></div><span class="tl-end-time">${minutesToTime(step.leaveTime)}</span>` : "";
+          leftEl.innerHTML = `<span class="tl-time">${minutesToTime(step.time)}</span>${endHtml}`;
+          const rightEl = document.createElement("div");
+          rightEl.className = "tl-right";
+          const dot = document.createElement("span");
+          dot.className = "tl-anchor-dot";
+          dot.style.background = "var(--accent-teal, #70d6c5)";
+          rightEl.appendChild(dot);
+          const flightBtn = document.createElement("button");
+          flightBtn.type = "button";
+          flightBtn.className = "tl-hotel-btn tl-flight-btn";
+          flightBtn.title = "クリックして航空券を登録・確認する";
+          const flt = step.flight || {};
+          const parts = [];
+          if (flt.flightNumber) parts.push(flt.flightNumber);
+          parts.push("離陸");
+          if (flt.arrivalTime) parts.push(`着陸 ${flt.arrivalTime}`);
+          if (flt.arrivalAirport) parts.push(`→ ${flt.arrivalAirport}`);
+          if (flt.pricePerPerson) parts.push(`¥${Number(flt.pricePerPerson).toLocaleString()}/名`);
+          flightBtn.innerHTML = `<span>✈</span><span class="tl-hotel-find">${escHtml(parts.join("  "))}</span><span class="tl-hotel-chevron">›</span>`;
+          const p = new URLSearchParams({
+            role: step.role || "meet",
+            airport: flt.airport || step.fromSpot?.name || "",
+            spotId: step.fromSpot?.id || "",
+            date: day.date || "",
+            time: flt.time || "",
+          });
+          if (flt.arrivalAirport) p.set("arrivalAirport", flt.arrivalAirport);
+          if (flt.arrivalTime) p.set("arrivalTime", flt.arrivalTime);
+          if (flt.flightNumber) p.set("flightNumber", flt.flightNumber);
+          if (flt.pricePerPerson) p.set("price", String(flt.pricePerPerson));
+          if (flt.memo) p.set("memo", flt.memo);
+          flightBtn.addEventListener("click", () => { location.href = `./flight.html?${p}`; });
+          rightEl.appendChild(flightBtn);
+          row.appendChild(leftEl);
+          row.appendChild(rightEl);
+
+        } else if (step.type === "airportPoint") {
+          row.className = "tl-row tl-row--anchor";
+          const leftEl = document.createElement("div");
+          leftEl.className = "tl-left";
+          leftEl.innerHTML = `<span class="tl-time">${minutesToTime(step.time)}</span>${!isLast ? '<div class="tl-line"></div>' : ''}`;
+          const rightEl = document.createElement("div");
+          rightEl.className = "tl-right";
+          const dot = document.createElement("span");
+          dot.className = "tl-anchor-dot";
+          dot.style.background = "var(--accent-teal, #70d6c5)";
+          rightEl.appendChild(dot);
+          const nameEl = document.createElement("span");
+          nameEl.className = "tl-anchor-name";
+          nameEl.textContent = `${step.label ? `${step.label} — ` : ""}${step.name}`;
+          if (step.anchorSpot?.id) {
+            nameEl.style.cursor = "pointer";
+            nameEl.style.textDecoration = "underline dotted";
+            nameEl.title = "スポットメニューを開く";
+            nameEl.addEventListener("click", () => openScheduleSpotMenu(step.anchorSpot.id));
+          }
+          rightEl.appendChild(nameEl);
           row.appendChild(leftEl);
           row.appendChild(rightEl);
 
@@ -2690,18 +3357,21 @@
 
           // 手動移動時間・メモ入力欄
           const fromEntry = day.entries.find(en => en.spotId === step.fromSpot?.id);
-          if (fromEntry) {
+          if (fromEntry || step.isMeetTravel) {
             const manualDiv = document.createElement("div");
             manualDiv.className = "tl-manual-travel";
-            const tH = fromEntry.travelToNextMinutes ? Math.floor(fromEntry.travelToNextMinutes / 60) : "";
-            const tM = fromEntry.travelToNextMinutes ? (fromEntry.travelToNextMinutes % 60) : "";
+            const mins0 = step.isMeetTravel
+              ? (day.meetTravelMinutes || null)
+              : (fromEntry?.travelToNextMinutes || null);
+            const tH = mins0 ? Math.floor(mins0 / 60) : "";
+            const tM = mins0 ? (mins0 % 60) : "";
             const timeRow = document.createElement("div");
             timeRow.className = "tl-manual-time-row";
             timeRow.innerHTML = `<span class="tl-manual-time-label">手動設定：</span><input type="number" min="0" max="23" step="1" value="${tH}" class="tl-manual-time-input" data-travel-h /><span class="tl-manual-time-label">時間</span><input type="number" min="0" max="55" step="5" value="${tM}" class="tl-manual-time-input" data-travel-m /><span class="tl-manual-time-label">分</span>`;
             const memoEl = document.createElement("textarea");
             memoEl.className = "tl-manual-memo";
             memoEl.placeholder = "移動メモ（例：電車20分＋徒歩5分）";
-            memoEl.value = fromEntry.travelToNextMemo || "";
+            memoEl.value = step.isMeetTravel ? (day.meetTravelMemo || "") : (fromEntry?.travelToNextMemo || "");
             memoEl.rows = 1;
             manualDiv.appendChild(timeRow);
             manualDiv.appendChild(memoEl);
@@ -2710,13 +3380,24 @@
               const hv = parseInt(timeRow.querySelector("[data-travel-h]").value) || 0;
               const mv = parseInt(timeRow.querySelector("[data-travel-m]").value) || 0;
               const mins = hv * 60 + mv;
-              fromEntry.travelToNextMinutes = mins > 0 ? mins : null;
+              if (step.isMeetTravel) {
+                day.meetTravelMinutes = mins > 0 ? mins : null;
+              } else {
+                fromEntry.travelToNextMinutes = mins > 0 ? mins : null;
+              }
               saveSchedule(schedule);
               renderDays();
             };
             timeRow.querySelector("[data-travel-h]").addEventListener("change", updateTime);
             timeRow.querySelector("[data-travel-m]").addEventListener("change", updateTime);
-            memoEl.addEventListener("input", () => { fromEntry.travelToNextMemo = memoEl.value.trim() || ""; saveSchedule(schedule); });
+            memoEl.addEventListener("input", () => {
+              if (step.isMeetTravel) {
+                day.meetTravelMemo = memoEl.value.trim() || "";
+              } else {
+                fromEntry.travelToNextMemo = memoEl.value.trim() || "";
+              }
+              saveSchedule(schedule);
+            });
             memoEl.addEventListener("click", e => e.stopPropagation());
           }
 
@@ -2806,7 +3487,7 @@
           const sH = Math.floor(stayMin / 60);
           const sM = stayMin % 60;
           const stayTimeRow = document.createElement("div");
-          stayTimeRow.className = "tl-manual-time-row";
+          stayTimeRow.className = "tl-manual-time-row tl-stay-time-row";
           stayTimeRow.innerHTML = `<span class="tl-manual-time-label">滞在：</span><input type="number" min="0" max="23" step="1" value="${sH}" class="tl-manual-time-input" data-stay-h /><span class="tl-manual-time-label">時間</span><input type="number" min="0" max="55" step="5" value="${sM}" class="tl-manual-time-input" data-stay-m /><span class="tl-manual-time-label">分</span>`;
           stayRow.appendChild(stayTimeRow);
           rightEl.appendChild(stayRow);
@@ -2904,6 +3585,132 @@
         }
 
         wrap.appendChild(row);
+
+        // 解散空港+フライト登録済み: 空港滞在行 + 離陸行を追加
+        if (step.dismissFlight) {
+          const flt = step.dismissFlight;
+          const stayMin = step.dismissAirportStayMin ?? 90;
+
+          // 空港滞在行
+          const stayRow = document.createElement("div");
+          stayRow.className = "tl-row tl-row--transit";
+          const stayLeft = document.createElement("div");
+          stayLeft.className = "tl-left";
+          stayLeft.innerHTML = '<div class="tl-line"></div>';
+          const stayRight = document.createElement("div");
+          stayRight.className = "tl-right";
+          const stayWrap = document.createElement("div");
+          stayWrap.className = "tl-transit-wrap tl-airport-stay-wrap";
+          const stayLabel = document.createElement("span");
+          stayLabel.className = "tl-transit-label";
+          stayLabel.textContent = "✈ 空港滞在";
+          const stayInput = document.createElement("input");
+          stayInput.type = "number";
+          stayInput.min = "5";
+          stayInput.max = "360";
+          stayInput.step = "5";
+          stayInput.value = String(stayMin);
+          stayInput.className = "tl-manual-mins";
+          stayInput.title = "空港での滞在時間（分）";
+          const stayUnit = document.createElement("span");
+          stayUnit.className = "tl-mins-label";
+          stayUnit.textContent = "分";
+          stayWrap.appendChild(stayLabel);
+          stayWrap.appendChild(stayInput);
+          stayWrap.appendChild(stayUnit);
+          stayRight.appendChild(stayWrap);
+          stayRow.appendChild(stayLeft);
+          stayRow.appendChild(stayRight);
+          wrap.appendChild(stayRow);
+          stayInput.addEventListener("change", () => {
+            const v = Math.max(5, Math.min(360, Number(stayInput.value) || 90));
+            stayInput.value = String(v);
+            schedule.dismissAirportStayMin = v;
+            saveSchedule(schedule);
+            renderAll();
+          });
+
+          // 離陸行
+          const deptRow = document.createElement("div");
+          deptRow.className = "tl-row tl-row--anchor";
+          const deptLeft = document.createElement("div");
+          deptLeft.className = "tl-left";
+          deptLeft.innerHTML = `<span class="tl-time">${escHtml(flt.time || "")}</span>`;
+          const deptRight = document.createElement("div");
+          deptRight.className = "tl-right";
+          const deptDot = document.createElement("span");
+          deptDot.className = "tl-anchor-dot";
+          deptDot.style.background = "var(--accent-pink, #ff8fb1)";
+          deptRight.appendChild(deptDot);
+          const flightBtn2 = document.createElement("button");
+          flightBtn2.type = "button";
+          flightBtn2.className = "tl-hotel-btn tl-flight-btn";
+          flightBtn2.title = "クリックして航空券を登録・確認する";
+          const parts2 = [];
+          if (flt.flightNumber) parts2.push(flt.flightNumber);
+          parts2.push("離陸");
+          if (flt.arrivalTime) parts2.push(`着陸 ${flt.arrivalTime}`);
+          if (flt.arrivalAirport) parts2.push(`→ ${flt.arrivalAirport}`);
+          if (flt.pricePerPerson) parts2.push(`¥${Number(flt.pricePerPerson).toLocaleString()}/名`);
+          flightBtn2.innerHTML = `<span>✈</span><span class="tl-hotel-find">${escHtml(parts2.join("  "))}</span><span class="tl-hotel-chevron">›</span>`;
+          const p2 = new URLSearchParams({
+            role: "dismiss",
+            airport: flt.airport || step.anchorSpot?.name || step.name,
+            spotId: step.dismissAnchorSpot?.id || "",
+            date: day.date || "",
+            time: flt.time || "",
+          });
+          if (flt.arrivalAirport || step.dismissAnchorSpot?.name) p2.set("arrivalAirport", flt.arrivalAirport || step.dismissAnchorSpot.name);
+          if (flt.arrivalTime) p2.set("arrivalTime", flt.arrivalTime);
+          if (flt.flightNumber) p2.set("flightNumber", flt.flightNumber);
+          if (flt.pricePerPerson) p2.set("price", String(flt.pricePerPerson));
+          if (flt.memo) p2.set("memo", flt.memo);
+          flightBtn2.addEventListener("click", () => { location.href = `./flight.html?${p2}`; });
+          deptRight.appendChild(flightBtn2);
+          if (step.airportCheckinWarning) {
+            const warnEl = document.createElement("span");
+            warnEl.className = "tl-overflow-warn";
+            warnEl.textContent = `チェックイン時刻（${step.airportCheckinDeadlineStr}）を過ぎています！`;
+            deptRight.appendChild(warnEl);
+          } else if (step.overflow) {
+            const warnEl = document.createElement("span");
+            warnEl.className = "tl-overflow-warn";
+            warnEl.textContent = "終了時刻を過ぎています!";
+            deptRight.appendChild(warnEl);
+          }
+          deptRow.appendChild(deptLeft);
+          deptRow.appendChild(deptRight);
+          wrap.appendChild(deptRow);
+
+          const arrivalName = flt.arrivalAirport || step.dismissAnchorSpot?.name || "";
+          const arrivalTime = flt.arrivalTime || "";
+          if (arrivalName || arrivalTime) {
+            const arrRow = document.createElement("div");
+            arrRow.className = "tl-row tl-row--anchor";
+            const arrLeft = document.createElement("div");
+            arrLeft.className = "tl-left";
+            arrLeft.innerHTML = `<span class="tl-time">${escHtml(arrivalTime)}</span>`;
+            const arrRight = document.createElement("div");
+            arrRight.className = "tl-right";
+            const arrDot = document.createElement("span");
+            arrDot.className = "tl-anchor-dot";
+            arrDot.style.background = "var(--accent-pink, #ff8fb1)";
+            arrRight.appendChild(arrDot);
+            const arrName = document.createElement("span");
+            arrName.className = "tl-anchor-name";
+            arrName.textContent = arrivalName || step.dismissAnchorSpot?.name || "到着地";
+            if (step.dismissAnchorSpot?.id) {
+              arrName.style.cursor = "pointer";
+              arrName.style.textDecoration = "underline dotted";
+              arrName.title = "スポットメニューを開く";
+              arrName.addEventListener("click", () => openScheduleSpotMenu(step.dismissAnchorSpot.id));
+            }
+            arrRight.appendChild(arrName);
+            arrRow.appendChild(arrLeft);
+            arrRow.appendChild(arrRight);
+            wrap.appendChild(arrRow);
+          }
+        }
       });
 
       if (isEmptyDay) {
@@ -2972,8 +3779,11 @@
             renderDays();
           });
         } else {
-          startInput.value = day.startTime || "09:00";
-          startInput.title = "この日の開始時刻（前泊チェックアウト後）";
+          const autoStartMin = getAutoLastDayStartMinutes(day, idx, schedule.days.length);
+          startInput.value = autoStartMin !== null ? minutesToTime(autoStartMin) : (day.startTime || "09:00");
+          startInput.title = autoStartMin !== null
+            ? "帰りの飛行機から逆算した出発時刻"
+            : "この日の開始時刻（前泊チェックアウト後）";
           startInput.addEventListener("change", e => { day.startTime = e.target.value; saveSchedule(schedule); renderDays(); });
         }
 
@@ -3160,6 +3970,23 @@
     window.addEventListener("message", event => {
       if (event.origin !== window.location.origin) return;
       if (event.data?.type === "spot-menu-saved" || event.data?.type === "spot-menu-closed") closeSharedSpotMenu();
+      if (event.data?.type === "spot-menu-saved") {
+        reloadActiveList();
+        const spotId = event.data.spotId;
+        const mins = Number(event.data.defaultStayMinutes);
+        if (spotId && Number.isFinite(mins) && mins >= 0) {
+          if (!schedule.defaultStayTimes) schedule.defaultStayTimes = {};
+          schedule.defaultStayTimes[spotId] = mins;
+          schedule.days?.forEach(day => {
+            if ((day.entries || []).some(entry => entry.spotId === spotId)) {
+              if (!day.stayTimes) day.stayTimes = {};
+              day.stayTimes[spotId] = mins;
+            }
+          });
+          saveSchedule(schedule);
+        }
+        renderAll();
+      }
     });
 
     // ── 旅程設定イベント ──────────────────────────────────────────
@@ -3174,12 +4001,12 @@
           syncDaysToDateRange();
         });
       });
-      // 時刻・場所変更 → プラン再描画
-      ["tripMeetTime", "tripMeetPlace", "tripDismissTime", "tripDismissPlace"].forEach(key => {
+      // 時刻変更 → プラン再描画。場所テキストは「新規追加」まで保存しない。
+      ["tripMeetTime", "tripDismissTime"].forEach(key => {
         document.getElementById(key).addEventListener("change", e => {
           schedule[key] = e.target.value;
           saveSchedule(schedule);
-          if (key === "tripMeetTime" || key === "tripDismissTime") autoFixDismissDate();
+          autoFixDismissDate();
           renderAll();
         });
       });
@@ -3218,33 +4045,62 @@
       const inputId = category === "meet" ? "tripMeetPlace" : "tripDismissPlace";
       const key = category === "meet" ? "tripMeetPlace" : "tripDismissPlace";
       const input = document.getElementById(inputId);
-      const name = input.value.trim();
-      if (!name) { input.focus(); return; }
+      const rawName = input.value.trim();
+      if (!rawName) { input.focus(); return; }
+      const airportMatch = findAirportData(rawName);
+      const name = airportMatch?.name || rawName;
+
+      // 同名スポットが既に登録されている場合はそちらを使用
+      const existing = (activeList.spots || []).find(s => s.name === name || s.name === rawName);
+      if (existing) {
+        const label = category === "meet" ? "集合" : "解散";
+        alert(`「${name}」は既に登録済みです。このスポットを${label}場所として設定します。`);
+        activeList.spots = activeList.spots.map(s => {
+          const roles = getSpotRoles(s).filter(r => r !== category);
+          return { ...s, spotRoles: roles, spotRole: roles[0] || "" };
+        });
+        activeList.spots = activeList.spots.map(s => {
+          if (s.id !== existing.id) return s;
+          const roles = [...new Set([...getSpotRoles(s), category])];
+          return { ...s, spotRoles: roles, spotRole: roles[0] || category };
+        });
+        schedule[key] = name;
+        saveActiveList();
+        saveSchedule(schedule);
+        renderAll();
+        return;
+      }
 
       // 座標検索（Nominatim）
       let lat = null, lng = null;
       let spotCategory = "other";
-      try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(name)}&format=json&limit=1`,
-          { headers: { "Accept-Language": "ja" } }
-        );
-        const data = await res.json();
-        if (data.length > 0) {
-          lat = parseFloat(data[0].lat);
-          lng = parseFloat(data[0].lon);
-          const osmCat  = data[0].class || "";
-          const osmType = data[0].type  || "";
-          if (osmCat === "aeroway") spotCategory = "airport";
-          else if (osmCat === "railway" || osmCat === "public_transport") spotCategory = "station";
-          else if (osmCat === "tourism" && ["hotel","hostel","motel","guest_house","chalet","apartment"].includes(osmType)) spotCategory = "hotel";
-          else if (osmCat === "amenity" && ["restaurant","cafe","bar","pub","fast_food","food_court","ice_cream"].includes(osmType)) spotCategory = "restaurant";
-          else if (/空港|airport|エアポート/i.test(name)) spotCategory = "airport";
-          else if (/駅|station/i.test(name)) spotCategory = "station";
-          else if (/ホテル|旅館|宿泊|リゾート|inn\b|hotel/i.test(name)) spotCategory = "hotel";
-          else if (/レストラン|食堂|居酒屋|カフェ|喫茶|ラーメン|寿司|焼肉/i.test(name)) spotCategory = "restaurant";
-        }
-      } catch {}
+      if (airportMatch) {
+        lat = airportMatch.lat;
+        lng = airportMatch.lng;
+        spotCategory = "airport";
+      } else {
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(name)}&format=json&limit=1`,
+            { headers: { "Accept-Language": "ja" } }
+          );
+          const data = await res.json();
+          if (data.length > 0) {
+            lat = parseFloat(data[0].lat);
+            lng = parseFloat(data[0].lon);
+            const osmCat  = data[0].class || "";
+            const osmType = data[0].type  || "";
+            if (osmCat === "aeroway") spotCategory = "airport";
+            else if (osmCat === "railway" || osmCat === "public_transport") spotCategory = "station";
+            else if (osmCat === "tourism" && ["hotel","hostel","motel","guest_house","chalet","apartment"].includes(osmType)) spotCategory = "hotel";
+            else if (osmCat === "amenity" && ["restaurant","cafe","bar","pub","fast_food","food_court","ice_cream"].includes(osmType)) spotCategory = "restaurant";
+            else if (/空港|airport|エアポート/i.test(name)) spotCategory = "airport";
+            else if (/駅|station/i.test(name)) spotCategory = "station";
+            else if (/ホテル|旅館|宿泊|リゾート|inn\b|hotel/i.test(name)) spotCategory = "hotel";
+            else if (/レストラン|食堂|居酒屋|カフェ|喫茶|ラーメン|寿司|焼肉/i.test(name)) spotCategory = "restaurant";
+          }
+        } catch {}
+      }
 
       if (lat === null || lng === null) {
         alert(`「${name}」の座標が見つかりませんでした。\nより具体的な名称（例：新千歳空港、東京駅）で入力してください。`);
@@ -3280,9 +4136,65 @@
 
     function pickAutoPlaceDay(spot) {
       const totalDays = schedule.days.length;
+
+      // 移動時間見積もり: transit キャッシュ優先 → 距離ベース → fallback
+      const travelEst = (a, b, fallback) => {
+        if (a?.lat && a?.lng && b?.lat && b?.lng) {
+          const key = transitCacheKey(a.lat, a.lng, b.lat, b.lng);
+          const cached = schedule.transitCache?.[key];
+          if (cached && !cached.failed && cached.durationMin) return cached.durationMin;
+          const d = schedDistKm(a, b);
+          return d < 1 ? 10 : d < 5 ? 20 : d < 20 ? 35 : d < 80 ? 60 : 100;
+        }
+        return fallback;
+      };
+
       const candidates = schedule.days
         .map((day, idx) => ({ day, idx, count: (day.entries || []).length }))
-        .filter(({ day, idx }) => canPlaceWithinHours(day, idx, totalDays, spot))
+        .filter(({ day, idx }) => {
+          if (!canPlaceWithinHours(day, idx, totalDays, spot)) return false;
+
+          const isFirst = idx === 0;
+          const isLast  = idx === totalDays - 1;
+          const startMin = timeToMinutes(isFirst ? (schedule.tripMeetTime    || "09:00") : (day.startTime || "09:00"));
+          const endMin   = timeToMinutes(isLast  ? (schedule.tripDismissTime || "18:00") : (day.endTime   || "21:00"));
+          const def = day.travelMinutes ?? 20;
+
+          // その日のスポット一覧（集合/解散スポット除く）+ 新スポット
+          const daySpots = (day.entries || [])
+            .map(en => getSpotById(en.spotId))
+            .filter(s => isScheduleVisitSpot(s, isFirst, isLast));
+          daySpots.push(spot);
+
+          // 集合地点（初日は集合スポット、非初日は前夜ホテル座標）
+          let meetAnchor = null;
+          if (isFirst) {
+            meetAnchor = activeList?.spots?.find(isMeetSpot) || null;
+          } else {
+            const h = schedule.hotels?.[schedule.days[idx - 1]?.id];
+            if (h?.lat && h?.lng) meetAnchor = h;
+          }
+          // 解散地点（最終日は解散スポット、非最終日は当夜ホテル座標）
+          let dismissAnchor = null;
+          if (isLast) {
+            dismissAnchor = activeList?.spots?.find(isDismissSpot) || null;
+          } else {
+            const h = schedule.hotels?.[day.id];
+            if (h?.lat && h?.lng) dismissAnchor = h;
+          }
+
+          // 逐次移動時間で総所要時間を推定（キャッシュ優先・ペアごとに算出）
+          let used = 0;
+          let prev = meetAnchor;
+          for (const s of daySpots) {
+            used += travelEst(prev, s, def);
+            used += (day.stayTimes?.[s.id]) ?? ((schedule.defaultStayTimes?.[s.id]) ?? getSpotStayDefault(s));
+            prev = s;
+          }
+          used += travelEst(prev, dismissAnchor, def); // 最終移動
+
+          return used <= endMin - startMin;
+        })
         .sort((a, b) => a.count - b.count || a.idx - b.idx);
       return candidates.length > 0 ? candidates[0].idx : null;
     }
@@ -3309,7 +4221,7 @@
         alert("配置できるスポットがありません。");
         return;
       }
-      const others = unscheduled.filter(s => !isMeetSpot(s) && !isDismissSpot(s) && s.spotCategory !== "hotel");
+      const others = unscheduled.filter(s => !isMeetSpot(s) && !isDismissSpot(s) && s.spotCategory !== "hotel" && s.spotCategory !== "airport");
       // 優先度の高い順（数値が小さいほど高優先、デフォルト3）で配置
       others.sort((a, b) => (a.priority || 3) - (b.priority || 3));
       others.forEach(spot => {
@@ -3330,6 +4242,9 @@
         while (maxRetry-- > 0) {
           const plan = generatePlan(day, idx, schedule.days.length, { strictCapacity: true });
           const toSkip = [...plan.skipped];
+          plan.steps
+            .filter(s => s.type === "spot" && s.outsideHours)
+            .forEach(s => toSkip.push(s.name));
           // ホテル到着（dismiss）が終了時刻を超えていたら最後のスポットも除去
           const dismissStep = plan.steps.find(s => s.type === "dismiss");
           if (dismissStep?.overflow && !toSkip.length) {
@@ -3428,6 +4343,7 @@
     });
 
     bindTripSettingsEvents();
+    bindTripPlaceAutocomplete();
 
     activeList = loadActiveList();
     if (activeList) {

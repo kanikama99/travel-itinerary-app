@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
@@ -6,31 +6,259 @@
   <title>使い方 - Trip Pop Map</title>
   <link rel="stylesheet" href="./styles.css" />
   <style>
-    .help-shell{width:min(960px,calc(100% - 32px));margin:0 auto;padding:40px 0 80px;display:grid;gap:18px}.help-title{font-size:clamp(1.7rem,4vw,2.25rem);margin:0}.help-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);padding:20px}.help-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}.help-item{background:rgba(255,255,255,.58);border:1px solid rgb(var(--accent-rgb,255,122,69)/.18);border-radius:12px;padding:16px}.help-item h2{font-size:1rem;margin:0 0 8px;color:var(--accent-deep)}.help-item p{margin:0;color:var(--muted);line-height:1.7}
+    .help-shell{width:min(960px,calc(100% - 32px));margin:0 auto;padding:40px 0 80px;display:grid;gap:24px}
+    .help-title{font-size:clamp(1.7rem,4vw,2.25rem);margin:0}
+    .help-intro{color:var(--muted);font-size:1rem;line-height:1.8;margin:0}
+    .help-steps{display:grid;gap:20px}
+    .help-step{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden}
+    .help-step-header{display:flex;align-items:center;gap:14px;padding:18px 22px;background:linear-gradient(135deg,rgba(var(--accent-rgb,255,122,69),.08),rgba(var(--accent-rgb,255,122,69),.03));border-bottom:1px solid var(--line)}
+    .help-step-num{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-light));color:#fff;font-size:1.1rem;font-weight:900;display:grid;place-items:center;flex-shrink:0}
+    .help-step-title{margin:0;font-size:1.15rem;font-weight:900;color:var(--accent-deep)}
+    .help-step-body{padding:18px 22px;display:grid;gap:14px}
+    .help-step-desc{margin:0;color:var(--text);line-height:1.85;font-size:.97rem}
+    .help-tips{display:grid;gap:8px}
+    .help-tip{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:rgba(255,255,255,.6);border:1px solid rgb(var(--accent-rgb,255,122,69)/.14);border-radius:10px;font-size:.9rem;line-height:1.7}
+    .help-tip-icon{flex-shrink:0;font-size:1.1rem;margin-top:1px}
+    .help-tip-text{color:var(--text)}
+    .help-tip-text strong{color:var(--accent-deep)}
+    .help-note{display:flex;gap:8px;align-items:flex-start;padding:9px 12px;background:rgba(var(--accent-rgb,255,122,69),.06);border-radius:8px;font-size:.84rem;color:var(--muted);line-height:1.7;margin-top:4px}
+    .help-note-icon{flex-shrink:0;font-size:1rem}
+    .help-example{background:rgba(255,255,255,.85);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:.84rem;color:var(--muted);line-height:1.8}
+    .help-example strong{color:var(--text);font-weight:700}
+    .help-card-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+    .help-mini-card{background:rgba(255,255,255,.7);border:1px solid rgb(var(--accent-rgb,255,122,69)/.16);border-radius:10px;padding:12px 14px}
+    .help-mini-card p{margin:0;font-size:.88rem;line-height:1.7;color:var(--text)}
+    .help-mini-card strong{display:block;color:var(--accent-deep);margin-bottom:4px;font-size:.95rem}
+    .help-flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+    .help-flow-step{background:var(--accent-soft);border:1px solid rgb(var(--accent-rgb,255,122,69)/.22);border-radius:999px;padding:4px 12px;font-size:.84rem;font-weight:700;color:var(--accent-deep);white-space:nowrap}
+    .help-flow-arrow{color:var(--muted);font-size:.9rem}
+    @media(max-width:520px){.help-step-header{padding:14px 16px}.help-step-body{padding:14px 16px}}
   </style>
 </head>
 <body>
   <main class="help-shell">
-    <header><p class="panel-kicker">Guide</p><h1 class="help-title">使い方</h1></header>
-        <section class="help-card help-grid">
-      <article class="help-item"><h2>1. 行きたい場所を追加</h2><p>検索やGoogle Maps URLからスポットを追加し、スポットメニューで滞在時間・予算・営業時間・写真を整えます。</p></article>
-      <article class="help-item"><h2>2. スケジュールを作る</h2><p>集合日・解散日を設定して、SPOTSを日程に追加します。自動配置や移動手段も使えます。</p></article>
-      <article class="help-item"><h2>3. 宿泊先や候補を追加</h2><p>日程中の宿泊先ボタンや、行きたい場所のエリアから提案で、旅程に必要な候補をSPOTSへ足せます。</p></article>
-      <article class="help-item"><h2>4. しおりとして仕上げる</h2><p>印刷ページで写真と紹介文を追加し、地図・日程・持ち物リストと一緒にPDF/印刷できます。</p></article>
-    </section>
+    <header>
+      <p class="panel-kicker">Guide</p>
+      <h1 class="help-title">使い方</h1>
+      <p class="help-intro">Trip Pop Map は「行きたい場所を追加 → スケジュールを組む → しおりにする」の流れで旅行計画を作るアプリです。</p>
+    </header>
+
+    <!-- 全体フロー -->
+    <div class="help-example">
+      <strong>全体の流れ</strong>
+      <div class="help-flow" style="margin-top:6px">
+        <span class="help-flow-step">①行きたい場所</span>
+        <span class="help-flow-arrow">›</span>
+        <span class="help-flow-step">②スポット詳細入力</span>
+        <span class="help-flow-arrow">›</span>
+        <span class="help-flow-step">③スケジュール</span>
+        <span class="help-flow-arrow">›</span>
+        <span class="help-flow-step">④持ち物リスト</span>
+        <span class="help-flow-arrow">›</span>
+        <span class="help-flow-step">⑤チェックリスト</span>
+        <span class="help-flow-arrow">›</span>
+        <span class="help-flow-step">⑥印刷する</span>
+      </div>
+    </div>
+
+    <div class="help-steps">
+
+      <!-- ① 行きたい場所 -->
+      <section class="help-step">
+        <div class="help-step-header">
+          <div class="help-step-num">①</div>
+          <h2 class="help-step-title">行きたい場所を追加する</h2>
+        </div>
+        <div class="help-step-body">
+          <p class="help-step-desc">まずは行きたいと思っているスポットをどんどん追加しましょう！スポット名を入力するか、Google Maps の URL を貼り付けるだけで追加できます。</p>
+          <div class="help-tips">
+            <div class="help-tip">
+              <span class="help-tip-icon">🔍</span>
+              <span class="help-tip-text"><strong>スポットの追加：</strong>入力欄にスポット名または Google Maps の URL を入力して「スポットを追加」ボタンを押します。</span>
+            </div>
+            <div class="help-tip">
+              <span class="help-tip-icon">💡</span>
+              <span class="help-tip-text"><strong>エリアからキーワードを提案：</strong>行きたい場所が思いつかない場合は「エリアからキーワードを提案」機能を使いましょう。エリア名（例：京都、台湾）を入力すると、その地域の観光スポットやグルメが提案されます。</span>
+            </div>
+            <div class="help-tip">
+              <span class="help-tip-icon">🗺</span>
+              <span class="help-tip-text"><strong>地図で位置確認：</strong>スポットを追加すると、ページ下部の地図に各スポットの位置が自動で表示されます。近いスポットは拡大図でまとめて確認できます。</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ② スポット詳細入力 -->
+      <section class="help-step">
+        <div class="help-step-header">
+          <div class="help-step-num">②</div>
+          <h2 class="help-step-title">スポットの詳細を入力する</h2>
+        </div>
+        <div class="help-step-body">
+          <p class="help-step-desc">各スポットに詳細情報を設定すると、スケジュールがより組みやすくなります。入力はすべて任意です。</p>
+          <div class="help-card-row">
+            <div class="help-mini-card">
+              <strong>⭐ 優先度</strong>
+              <p>行きたい度合い（1〜5）。自動配置時に優先度の高い順から配置されます。</p>
+            </div>
+            <div class="help-mini-card">
+              <strong>⏱ 滞在時間</strong>
+              <p>そのスポットに滞在する予定の時間。スケジュール計算に使われます。</p>
+            </div>
+            <div class="help-mini-card">
+              <strong>💰 予算</strong>
+              <p>1人あたりの目安費用。旅行全体の予算管理に活用できます。</p>
+            </div>
+            <div class="help-mini-card">
+              <strong>🕐 営業時間</strong>
+              <p>自動配置の際に営業時間内に収まるよう調整されます。スポットに行きたい時間帯として設定してもOKです。</p>
+            </div>
+          </div>
+          <div class="help-note">
+            <span class="help-note-icon">📝</span>
+            より細かい設定（写真・メモ・カテゴリなど）は、スポット名をクリックして開く<strong>スポットメニュー</strong>から編集できます。
+          </div>
+        </div>
+      </section>
+
+      <!-- ③ スケジュール -->
+      <section class="help-step">
+        <div class="help-step-header">
+          <div class="help-step-num">③</div>
+          <h2 class="help-step-title">スケジュールを組む</h2>
+        </div>
+        <div class="help-step-body">
+          <p class="help-step-desc">集合・解散の設定をしたあと、日程表にスポットを配置してスケジュールを作ります。</p>
+          <div class="help-tips">
+            <div class="help-tip">
+              <span class="help-tip-icon">🤝</span>
+              <span class="help-tip-text"><strong>集合・解散の設定：</strong>まず集合時間・場所と解散時間・場所、移動手段を設定します。</span>
+            </div>
+            <div class="help-tip">
+              <span class="help-tip-icon">👆</span>
+              <span class="help-tip-text"><strong>ドラッグ＆ドロップ：</strong>右側の「SPOTS」からスポット名をドラッグして日程表にドロップすると配置できます。</span>
+            </div>
+            <div class="help-tip">
+              <span class="help-tip-icon">🤖</span>
+              <span class="help-tip-text"><strong>自動配置：</strong>「自動配置」ボタンを押すと、優先度・滞在時間・営業時間を考慮して自動でスケジュールが提案されます。</span>
+            </div>
+            <div class="help-tip">
+              <span class="help-tip-icon">⏱</span>
+              <span class="help-tip-text"><strong>滞在時間の変更：</strong>スケジュールに配置したスポットの滞在時間は、タイムライン上のテキストボックスから再設定できます。</span>
+            </div>
+            <div class="help-tip">
+              <span class="help-tip-icon">🚗</span>
+              <span class="help-tip-text"><strong>移動時間：</strong>スポット間の移動時間は自動提案されます。手動で変更することも可能です。「経路」ボタンを押すとGoogle Mapsで経路を検索できます。</span>
+            </div>
+          </div>
+          <div class="help-note">
+            <span class="help-note-icon">✈️</span>
+            このページから飛行機・ホテル・レンタカーの予約サイトへジャンプすることもできます。
+          </div>
+        </div>
+      </section>
+
+      <!-- ④ 持ち物リスト -->
+      <section class="help-step">
+        <div class="help-step-header">
+          <div class="help-step-num">④</div>
+          <h2 class="help-step-title">持ち物リスト</h2>
+        </div>
+        <div class="help-step-body">
+          <p class="help-step-desc">旅行に必要な持ち物のリストが自動で提案されます。不要なものは削除し、必要なものを追加してカスタマイズしましょう。</p>
+          <div class="help-tips">
+            <div class="help-tip">
+              <span class="help-tip-icon">🧳</span>
+              <span class="help-tip-text"><strong>自動提案：</strong>旅行先や旅行形態に合わせた持ち物が自動で提案されます（海外旅行の場合はパスポートや変換プラグなども追加されます）。</span>
+            </div>
+            <div class="help-tip">
+              <span class="help-tip-icon">✏️</span>
+              <span class="help-tip-text"><strong>カスタマイズ：</strong>アイテムの追加・削除・グループ分けが自由にできます。グループ名も編集可能です。</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ⑤ チェックリスト -->
+      <section class="help-step">
+        <div class="help-step-header">
+          <div class="help-step-num">⑤</div>
+          <h2 class="help-step-title">チェックリスト</h2>
+        </div>
+        <div class="help-step-body">
+          <p class="help-step-desc">旅行前に確認しておくべきことのチェックリストです。予約状況や準備の確認に使いましょう。</p>
+          <div class="help-tips">
+            <div class="help-tip">
+              <span class="help-tip-icon">✅</span>
+              <span class="help-tip-text"><strong>確認項目：</strong>ホテル・飛行機・新幹線・レンタカー・ツアーの予約、常備薬、パスポート期限、レストラン予約などが提案されます。</span>
+            </div>
+            <div class="help-tip">
+              <span class="help-tip-icon">🚫</span>
+              <span class="help-tip-text"><strong>対象外：</strong>国内旅行でパスポートが不要な場合など、該当しない項目は「対象外」にすることができます。</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ⑥ 印刷する -->
+      <section class="help-step">
+        <div class="help-step-header">
+          <div class="help-step-num">⑥</div>
+          <h2 class="help-step-title">印刷する（しおりにする）</h2>
+        </div>
+        <div class="help-step-body">
+          <p class="help-step-desc">今まで入力した旅行計画を1冊のしおりとしてまとめられます。PDF保存や印刷ができます。</p>
+          <div class="help-card-row">
+            <div class="help-mini-card">
+              <strong>📖 表紙</strong>
+              <p>タイトル・サブタイトル・写真を設定してオリジナルの表紙が作れます。</p>
+            </div>
+            <div class="help-mini-card">
+              <strong>🗺 地図</strong>
+              <p>スポットの位置関係を地図で確認できます。地図スタイルも変更できます。</p>
+            </div>
+            <div class="help-mini-card">
+              <strong>📅 日程</strong>
+              <p>スケジュールのタイムラインが日付・曜日付きで出力されます。</p>
+            </div>
+            <div class="help-mini-card">
+              <strong>🧳 持ち物</strong>
+              <p>持ち物リストがグループごとに印刷されます。</p>
+            </div>
+          </div>
+          <div class="help-tips" style="margin-top:4px">
+            <div class="help-tip">
+              <span class="help-tip-icon">🔄</span>
+              <span class="help-tip-text"><strong>ページの並べ替え・削除：</strong>表紙と背表紙以外はページの順番を変えたり、不要なページを非表示にしたりできます。</span>
+            </div>
+            <div class="help-tip">
+              <span class="help-tip-icon">📝</span>
+              <span class="help-tip-text"><strong>自由記入ページ：</strong>メモや備考用に空白ページを挿入できます。</span>
+            </div>
+            <div class="help-tip">
+              <span class="help-tip-icon">🖨</span>
+              <span class="help-tip-text"><strong>PDF/印刷：</strong>「PDF/印刷を開く」ボタンから印刷ダイアログを開いてPDF保存や印刷ができます。</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
   </main>
+
   <nav class="page-nav-bar page-nav-bar--start">
-      <a href="./schedule.html" class="page-nav-bar-btn page-nav-bar-btn--prev">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-        スケジュール
-      </a>
-    </nav>
+    <button id="historyBackBtn" type="button" class="page-nav-bar-btn page-nav-bar-btn--prev">
+      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      前のページに戻る
+    </button>
+  </nav>
 
   <button id="hamburgerBtn" class="hamburger-btn" type="button" aria-label="メニューを開く"><span class="hamburger-line"></span><span class="hamburger-line"></span><span class="hamburger-line"></span></button>
   <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
   <aside id="sideDrawer" class="side-drawer hidden" aria-hidden="true"><div class="drawer-head"><p class="drawer-kicker">Menu</p></div><nav class="drawer-nav"><a href="./bookmarks.html" class="drawer-nav-item"><span class="drawer-nav-icon">★</span><span>しおりを選ぶ</span></a><a href="./hotel.html" class="drawer-nav-item"><span class="drawer-nav-icon">H</span><span>ホテルを見つける</span></a><a href="./howto.html" class="drawer-nav-item drawer-nav-item--active"><span class="drawer-nav-icon">?</span><span>使い方</span></a><a href="./settings.html" class="drawer-nav-item"><span class="drawer-nav-icon">⚙</span><span>設定</span></a></nav></aside>
   <script>
     const hb=document.getElementById("hamburgerBtn"),sd=document.getElementById("sideDrawer"),db=document.getElementById("drawerBackdrop");hb.onclick=()=>{const o=!sd.classList.contains("hidden");sd.classList.toggle("hidden",o);db.classList.toggle("hidden",o)};db.onclick=()=>{sd.classList.add("hidden");db.classList.add("hidden")};
+    document.getElementById("historyBackBtn")?.addEventListener("click",()=>{if(history.length>1)history.back();else location.href="./spots.html"});
   </script>
   <script src="./theme.js"></script>
 </body>

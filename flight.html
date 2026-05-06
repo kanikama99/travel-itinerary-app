@@ -163,6 +163,74 @@
       return { listsData, activeList, all, schedule };
     }
 
+    function makeAirportSpotId() {
+      return `airport-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    }
+
+    const AIRPORT_DATA = [
+      { name: "成田国際空港 (NRT)", lat: 35.7719, lng: 140.3929 },
+      { name: "羽田空港 (HND)", lat: 35.5494, lng: 139.7798 },
+      { name: "関西国際空港 (KIX)", lat: 34.4270, lng: 135.2440 },
+      { name: "中部国際空港 (NGO)", lat: 34.8584, lng: 136.8054 },
+      { name: "福岡空港 (FUK)", lat: 33.5863, lng: 130.4511 },
+      { name: "那覇空港 (OKA)", lat: 26.1959, lng: 127.6459 },
+      { name: "桃園国際空港・台北 (TPE)", lat: 25.0777, lng: 121.2327 },
+      { name: "仁川国際空港 (ICN)", lat: 37.4602, lng: 126.4407 },
+      { name: "金浦空港 (GMP)", lat: 37.5589, lng: 126.7950 },
+      { name: "香港国際空港 (HKG)", lat: 22.3080, lng: 113.9185 },
+      { name: "シンガポール・チャンギ空港 (SIN)", lat: 1.3644, lng: 103.9915 },
+      { name: "バンコク・スワンナプーム空港 (BKK)", lat: 13.6900, lng: 100.7501 },
+      { name: "ホーチミン・タンソンニャット空港 (SGN)", lat: 10.8188, lng: 106.6520 },
+      { name: "ハノイ・ノイバイ空港 (HAN)", lat: 21.2212, lng: 105.8072 },
+    ];
+
+    function normalizeAirportName(value) {
+      return String(value || "").trim().toLowerCase().replace(/\s+/g, "");
+    }
+
+    function findAirportData(name) {
+      const key = normalizeAirportName(name);
+      if (!key) return null;
+      return AIRPORT_DATA.find(ap => normalizeAirportName(ap.name) === key)
+        || AIRPORT_DATA.find(ap => {
+          const code = (ap.name.match(/\(([A-Z0-9]{3})\)/) || [])[1];
+          return code && key.includes(code.toLowerCase());
+        })
+        || AIRPORT_DATA.find(ap => key.includes(normalizeAirportName(ap.name.replace(/（.*?）|\(.*?\)/g, ""))));
+    }
+
+    function ensureAirportSpot(activeList, name, fields = {}) {
+      const airportName = String(name || "").trim();
+      if (!activeList || !airportName) return null;
+      if (!Array.isArray(activeList.spots)) activeList.spots = [];
+      const known = findAirportData(airportName);
+      const exactId = fields.preferredId
+        ? activeList.spots.find(spot => spot.id === fields.preferredId)
+        : null;
+      const existing = exactId || activeList.spots.find(spot =>
+        String(spot.name || "").trim() === airportName && (spot.spotCategory === "airport" || spot.sourceType === "flight")
+      ) || activeList.spots.find(spot => String(spot.name || "").trim() === airportName);
+      const patch = {
+        name: airportName,
+        type: "spot",
+        spotCategory: "airport",
+        sourceType: "flight",
+      };
+      if (Number.isFinite(Number(fields.lat ?? known?.lat))) patch.lat = Number(fields.lat ?? known.lat);
+      if (Number.isFinite(Number(fields.lng ?? known?.lng))) patch.lng = Number(fields.lng ?? known.lng);
+      const hasStay = Number.isFinite(Number(fields.defaultStayMinutes));
+      if (hasStay) patch.defaultStayMinutes = Number(fields.defaultStayMinutes);
+      if (fields.takeoffTime) patch.takeoffTime = fields.takeoffTime;
+      if (fields.landingTime) patch.landingTime = fields.landingTime;
+      if (existing) {
+        Object.assign(existing, patch);
+        return existing;
+      }
+      const created = { id: makeAirportSpotId(), defaultStayMinutes: hasStay ? patch.defaultStayMinutes : 60, ...patch };
+      activeList.spots.push(created);
+      return created;
+    }
+
     function initFromParams() {
       const params = new URLSearchParams(location.search);
       const airport = params.get("airport") || "";
@@ -213,23 +281,39 @@
       if (!airport || !date) { status.textContent = "出発空港と搭乗日を入力してください"; return; }
       try {
         const params = new URLSearchParams(location.search);
-        const { activeList, all, schedule } = getActiveListAndSchedule();
+        const { listsData, activeList, all, schedule } = getActiveListAndSchedule();
         if (!activeList) throw new Error("しおりが見つかりません");
         if (!schedule.flights) schedule.flights = {};
-        const key = `${params.get("role") || "flight"}:${params.get("spotId") || airport}:${date}`;
+        const time = document.getElementById("flightTime").value || "";
+        const arrivalAirport = document.getElementById("flightArrivalAirport").value.trim();
+        const arrivalTime = document.getElementById("flightArrivalTime").value || "";
+        const role = params.get("role") || "flight";
+        const anchorSpotId = params.get("spotId") || "";
+        const departureSpot = ensureAirportSpot(activeList, airport, {
+          preferredId: role === "meet" ? anchorSpotId : "",
+          takeoffTime: time,
+        });
+        const arrivalSpot = ensureAirportSpot(activeList, arrivalAirport, {
+          preferredId: role === "dismiss" ? anchorSpotId : "",
+          landingTime: arrivalTime,
+        });
+        const key = `${role}:${anchorSpotId || departureSpot?.id || airport}:${date}`;
         schedule.flights[key] = {
-          role: params.get("role") || "",
-          spotId: params.get("spotId") || "",
+          role,
+          spotId: anchorSpotId || departureSpot?.id || "",
+          departureSpotId: departureSpot?.id || "",
+          arrivalSpotId: arrivalSpot?.id || "",
           airport,
-          arrivalAirport: document.getElementById("flightArrivalAirport").value.trim(),
+          arrivalAirport,
           date,
-          time: document.getElementById("flightTime").value || "",
-          arrivalTime: document.getElementById("flightArrivalTime").value || "",
+          time,
+          arrivalTime,
           flightNumber: document.getElementById("flightNumber").value.trim(),
           pricePerPerson: parseInt(document.getElementById("flightPrice").value, 10) || 0,
           memo: document.getElementById("flightMemo").value.trim(),
         };
         all[activeList.id] = schedule;
+        localStorage.setItem(LISTS_KEY, JSON.stringify(listsData));
         localStorage.setItem(SCHEDULE_KEY, JSON.stringify(all));
         location.href = "./schedule.html";
       } catch (e) {

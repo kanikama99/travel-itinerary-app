@@ -53,6 +53,18 @@
     document.body.classList.toggle("budget-hidden", !shouldShowBudget());
   }
 
+  function injectCurrentTripLink() {
+    const nav = document.querySelector(".drawer-nav");
+    if (!nav || nav.querySelector("[data-current-trip-link]")) return;
+    const link = document.createElement("a");
+    link.href = "./spots.html";
+    link.className = "drawer-nav-item";
+    link.dataset.currentTripLink = "true";
+    link.innerHTML = '<span class="drawer-nav-icon">🧭</span><span>現在のしおりのページに戻る</span>';
+    nav.insertBefore(link, nav.firstChild);
+  }
+
   applyTheme();
-  window.TripTheme = { applyTheme };
+  injectCurrentTripLink();
+  window.TripTheme = { applyTheme, injectCurrentTripLink };
 })();

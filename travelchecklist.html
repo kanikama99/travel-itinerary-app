@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>チェックリスト - Trip Pop Map</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <style>
+    .tcl-shell{width:min(800px,calc(100% - 32px));margin:0 auto;padding:40px 0 80px;display:grid;gap:18px}
+    .tcl-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);padding:20px 22px}
+    .tcl-list{display:grid;gap:10px;margin-top:4px}
+    .tcl-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,.6);border:1px solid rgb(var(--accent-rgb,255,122,69)/.14);border-radius:10px;transition:opacity .2s,background .15s}
+    .tcl-item.is-na{opacity:.45}
+    .tcl-item.is-done .tcl-label{text-decoration:line-through;color:var(--muted)}
+    .tcl-checkbox{width:22px;height:22px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+    .tcl-label{flex:1;font-size:.98rem;font-weight:700;cursor:pointer;color:var(--text)}
+    .tcl-na-btn{font:inherit;font-size:.75rem;font-weight:700;padding:4px 10px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.72);color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background .15s,color .15s}
+    .tcl-na-btn:hover{background:rgba(204,68,68,.1);color:#b33;border-color:rgba(204,68,68,.3)}
+    .tcl-item.is-na .tcl-na-btn{background:rgba(204,68,68,.1);color:#b33;border-color:rgba(204,68,68,.3)}
+    .tcl-add-row{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px}
+    .tcl-input{font:inherit;border:1.5px solid var(--line);border-radius:10px;padding:9px 12px;background:rgba(255,255,255,.9)}
+    .tcl-btn{min-height:44px;border:1.5px solid var(--line);border-radius:999px;background:rgba(255,255,255,.72);color:var(--accent-deep);font:inherit;font-weight:900;padding:9px 14px;cursor:pointer}
+    .tcl-hint{margin:8px 0 0;font-size:.84rem;color:var(--muted);line-height:1.6}
+    .tcl-progress{display:flex;align-items:center;gap:10px;padding:10px 0 2px}
+    .tcl-progress-bar-wrap{flex:1;height:8px;border-radius:999px;background:var(--line)}
+    .tcl-progress-bar{height:100%;border-radius:999px;background:linear-gradient(135deg,var(--accent),var(--accent-light));transition:width .4s}
+    .tcl-progress-text{font-size:.82rem;font-weight:700;color:var(--accent-deep);white-space:nowrap}
+    @media(max-width:520px){.tcl-add-row{grid-template-columns:1fr}.tcl-btn{width:100%}}
+  </style>
+</head>
+<body>
+  <main class="tcl-shell">
+    <header class="hero">
+      <div class="hero-copy-wrap">
+        <p class="eyebrow">Trip Pop Map</p>
+        <h1>チェックリスト</h1>
+        <p class="hero-copy">旅行前に確認しておくべきことのリストです。確認できたらチェックを入れましょう。</p>
+        <nav class="progress-steps" aria-label="ステップ">
+          <a href="./spots.html" class="progress-step">①行きたい場所</a>
+          <span class="progress-sep">›</span>
+          <a href="./tripplan.html" class="progress-step">②スポット詳細入力</a>
+          <span class="progress-sep">›</span>
+          <a href="./schedule.html" class="progress-step">③スケジュール</a>
+          <span class="progress-sep">›</span>
+          <a href="./checklist.html" class="progress-step">④持ち物リスト</a>
+          <span class="progress-sep">›</span>
+          <strong class="progress-step progress-step--current">⑤チェックリスト</strong>
+          <span class="progress-sep">›</span>
+          <a href="./print.html" class="progress-step">⑥印刷する</a>
+        </nav>
+      </div>
+    </header>
+
+    <section class="tcl-card">
+      <div class="tcl-progress">
+        <div class="tcl-progress-bar-wrap"><div id="progressBar" class="tcl-progress-bar" style="width:0%"></div></div>
+        <span id="progressText" class="tcl-progress-text">0 / 0</span>
+      </div>
+      <div id="tclList" class="tcl-list"></div>
+      <div class="tcl-add-row">
+        <input id="tclNewInput" class="tcl-input" type="text" placeholder="確認項目を追加（Enterで確定）" />
+        <button id="tclAddBtn" class="tcl-btn" type="button">追加</button>
+      </div>
+      <p class="tcl-hint">「対象外」を押すと、その項目を確認対象外にできます（例：国内旅行でのパスポート確認）。</p>
+    </section>
+  </main>
+
+  <nav class="page-nav-bar">
+    <a href="./checklist.html" class="page-nav-bar-btn page-nav-bar-btn--prev">
+      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      持ち物リスト
+    </a>
+    <a href="./print.html" class="page-nav-bar-btn page-nav-bar-btn--next">
+      印刷する
+      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </a>
+  </nav>
+
+  <button id="hamburgerBtn" class="hamburger-btn" type="button" aria-label="メニューを開く">
+    <span class="hamburger-line"></span><span class="hamburger-line"></span><span class="hamburger-line"></span>
+  </button>
+  <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
+  <aside id="sideDrawer" class="side-drawer hidden" aria-hidden="true">
+    <div class="drawer-head"><p class="drawer-kicker">Menu</p></div>
+    <nav class="drawer-nav">
+      <a href="./bookmarks.html" class="drawer-nav-item"><span class="drawer-nav-icon">★</span><span>しおりを選ぶ</span></a>
+      <a href="./hotel.html" class="drawer-nav-item"><span class="drawer-nav-icon">H</span><span>ホテルを見つける</span></a>
+      <a href="./howto.html" class="drawer-nav-item"><span class="drawer-nav-icon">?</span><span>使い方</span></a>
+      <a href="./settings.html" class="drawer-nav-item"><span class="drawer-nav-icon">⚙</span><span>設定</span></a>
+    </nav>
+  </aside>
+
+  <script>
+    const STORAGE_KEY = "trip-travel-checklist.v1";
+    const DEFAULT_ITEMS = [
+      { id: "hotel",     label: "ホテルの予約",       done: false, na: false },
+      { id: "flight",    label: "飛行機の予約",       done: false, na: false },
+      { id: "shinkansen",label: "新幹線の予約",       done: false, na: false },
+      { id: "rental",    label: "レンタカーの予約",   done: false, na: false },
+      { id: "tour",      label: "ツアーの予約",       done: false, na: false },
+      { id: "medicine",  label: "常備薬・酔い止めの確認", done: false, na: false },
+      { id: "passport",  label: "パスポートの期限確認", done: false, na: false },
+      { id: "restaurant",label: "レストランの予約",   done: false, na: false },
+    ];
+
+    function load() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return seedDefaults();
+        const saved = JSON.parse(raw);
+        // merge with defaults to ensure all default items exist
+        const merged = DEFAULT_ITEMS.map(def => {
+          const found = saved.find(s => s.id === def.id);
+          return found ? { ...def, ...found } : { ...def };
+        });
+        // append any custom items (id not in defaults)
+        const defaultIds = new Set(DEFAULT_ITEMS.map(d => d.id));
+        saved.filter(s => !defaultIds.has(s.id)).forEach(s => merged.push(s));
+        return merged;
+      } catch { return seedDefaults(); }
+    }
+
+    function seedDefaults() {
+      const items = DEFAULT_ITEMS.map(d => ({ ...d }));
+      save(items);
+      return items;
+    }
+
+    function save(items) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    }
+
+    function makeId() {
+      return "custom-" + Math.random().toString(36).slice(2, 9);
+    }
+
+    function render(items) {
+      const list = document.getElementById("tclList");
+      list.innerHTML = "";
+      items.forEach((item, idx) => {
+        const div = document.createElement("div");
+        div.className = "tcl-item" + (item.done ? " is-done" : "") + (item.na ? " is-na" : "");
+
+        const chk = document.createElement("input");
+        chk.type = "checkbox";
+        chk.className = "tcl-checkbox";
+        chk.checked = item.done;
+        chk.disabled = item.na;
+        chk.id = "chk-" + idx;
+        chk.addEventListener("change", () => {
+          item.done = chk.checked;
+          save(items);
+          render(items);
+        });
+
+        const lbl = document.createElement("label");
+        lbl.htmlFor = "chk-" + idx;
+        lbl.className = "tcl-label";
+        lbl.textContent = item.label;
+
+        const naBtn = document.createElement("button");
+        naBtn.type = "button";
+        naBtn.className = "tcl-na-btn";
+        naBtn.textContent = item.na ? "対象外を解除" : "対象外";
+        naBtn.addEventListener("click", () => {
+          item.na = !item.na;
+          if (item.na) item.done = false;
+          save(items);
+          render(items);
+        });
+
+        div.append(chk, lbl, naBtn);
+        list.appendChild(div);
+      });
+
+      // update progress
+      const active = items.filter(i => !i.na);
+      const done = active.filter(i => i.done).length;
+      const total = active.length;
+      const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+      document.getElementById("progressBar").style.width = pct + "%";
+      document.getElementById("progressText").textContent = done + " / " + total;
+    }
+
+    const items = load();
+    render(items);
+
+    // add new item
+    function addItem() {
+      const input = document.getElementById("tclNewInput");
+      const label = input.value.trim();
+      if (!label) return;
+      items.push({ id: makeId(), label, done: false, na: false });
+      save(items);
+      render(items);
+      input.value = "";
+      input.focus();
+    }
+
+    document.getElementById("tclAddBtn").addEventListener("click", addItem);
+    document.getElementById("tclNewInput").addEventListener("keydown", e => {
+      if (e.key === "Enter") addItem();
+    });
+
+    // hamburger
+    const hb=document.getElementById("hamburgerBtn"),sd=document.getElementById("sideDrawer"),db=document.getElementById("drawerBackdrop");
+    hb.onclick=()=>{const o=!sd.classList.contains("hidden");sd.classList.toggle("hidden",o);db.classList.toggle("hidden",o)};
+    db.onclick=()=>{sd.classList.add("hidden");db.classList.add("hidden")};
+  </script>
+  <script src="./theme.js"></script>
+</body>
+</html>

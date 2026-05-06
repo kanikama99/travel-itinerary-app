@@ -946,7 +946,7 @@ function updateBusinessHoursRange(row) {
   if (closeInput) closeInput.value = close;
   row.style.setProperty("--hours-open-pct", `${(open / 1440) * 100}%`);
   row.style.setProperty("--hours-close-pct", `${(close / 1440) * 100}%`);
-  if (valueEl) valueEl.textContent = enabled ? `${formatMinutesAsTime(open)}〜${formatMinutesAsTime(close)}` : "使用しない";
+  if (valueEl) valueEl.textContent = enabled ? `${formatMinutesAsTime(open)}〜${formatMinutesAsTime(close)}` : "定休日";
 }
 
 function createBusinessHoursExtraRange(day) {
@@ -1148,6 +1148,8 @@ function updateHoursBulkButton() {
 }
 
 function fillBusinessHoursInputs(hours) {
+  // hours が null/undefined = 未設定の新規スポット → 全曜日有効・0:00-24:00 をデフォルトにする
+  const noHoursAtAll = !hours || !Object.values(hours).some(v => String(v || "").trim());
   document.querySelectorAll(".spot-hours-range").forEach(row => {
     if (row.classList.contains("spot-hours-range--extra")) row.remove();
   });
@@ -1156,14 +1158,23 @@ function fillBusinessHoursInputs(hours) {
     const enabledInput = document.querySelector(`.spot-hours-enabled[data-day="${day}"]`);
     const openInput = row.querySelector('[data-part="open"]');
     const closeInput = row.querySelector('[data-part="close"]');
+    if (noHoursAtAll) {
+      if (enabledInput) enabledInput.checked = true;
+      row.classList.add("spot-hours-range--enabled");
+      if (openInput) openInput.value = 0;
+      if (closeInput) closeInput.value = 1440;
+      updateBusinessHoursRange(row);
+      setExtraHoursVisible(day, false);
+      return;
+    }
     const isClosed = String(hours?.[day] || "").trim().toLowerCase() === "closed";
     const ranges = isClosed ? [] : String(hours?.[day] || "").split(",").map(v => splitBusinessHoursRange(v)).filter(r => r.open && r.close);
     const range = ranges[0] || { open: "", close: "" };
     const enabled = !!(range.open && range.close);
     if (enabledInput) enabledInput.checked = enabled;
     row.classList.toggle("spot-hours-range--enabled", enabled);
-    if (openInput) openInput.value = timeToBusinessMinutes(range.open, 600);
-    if (closeInput) closeInput.value = timeToBusinessMinutes(range.close, 1080);
+    if (openInput) openInput.value = timeToBusinessMinutes(range.open, 0);
+    if (closeInput) closeInput.value = timeToBusinessMinutes(range.close, 1440);
     updateBusinessHoursRange(row);
     if (ranges[1]) {
       const extra = getOrCreateExtraHoursRange(day);
@@ -1221,7 +1232,7 @@ function readBusinessHoursInputs() {
     const day = row.dataset.day;
     const enabled = document.querySelector(`.spot-hours-enabled[data-day="${day}"]`)?.checked;
     if (!enabled) {
-      if (currentSpot?.businessHours?.[day] === "closed") businessHours[day] = "closed";
+      if (day && !row.classList.contains("spot-hours-range--extra")) businessHours[day] = "closed";
       return;
     }
     if (row.classList.contains("hidden")) return;
@@ -1381,7 +1392,11 @@ function saveSpotDescription() {
   };
   persistState();
   if (IS_EMBEDDED_SPOT_MENU && window.parent && window.parent !== window) {
-    window.parent.postMessage({ type: "spot-menu-saved", spotId: state.editingSpotId }, window.location.origin);
+    window.parent.postMessage({
+      type: "spot-menu-saved",
+      spotId: state.editingSpotId,
+      defaultStayMinutes: state.spots[targetIndex].defaultStayMinutes,
+    }, window.location.origin);
   }
   setFeedback("スポットを保存しました。", false);
   closeSpotMenu();
@@ -1488,8 +1503,8 @@ function estimateLabelSize(point) {
 }
 
 function estimateClusterLabelSize(item) {
-  const rows = Math.max(1, item?.points?.length || 1);
-  return { w: 150, h: Math.min(120, 12 + rows * 20) };
+  const rows = Math.max(1, item?.points?.length || 1) + (item?.mapNumber ? 1 : 0);
+  return { w: 160, h: Math.min(150, 12 + rows * 20) };
 }
 
 function pointToLayerPx(map, point) {
@@ -1760,7 +1775,10 @@ function renderOverviewLayer(map, items, bounds) {
       dashArray: "6 6",
     }).addTo(map);
 
-    const labelHtml = item.points.map((point) =>
+    const mapLabel = item.mapNumber
+      ? `<span class="cluster-map-label">拡大図: MAP${item.mapNumber}</span>`
+      : "";
+    const labelHtml = mapLabel + item.points.map((point) =>
       `<span class="cluster-part cluster-spot-link" onclick="event.stopPropagation();openSpotMenu('${point.id}')">${escapeHtml(point.name)}</span>`
     ).join("");
 
@@ -1846,7 +1864,7 @@ function buildMapGroups(points) {
       overviewItems,
       bounds: boundsFromPoints(points, OVERVIEW_PADDING_RATIO),
     });
-    addZoomGroupsRecursive(topClusters, groups);
+    addZoomGroupsRecursive(topClusters, groups, overviewItems);
   } else {
     groups.push({
       kind: "detail",
@@ -1860,7 +1878,7 @@ function buildMapGroups(points) {
   return groups;
 }
 
-function addZoomGroupsRecursive(clusters, groups) {
+function addZoomGroupsRecursive(clusters, groups, parentOverviewItems) {
   clusters.filter((c) => c.length >= 2).forEach((cluster) => {
     const clusterDiagonal = rawDiagonalKm(cluster);
     const subClusters = findRelativeClusters(cluster, clusterDiagonal * RELATIVE_CLUSTER_THRESHOLD);
@@ -1869,6 +1887,20 @@ function addZoomGroupsRecursive(clusters, groups) {
     const labels = cluster.map((p) => p.name);
     const title = `${labels.join(" / ")} の拡大図`;
     const clusterBounds = boundsFromPoints(cluster, DETAIL_PADDING_RATIO, 0.001);
+
+    // このクラスターに対応するMAP番号（次にpushされるgroup）
+    const mapNum = groups.length + 1;
+
+    // 親のoverviewItemsに対応するcluster itemがあればmapNumberを付与
+    if (parentOverviewItems) {
+      const clusterIds = new Set(cluster.map(p => p.id));
+      const parentItem = parentOverviewItems.find(item =>
+        item.type === "cluster" &&
+        item.points.length === cluster.length &&
+        item.points.every(p => clusterIds.has(p.id))
+      );
+      if (parentItem) parentItem.mapNumber = mapNum;
+    }
 
     if (hasUsefulSubClusters) {
       const overviewItems = subClusters.map((sc) => {
@@ -1887,7 +1919,7 @@ function addZoomGroupsRecursive(clusters, groups) {
         overviewItems,
         bounds: clusterBounds,
       });
-      addZoomGroupsRecursive(subClusters, groups);
+      addZoomGroupsRecursive(subClusters, groups, overviewItems);
     } else {
       groups.push({
         kind: "detail",
