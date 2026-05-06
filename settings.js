@@ -133,6 +133,31 @@ const cacheClearStatus = document.getElementById("cacheClearStatus");
 const clearSavedDataBtn = document.getElementById("clearSavedDataBtn");
 const savedDataClearStatus = document.getElementById("savedDataClearStatus");
 
+const APP_STORAGE_KEYS = [
+  "spot-map-settings.v1",
+  "spot-map-lists.v1",
+  "spot-map-schedule.v1",
+  "spot-map-custom-categories.v1",
+  "spot-map-local-area-suggestions.v1",
+  "trip-basic-plan.v1",
+  "trip-print-cover.v1",
+  "trip-packing-list.v1",
+  "trip-packing-deleted.v1",
+  "trip-travel-checklist.v1",
+];
+const APP_STORAGE_PREFIXES = [
+  "trip-packing-list.v1:",
+  "trip-packing-deleted.v1:",
+  "trip-travel-checklist.v1:",
+];
+
+function clearKnownSavedData() {
+  APP_STORAGE_KEYS.forEach(key => localStorage.removeItem(key));
+  Object.keys(localStorage)
+    .filter(key => APP_STORAGE_PREFIXES.some(prefix => key.startsWith(prefix)))
+    .forEach(key => localStorage.removeItem(key));
+}
+
 if (googlePlaceHoursEnabled) googlePlaceHoursEnabled.checked = draftSettings.googlePlaceHoursEnabled !== false;
 if (showBudgetEnabled) showBudgetEnabled.checked = draftSettings.showBudget !== false;
 if (labelDragEnabled) labelDragEnabled.checked = draftSettings.labelDragEnabled === true;
@@ -194,7 +219,7 @@ clearPageCacheBtn?.addEventListener("click", async () => {
 clearSavedDataBtn?.addEventListener("click", () => {
   const ok = window.confirm("しおり、スポット、スケジュール、持ち物リスト、印刷編集内容をすべて削除します。元に戻せません。実行しますか？");
   if (!ok) return;
-  localStorage.clear();
+  clearKnownSavedData();
   sessionStorage.clear();
   if (savedDataClearStatus) savedDataClearStatus.textContent = "保存データをすべて削除しました。";
   setTimeout(() => {
@@ -246,7 +271,7 @@ if (settingsBackRow && referrer && new URL(referrer).origin === window.location.
 // デバッグログ生成
 const LISTS_KEY_DBG    = "spot-map-lists.v1";
 const SCHEDULE_KEY_DBG = "spot-map-schedule.v1";
-const PACKING_KEY_DBG  = "trip-packing.v1";
+const PACKING_KEY_DBG  = "trip-packing-list.v1";
 
 function buildDebugLog() {
   const lines = [];
@@ -383,7 +408,8 @@ function buildDebugLog() {
       }
     }
 
-    const packRaw = localStorage.getItem(PACKING_KEY_DBG);
+    const packRaw = localStorage.getItem(`${PACKING_KEY_DBG}:${activeList.id}`)
+      || localStorage.getItem(PACKING_KEY_DBG);
     if (packRaw) {
       const packing = JSON.parse(packRaw);
       const itemCount = packing.reduce((n, g) => n + (g.items || []).length, 0);

@@ -1434,6 +1434,14 @@ function saveSpotDescription() {
 
   // カテゴリ固有フィールド
   const extraFields = {};
+  const categoryFieldReset = {
+    takeoffTime: null,
+    landingTime: null,
+    airportCheckinTime: null,
+    airportCheckinOffsetMin: null,
+    hotelCheckinTime: null,
+    hotelCheckoutTime: null,
+  };
   let nextDefaultStayMinutes = readSpotDurationMinutes();
   if (newCategory === "airport") {
     const g = id => document.getElementById(id);
@@ -1456,6 +1464,7 @@ function saveSpotDescription() {
 
   state.spots[targetIndex] = {
     ...state.spots[targetIndex],
+    ...categoryFieldReset,
     name: spotNameInput.value.trim() || state.spots[targetIndex].name,
     budget: shouldShowBudget() ? Math.max(0, parseInt(spotBudgetInput.value, 10) || 0) : (spot.budget || 0),
     description: spotDescriptionInput.value.trim(),

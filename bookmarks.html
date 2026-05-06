@@ -560,6 +560,20 @@
         }
       } catch {}
 
+      try {
+        const coverRaw = localStorage.getItem("trip-print-cover.v1");
+        if (coverRaw) {
+          const all = JSON.parse(coverRaw);
+          delete all[listId];
+          localStorage.setItem("trip-print-cover.v1", JSON.stringify(all));
+        }
+      } catch {}
+      [
+        `trip-packing-list.v1:${listId}`,
+        `trip-packing-deleted.v1:${listId}`,
+        `trip-travel-checklist.v1:${listId}`,
+      ].forEach(key => localStorage.removeItem(key));
+
       render();
     }
 

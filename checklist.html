@@ -163,11 +163,23 @@
       if (/^旅(行先?|先)$/.test(cat)) return "旅先";
       return cat;
     }
+    function activeListId() {
+      try {
+        const data = JSON.parse(localStorage.getItem(LISTS_KEY) || "{}");
+        return data.activeListId || data.lists?.[0]?.id || "default";
+      } catch { return "default"; }
+    }
+    function scopedKey(base) {
+      return `${base}:${activeListId()}`;
+    }
     function readDeleted() {
-      try { return new Set(JSON.parse(localStorage.getItem(DELETED_KEY) || "[]")); }
+      try {
+        const raw = localStorage.getItem(scopedKey(DELETED_KEY)) ?? localStorage.getItem(DELETED_KEY) ?? "[]";
+        return new Set(JSON.parse(raw));
+      }
       catch { return new Set(); }
     }
-    function writeDeleted(set) { localStorage.setItem(DELETED_KEY, JSON.stringify([...set])); }
+    function writeDeleted(set) { localStorage.setItem(scopedKey(DELETED_KEY), JSON.stringify([...set])); }
     function forgetDeleted(name) { const d = readDeleted(); d.delete(name); writeDeleted(d); }
     function rememberDeleted(name) { const d = readDeleted(); d.add(name); writeDeleted(d); }
 
@@ -197,14 +209,14 @@
 
     function load() {
       try {
-        const raw = localStorage.getItem(KEY);
+        const raw = localStorage.getItem(scopedKey(KEY)) ?? localStorage.getItem(KEY);
         if (!raw) return base();
         const parsed = JSON.parse(raw).map(g => ({ cat: normCat(g.cat), items: (g.items || []).map(normItem) }));
         return mergeDuplicateCats(parsed);
       } catch { return base(); }
     }
 
-    function save(d) { localStorage.setItem(KEY, JSON.stringify(d)); }
+    function save(d) { localStorage.setItem(scopedKey(KEY), JSON.stringify(d)); }
 
     function activeTripText() {
       try {

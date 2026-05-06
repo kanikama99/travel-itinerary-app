@@ -129,6 +129,7 @@
     </nav>
   </aside>
 
+  <script src="./airports.js"></script>
   <script>
     const LISTS_KEY = "spot-map-lists.v1";
     const SCHEDULE_KEY = "spot-map-schedule.v1";
@@ -167,7 +168,7 @@
       return `airport-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     }
 
-    const AIRPORT_DATA = [
+    const AIRPORT_DATA = window.TRIP_AIRPORTS || [
       { name: "成田国際空港 (NRT)", lat: 35.7719, lng: 140.3929 },
       { name: "羽田空港 (HND)", lat: 35.5494, lng: 139.7798 },
       { name: "関西国際空港 (KIX)", lat: 34.4270, lng: 135.2440 },
@@ -185,10 +186,13 @@
     ];
 
     function normalizeAirportName(value) {
-      return String(value || "").trim().toLowerCase().replace(/\s+/g, "");
+      return window.normalizeTripAirportName
+        ? window.normalizeTripAirportName(value)
+        : String(value || "").trim().toLowerCase().replace(/\s+/g, "");
     }
 
     function findAirportData(name) {
+      if (window.findTripAirport) return window.findTripAirport(name);
       const key = normalizeAirportName(name);
       if (!key) return null;
       return AIRPORT_DATA.find(ap => normalizeAirportName(ap.name) === key)

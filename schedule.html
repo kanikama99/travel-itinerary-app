@@ -1195,6 +1195,7 @@
   </aside>
 
   <script src="./calendar.js"></script>
+  <script src="./airports.js"></script>
   <script>
     // テーマ適用
     (function() {
@@ -1313,14 +1314,11 @@
     }
 
     function getEntryStayMinutes(day, entry, spot) {
-      const spotStay = getSpotStayDefault(spot);
-      if (Number.isFinite(Number(spot?.defaultStayMinutes)) && Number(spot.defaultStayMinutes) > 0) {
-        return spotStay;
-      }
-      const scheduleStay = Number(schedule.defaultStayTimes?.[entry.spotId]);
-      if (Number.isFinite(scheduleStay) && scheduleStay > 0) return scheduleStay;
       const dayStay = Number(day.stayTimes?.[entry.spotId]);
       if (Number.isFinite(dayStay) && dayStay > 0) return dayStay;
+      const scheduleStay = Number(schedule.defaultStayTimes?.[entry.spotId]);
+      if (Number.isFinite(scheduleStay) && scheduleStay > 0) return scheduleStay;
+      const spotStay = getSpotStayDefault(spot);
       return spotStay;
     }
 
@@ -2389,7 +2387,7 @@
     }
 
     // ── 空港サジェスト ────────────────────────────────────────────
-    const AIRPORT_DATA = [
+    const AIRPORT_DATA = window.TRIP_AIRPORTS || [
       // 日本
       { name: "成田国際空港 (NRT)", lat: 35.7719, lng: 140.3929 },
       { name: "羽田空港 (HND)", lat: 35.5494, lng: 139.7798 },
@@ -2473,10 +2471,13 @@
     }
 
     function normalizeAirportName(value) {
-      return String(value || "").trim().toLowerCase().replace(/\s+/g, "");
+      return window.normalizeTripAirportName
+        ? window.normalizeTripAirportName(value)
+        : String(value || "").trim().toLowerCase().replace(/\s+/g, "");
     }
 
     function findAirportData(name) {
+      if (window.findTripAirport) return window.findTripAirport(name);
       const key = normalizeAirportName(name);
       if (!key) return null;
       return AIRPORT_DATA.find(ap => normalizeAirportName(ap.name) === key)

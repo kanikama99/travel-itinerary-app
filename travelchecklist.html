@@ -92,6 +92,7 @@
 
   <script>
     const STORAGE_KEY = "trip-travel-checklist.v1";
+    const LISTS_KEY = "spot-map-lists.v1";
     const DEFAULT_ITEMS = [
       { id: "hotel",     label: "ホテルの予約",       done: false, na: false },
       { id: "flight",    label: "飛行機の予約",       done: false, na: false },
@@ -103,9 +104,20 @@
       { id: "restaurant",label: "レストランの予約",   done: false, na: false },
     ];
 
+    function activeListId() {
+      try {
+        const data = JSON.parse(localStorage.getItem(LISTS_KEY) || "{}");
+        return data.activeListId || data.lists?.[0]?.id || "default";
+      } catch { return "default"; }
+    }
+
+    function scopedStorageKey() {
+      return `${STORAGE_KEY}:${activeListId()}`;
+    }
+
     function load() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const raw = localStorage.getItem(scopedStorageKey()) ?? localStorage.getItem(STORAGE_KEY);
         if (!raw) return seedDefaults();
         const saved = JSON.parse(raw);
         // merge with defaults to ensure all default items exist
@@ -127,7 +139,7 @@
     }
 
     function save(items) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      localStorage.setItem(scopedStorageKey(), JSON.stringify(items));
     }
 
     function makeId() {

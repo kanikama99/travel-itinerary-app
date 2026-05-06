@@ -391,6 +391,18 @@ Shared notes for Claude / Codex agents working on this repo.
   - Return flight registration no longer defaults takeoff time to the computed airport-arrival time such as 14:43; blank unless a flight was already saved.
 - Checks: inline scripts in `schedule.html` and `flight.html` passed `vm.Script`; mojibake scan for touched files passed; Browser Use loaded `schedule.html` and a sample `flight.html?role=dismiss&airport=TPE&arrivalAirport=HND...` with no console warnings/errors.
 
+### 2026-05-06 Codex code health fixes
+
+- Added `airports.js` as a shared airport master and loaded it from `schedule.html` / `flight.html`; both pages still have local fallback arrays.
+- Updated `app.js` so airport/hotel-only spot fields are reset when a spot category changes away from those categories.
+- Updated `schedule.html` so inline stay-time precedence is day override -> schedule default -> spot default, and kept the existing final-day airport check-in capacity guard.
+- Scoped `checklist.html` and `travelchecklist.html` storage by active list id, with legacy global-key fallback.
+- Updated `print.html` to read scoped packing data and avoid accumulating duplicate drag/drop listeners in visibility controls.
+- Updated `bookmarks.html` list deletion to clean schedule, print-cover, packing, and travel-checklist data for the deleted list id.
+- Updated `settings.js` saved-data deletion to remove only known app keys/prefixes instead of calling `localStorage.clear()`.
+- Updated `api/resolve.js` to validate Google Maps hosts before server-side fetch; allowed `google.com`, `maps.google.com`, `goo.gl`, and `maps.app.goo.gl`.
+- Checks: `node --check` passed for touched JS files; all HTML inline scripts passed `vm.Script`; touched-file mojibake scan passed; Browser Use loaded `spots.html`, `schedule.html`, `flight.html`, `print.html`, `checklist.html`, `travelchecklist.html`, `settings.html`, and `bookmarks.html` with no console errors.
+
 ### 2026-05-06 Codex airport UX follow-up
 
 - Updated `schedule.html` again for airport trip planning.
