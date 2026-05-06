@@ -2652,6 +2652,79 @@ body.budget-hidden [data-budget-ui] {
   border: 1.5px solid var(--line);
 }
 
+@media (max-width: 640px) {
+  .area-suggest-wrap {
+    margin-top: 16px;
+    padding-top: 14px;
+  }
+
+  .area-suggest-toggle-btn {
+    width: 100%;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    text-align: left;
+  }
+
+  .area-suggest-desc {
+    font-size: 0.8rem;
+    line-height: 1.65;
+  }
+
+  .area-suggest-count-row {
+    flex-wrap: nowrap;
+  }
+
+  .area-suggest-row {
+    flex-direction: column;
+  }
+
+  .area-suggest-input,
+  .area-suggest-row .primary-button {
+    width: 100%;
+  }
+
+  .area-suggest-results {
+    max-height: none;
+    overflow: visible;
+    gap: 8px;
+  }
+
+  .area-suggest-item {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .area-suggest-item-name {
+    font-size: 0.92rem;
+    line-height: 1.45;
+  }
+
+  .area-suggest-google-btn,
+  .area-suggest-subarea-btn,
+  .area-suggest-add-btn {
+    width: 100%;
+    min-height: 40px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    text-align: center;
+  }
+
+  .area-suggest-draw-row {
+    flex-direction: column;
+  }
+
+  .area-suggest-draw-btn,
+  .area-suggest-filter-clear {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 .btn-mobile-label {
   display: none;
 }

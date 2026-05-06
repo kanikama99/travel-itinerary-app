@@ -19,6 +19,13 @@ Shared notes for Claude / Codex agents working on this repo.
 
 ## Recent Work Log
 
+### 2026-05-06 Codex mobile area suggestions
+
+- Updated the mobile layout for the "エリアからキーワードを提案" panel on `spots.html`.
+  - `styles.css` now stacks suggestion-card actions vertically below 640px and lets the page scroll naturally instead of using a nested result scroller.
+  - `app.js` shortens the fill button label to "追加欄に入力" while keeping the full text in the button title.
+- Checks: `spots.html` inline script and `app.js` parse OK; mojibake scan OK for `spots.html`, `app.js`, and `styles.css`; Browser Use screenshot on `spots.html` showed the mobile-style panel without console errors.
+
 ### 2026-05-06 Codex sandbox auto-push rule
 
 - Updated `AGENTS.md` and `CLAUDE.md` so AI agents may automatically commit and push completed, checked work on the `sandbox` branch without asking for extra approval every time.

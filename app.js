@@ -2566,7 +2566,8 @@ function renderAreaSuggestions(suggestions) {
     const useBtn = document.createElement("button");
     useBtn.type = "button";
     useBtn.className = "area-suggest-add-btn";
-    useBtn.textContent = "スポットを追加欄に入力";
+    useBtn.textContent = "追加欄に入力";
+    useBtn.title = "スポットを追加欄に入力";
     useBtn.addEventListener("click", fillSpotInput);
 
     if (item.display === "候補エリア") {
