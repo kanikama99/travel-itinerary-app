@@ -19,6 +19,21 @@ Shared notes for Claude / Codex agents working on this repo.
 
 ## Recent Work Log
 
+### 2026-05-06 Codex schedule airport auto-placement
+
+- Updated `schedule.html` auto-placement for return flights.
+  - Final-day candidate capacity now uses the earlier of trip end, return-flight airport stay start, and airport check-in deadline.
+  - Final-day auto-placement estimates the last leg to the return flight departure airport/trip-side airport instead of the home dismiss airport.
+  - Post-placement cleanup removes the last spot when the generated dismiss step exceeds the end/check-in limit.
+- Checks: `schedule.html` inline script syntax OK; mojibake scan OK for `schedule.html`.
+
+### 2026-05-06 Codex branch workflow notes
+
+- Added the same "Branch sync workflow for AI agents" section to `AGENTS.md` and `CLAUDE.md`.
+- The rule covers Codex, Claude Code, Codespaces, and local PC work:
+  check branch/status first, pull only on a clean worktree, avoid direct `develop` pushes, ask before stash/merge/reset, and pull --ff-only before pushing.
+- Existing mojibake remains in both instruction files; only a small ASCII section was added to avoid broad risky rewrites.
+
 ### 2026-05-06 Codex airport schedule follow-up
 
 - Updated `schedule.html` airport handling for cross-border trips.

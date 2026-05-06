@@ -1900,6 +1900,8 @@
             const _target  = timeToMinutes(dismissFlightForDay.time) - _stayMin;
             if (_target < timeToMinutes(endTime)) endTime = minutesToTime(_target);
         }
+        const autoLimitT = getDismissAirportScheduleLimit(dayIdx);
+        if (autoLimitT !== null && autoLimitT < timeToMinutes(endTime)) endTime = minutesToTime(autoLimitT);
       } else {
         endTime     = day.endTime || "21:00";
         dismissName = "宿泊先";
@@ -2498,6 +2500,10 @@
 
     // 最終日の解散空港のチェックイン締め切り時刻（分）。対象外なら null
     function getDismissAirportCheckinDeadline(dayIdx) {
+      return getDismissAirportScheduleLimit(dayIdx);
+    }
+
+    function getDismissAirportScheduleLimit(dayIdx) {
       if (dayIdx !== schedule.days.length - 1) return null;
       const day = schedule.days[dayIdx];
       const dismissSpot = (() => {
@@ -2505,9 +2511,19 @@
         return e ? getSpotById(e.spotId) : (activeList?.spots?.find(isDismissSpot) || null);
       })();
       if (!dismissSpot || dismissSpot.spotCategory !== "airport") return null;
-      const flt = getFlightForAnchor("dismiss", dismissSpot, day.date);
-      if (!flt?.time) return null;
-      return timeToMinutes(flt.time) - (schedule.dismissAirportStayMin ?? 90);
+      const flight = getFlightForAnchor("dismiss", dismissSpot, day.date);
+      if (!flight?.time) return null;
+      const departureSpot = getFlightDepartureSpot(flight) || getTripSideAirport(day, "dismiss") || dismissSpot;
+      const checkinSpot = departureSpot || dismissSpot;
+      let checkinT = null;
+      if (checkinSpot.airportCheckinTime) {
+        checkinT = timeToMinutes(checkinSpot.airportCheckinTime);
+      } else {
+        const off = checkinSpot.airportCheckinOffsetMin || 0;
+        checkinT = timeToMinutes(flight.time) - off;
+      }
+      const stayStartT = timeToMinutes(flight.time) - (schedule.dismissAirportStayMin ?? 90);
+      return Math.min(checkinT, stayStartT);
     }
 
     // スポット追加がチェックイン締め切りを超えるか確認。超えるならエラーメッセージを返す
@@ -4197,7 +4213,9 @@
           const isFirst = idx === 0;
           const isLast  = idx === totalDays - 1;
           const startMin = timeToMinutes(isFirst ? (schedule.tripMeetTime    || "09:00") : (day.startTime || "09:00"));
-          const endMin   = timeToMinutes(isLast  ? (schedule.tripDismissTime || "18:00") : (day.endTime   || "21:00"));
+          let endMin = timeToMinutes(isLast ? (schedule.tripDismissTime || "18:00") : (day.endTime || "21:00"));
+          const airportLimitT = getDismissAirportScheduleLimit(idx);
+          if (airportLimitT !== null) endMin = Math.min(endMin, airportLimitT);
           const def = day.travelMinutes ?? 20;
 
           // その日のスポット一覧（集合/解散スポット除く）+ 新スポット
@@ -4218,6 +4236,10 @@
           let dismissAnchor = null;
           if (isLast) {
             dismissAnchor = activeList?.spots?.find(isDismissSpot) || null;
+            if (dismissAnchor?.spotCategory === "airport") {
+              const flight = getFlightForAnchor("dismiss", dismissAnchor, day.date);
+              dismissAnchor = getFlightDepartureSpot(flight) || getTripSideAirport(day, "dismiss") || dismissAnchor;
+            }
           } else {
             const h = schedule.hotels?.[day.id];
             if (h?.lat && h?.lng) dismissAnchor = h;
@@ -4285,9 +4307,9 @@
           plan.steps
             .filter(s => s.type === "spot" && s.outsideHours)
             .forEach(s => toSkip.push(s.name));
-          // ホテル到着（dismiss）が終了時刻を超えていたら最後のスポットも除去
+          // ホテル/空港到着（dismiss）が終了時刻やチェックイン締切を超えていたら最後のスポットも除去
           const dismissStep = plan.steps.find(s => s.type === "dismiss");
-          if (dismissStep?.overflow && !toSkip.length) {
+          if ((dismissStep?.overflow || dismissStep?.airportCheckinWarning) && !toSkip.length) {
             const lastSpotStep = [...plan.steps].reverse().find(s => s.type === "spot");
             if (lastSpotStep) toSkip.push(lastSpotStep.name);
           }

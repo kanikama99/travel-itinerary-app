@@ -1,5 +1,20 @@
 # travel-itinerary-app プロジェクト固有メモ
 
+## Branch sync workflow for AI agents
+
+Use this workflow for Claude Code, Codex, Codespaces, and local PC work.
+
+- Start work by checking `git status` and `git branch --show-current`.
+- On a work branch such as `sandbox` or `feature/*`, if the working tree is clean, run `git pull --ff-only` before editing.
+- If there are uncommitted changes, do not run `pull`, `stash`, `merge`, `reset`, or checkout another branch without asking the user first.
+- Do not push directly to `develop` unless the user explicitly asks. Treat `develop` as the branch for reviewed/stable changes.
+- Prefer working in `sandbox` or a short-lived branch from `develop`.
+- Before switching devices or handing work to another AI, commit and push the current work when the user has approved commit/push.
+- Before committing, review `git diff` and run the relevant syntax checks/tests for the touched files.
+- Before pushing, run `git pull --ff-only`; if it fails or reports divergence/conflict, stop and ask the user.
+- Use clear commit messages that describe the user-visible change.
+- Never use destructive commands such as `git reset --hard` or `git checkout -- <file>` unless the user explicitly requested that exact operation.
+
 ## AI間の引き継ぎ
 
 - Claude / Codex などAI同士の伝達事項は `AI_HANDOFF.md` に書く。
