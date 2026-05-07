@@ -253,6 +253,7 @@ let areaSuggestMap     = null;
 let geoFilterCorner1   = null;
 let geoFilterRectLayer = null;
 let geoFilterMarkers   = [];
+let lastAreaSuggestions = [];
 const spotCategorySelect = document.getElementById("spotCategorySelect");
 const spotAirportMasterInput = document.getElementById("spotAirportMasterInput");
 const spotAirportMasterList = document.getElementById("spotAirportMasterList");
@@ -603,8 +604,9 @@ async function maybeAttachGoogleBusinessHours(spot) {
   return spot;
 }
 
-async function searchByNominatim(query) {
-  const params = new URLSearchParams({ q: query, format: "jsonv2", limit: "1" });
+async function searchByNominatim(query, options = {}) {
+  const params = new URLSearchParams({ q: query, format: "jsonv2", limit: String(options.limit || 1), addressdetails: "1" });
+  if (options.countrycodes) params.set("countrycodes", options.countrycodes);
   const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
     headers: { "Accept-Language": "ja,en" },
   });
@@ -622,6 +624,8 @@ async function searchByNominatim(query) {
     url: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
     osmCategory: best.category || "",
     osmType: best.type || "",
+    displayName: best.display_name || "",
+    address: best.address || null,
   };
 }
 
@@ -678,6 +682,84 @@ async function buildSpotFromSearch(query) {
   };
 }
 
+function inferAreaCountryCode(text) {
+  const value = String(text || "");
+  if (/(台湾|台灣|Taiwan|台北|台中|台南|高雄|花蓮|宜蘭|太魯閣)/i.test(value)) return "tw";
+  if (/(日本|Japan|東京|大阪|京都|北海道|沖縄)/i.test(value)) return "jp";
+  if (/(韓国|韓國|Korea|Seoul|ソウル|釜山)/i.test(value)) return "kr";
+  if (/(中国|中國|China|北京|上海)/i.test(value)) return "cn";
+  return "";
+}
+
+function localAreaTokens(suggestion) {
+  return [
+    suggestion.areaName,
+    suggestion.areaPref,
+    ...(Array.isArray(suggestion.areaKeys) ? suggestion.areaKeys : []),
+  ].filter(Boolean);
+}
+
+function resultMatchesLocalArea(result, suggestion) {
+  const countryCode = inferAreaCountryCode(localAreaTokens(suggestion).join(" "));
+  const haystack = [
+    result?.name,
+    result?.displayName,
+    result?.address?.country,
+    result?.address?.state,
+    result?.address?.city,
+    result?.address?.county,
+  ].filter(Boolean).join(" ");
+  if (!haystack.trim()) return !countryCode;
+  if (countryCode === "tw" && /(中国|中國|China|People's Republic of China|中华人民共和国)/i.test(haystack)) return false;
+  if (countryCode === "cn" && /(台湾|台灣|Taiwan)/i.test(haystack)) return false;
+  return !countryCode || inferAreaCountryCode(haystack) === countryCode;
+}
+
+async function buildSpotFromLocalSuggestion(suggestion) {
+  const tokens = localAreaTokens(suggestion);
+  const countrycodes = inferAreaCountryCode(tokens.join(" "));
+  const queries = [
+    `${suggestion.name} ${suggestion.areaName || ""}`,
+    `${suggestion.name} ${suggestion.areaPref || ""}`,
+    suggestion.name,
+  ].map(q => q.trim()).filter((q, i, arr) => q && arr.indexOf(q) === i);
+
+  for (const query of queries) {
+    const result = await searchByNominatim(query, { countrycodes, limit: 5 }).catch(() => null);
+    if (result && resultMatchesLocalArea(result, suggestion)) {
+      return {
+        name: suggestion.name,
+        lat: result.lat,
+        lng: result.lng,
+        url: result.url,
+        sourceUrl: result.url,
+        sourceQuery: query,
+        sourceType: "local-suggestion",
+        osmCategory: result.osmCategory,
+        osmType: result.osmType,
+      };
+    }
+  }
+
+  const wikiQuery = `${suggestion.name} ${suggestion.areaName || suggestion.areaPref || ""}`.trim();
+  const wikiResult = await searchByWikipedia(wikiQuery).catch(() => null);
+  if (wikiResult && resultMatchesLocalArea(wikiResult, suggestion)) {
+    return {
+      name: suggestion.name,
+      lat: wikiResult.lat,
+      lng: wikiResult.lng,
+      url: wikiResult.url,
+      sourceUrl: wikiResult.url,
+      sourceQuery: wikiQuery,
+      sourceType: "local-suggestion",
+      osmCategory: wikiResult.osmCategory,
+      osmType: wikiResult.osmType,
+    };
+  }
+
+  throw new Error("提案エリアと違う場所が見つかったため、追加を止めました。地名に国名や都市名を足して再検索してください。");
+}
+
 function clearAllData() {
   if (state.spots.length === 0) {
     setFeedback("消去するデータはありません。", true);
@@ -700,6 +782,9 @@ function render() {
   renderListNameDisplay();
   renderSpotList();
   renderMaps();
+  if (lastAreaSuggestions.length && areaSuggestResults && !areaSuggestPanel?.classList.contains("hidden")) {
+    renderAreaSuggestionsV2(lastAreaSuggestions);
+  }
 }
 
 function renderSpotList() {
@@ -2522,6 +2607,16 @@ function deleteCustomCategory(key) {
 }
 
 async function addSpotFromSuggestion(suggestion) {
+  if (suggestion.suggestType === "food") return;
+  if (suggestion.sourceType === "local-suggestion" && suggestion.suggestType === "spot" && !(Number.isFinite(Number(suggestion.lat)) && Number.isFinite(Number(suggestion.lng)))) {
+    try {
+      setFeedback("提案スポットの場所を確認しています...", false);
+      suggestion = { ...suggestion, ...(await buildSpotFromLocalSuggestion(suggestion)) };
+    } catch (error) {
+      setFeedback(error.message, true);
+      return;
+    }
+  }
   const spotCategory = suggestion.spotCategory || detectSpotCategory(
     suggestion.name,
     suggestion.osmCategory || "",
@@ -2560,6 +2655,7 @@ async function addSpotFromSuggestion(suggestion) {
   }
   const duplicate = state.spots.find(s =>
     s.name === location.name
+    || normalizeAreaText(s.name) === normalizeAreaText(location.name)
     || (location.spotCategory === "airport" && s.spotCategory === "airport" && (
       s.airportId === location.airportId || window.sameTripAirport?.(s, location)
     ))
@@ -2675,14 +2771,15 @@ async function handleAreaSuggest() {
 
   try {
     const count = getAreaSuggestCount();
-    const suggestions = fetchAreaSuggestions(areaName, count);
+    const suggestions = fetchAreaSuggestionsOrdered(areaName, count);
+    lastAreaSuggestions = suggestions;
 
     if (!suggestions.length) {
       setAreaSuggestStatus("ローカル候補が見つかりませんでした。都道府県名や主要エリア名で試してください。", true);
       return;
     }
     setAreaSuggestStatus(`「${areaName}」向けのローカル候補 ${suggestions.length} 件`, false);
-    renderAreaSuggestions(suggestions);
+    renderAreaSuggestionsV2(suggestions);
   } catch (_) {
     setAreaSuggestStatus("候補の作成に失敗しました。別のエリア名で試してください。", true);
   } finally {
@@ -2753,6 +2850,25 @@ function fetchAreaSuggestions(areaName, count) {
   return [...subareas, ...mixed].slice(0, max);
 }
 
+function fetchAreaSuggestionsOrdered(areaName, count) {
+  const found = findLocalAreaData(areaName);
+  if (!found) return [];
+  const [pref, entry] = found;
+  const needle = normalizeAreaText(areaName);
+  const mainKey = normalizeAreaText(pref);
+  const isSearchingMainArea = needle.includes(mainKey) || mainKey.includes(needle);
+  const common = { sourceType: "local-suggestion", areaName, areaPref: pref, areaKeys: entry.keys || [] };
+  const subAreaNames = isSearchingMainArea
+    ? (entry.subareas || (entry.keys || []).filter(k => normalizeAreaText(k) !== mainKey))
+    : [];
+  const subareas = subAreaNames.map(name => ({ name, display: "候補エリア", suggestType: "subarea", ...common }));
+  const spots = isSearchingMainArea
+    ? (entry.spots || []).map(name => ({ name, display: "おすすめスポット", suggestType: "spot", ...common }))
+    : [];
+  const foods = (entry.foods || []).map(name => ({ name, display: "ご当地フード", suggestType: "food", ...common }));
+  return [...subareas, ...spots, ...foods].slice(0, Math.max(count, 1));
+}
+
 function setAreaSuggestStatus(msg, isError) {
   areaSuggestStatus.textContent = msg;
   areaSuggestStatus.classList.remove("hidden");
@@ -2807,6 +2923,84 @@ function renderAreaSuggestions(suggestions) {
     } else if (isFood) {
       card.append(nameSpan, googleBtn);
     } else {
+      card.append(nameSpan, googleBtn, useBtn);
+    }
+    areaSuggestResults.appendChild(card);
+  });
+}
+
+function isAreaSuggestionAdded(item) {
+  const itemName = normalizeAreaText(item?.name || "");
+  if (!itemName) return false;
+  return state.spots.some(spot =>
+    normalizeAreaText(spot.name || "") === itemName
+    || normalizeAreaText(spot.sourceQuery || "") === itemName
+  );
+}
+
+function renderAreaSuggestionsV2(suggestions) {
+  areaSuggestResults.innerHTML = "";
+  suggestions.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "area-suggest-item";
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "area-suggest-item-name";
+    nameSpan.innerHTML = `${escapeHtml(item.name)}<small>${escapeHtml(item.display || "")}</small>`;
+
+    const googleBtn = document.createElement("button");
+    googleBtn.type = "button";
+    googleBtn.className = "area-suggest-google-btn";
+    googleBtn.textContent = "Google検索";
+    googleBtn.addEventListener("click", () => {
+      const q = [item.name, item.areaName || item.areaPref || ""].filter(Boolean).join(" ");
+      window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}`, "_blank", "noopener,noreferrer");
+    });
+
+    const isFood = item.suggestType === "food" || item.display === "ご当地フード";
+    const isSubarea = item.suggestType === "subarea" || item.display === "候補エリア";
+
+    if (isSubarea) {
+      const subareaBtn = document.createElement("button");
+      subareaBtn.type = "button";
+      subareaBtn.className = "area-suggest-subarea-btn";
+      subareaBtn.textContent = "提案を見る";
+      subareaBtn.addEventListener("click", () => {
+        if (areaSuggestInput) {
+          areaSuggestInput.value = item.name;
+          handleAreaSuggest();
+        }
+      });
+      card.append(nameSpan, googleBtn, subareaBtn);
+    } else if (isFood) {
+      card.append(nameSpan, googleBtn);
+    } else {
+      const useBtn = document.createElement("button");
+      useBtn.type = "button";
+      useBtn.className = "area-suggest-add-btn";
+      const setAdded = () => {
+        useBtn.disabled = true;
+        useBtn.textContent = "追加済み";
+        useBtn.title = "このスポットは追加済みです";
+      };
+      if (isAreaSuggestionAdded(item)) {
+        setAdded();
+      } else {
+        useBtn.textContent = "スポット追加";
+        useBtn.title = "スポットに追加";
+        useBtn.addEventListener("click", async () => {
+          useBtn.disabled = true;
+          useBtn.textContent = "追加中...";
+          const before = state.spots.length;
+          await addSpotFromSuggestion(item);
+          if (state.spots.length > before || isAreaSuggestionAdded(item)) {
+            renderAreaSuggestionsV2(suggestions);
+          } else {
+            useBtn.disabled = false;
+            useBtn.textContent = "スポット追加";
+          }
+        });
+      }
       card.append(nameSpan, googleBtn, useBtn);
     }
     areaSuggestResults.appendChild(card);

@@ -455,3 +455,15 @@ Shared notes for Claude / Codex agents working on this repo.
   - Return flights with a missing/wrong departure endpoint that resolves to the dismiss airport are treated as provisional and corrected to the nearest airport suggestion until re-saved.
   - Airport suggestions for these provisional endpoints ignore airport spots and use actual non-airport spots as the distance base.
 - Checks: `node --check` passed for `airports.js` and `app.js`; inline scripts for `flight.html`, `schedule.html`, and `spots.html` passed `vm.Script`; local HTTP 200 confirmed for `flight.html` and `schedule.html`; touched-file mojibake scan returned no matches.
+
+### 2026-05-07 Codex area suggestion add flow
+
+- Updated `app.js` area suggestions on `spots.html`.
+  - The displayed order is now candidate areas, recommended spots, then local foods.
+  - Recommended spot buttons now add the spot directly instead of copying text into the add field.
+  - Local-food rows remain reference-only and have no add button.
+  - Added buttons become disabled as "追加済み"; when the spot list changes, the suggestion buttons are re-rendered from current spots, so deleting the spot makes the button available again.
+  - Local-suggestion spot adds now search with the selected area context and country code hints. For Taiwan/China ambiguity, mismatched country results are rejected before adding.
+- Data audit: Taiwan local suggestions and China local suggestions have no exact duplicate recommended spot names. `太魯閣渓谷` exists in the Taiwan suggestions only; the wrong-China result came from ambiguous geocoding during add, not from duplicate local data.
+- Browser check: `spots.html` showed Taiwan suggestions in the expected order, with foods after spots and without add buttons. A live add of `太魯閣渓谷` placed the marker around Xibao/Taroko, Taiwan.
+- Checks: `node --check app.js` passed; `spots.html` inline scripts passed `vm.Script`; local HTTP 200 confirmed for `spots.html`; touched-file mojibake scan returned no matches.
