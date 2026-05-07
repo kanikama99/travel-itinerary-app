@@ -286,7 +286,8 @@
 
       spots.forEach(spot => {
         const dur      = splitDuration(spot.defaultStayMinutes ?? 60);
-        const hrs      = getSimpleHours(spot.businessHours);
+        const savedHrs = getSimpleHours(spot.businessHours);
+        const hrs      = { open: savedHrs.open || "09:00", close: savedHrs.close || "20:00" };
         const catLabel = CAT_LABELS[spot.spotCategory] || "📍 その他";
         const pri      = spot.priority || 3;
 

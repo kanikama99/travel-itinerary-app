@@ -2712,13 +2712,21 @@
       const neighborDay = role === "meet" ? schedule.days?.[dayIdx - 1] : schedule.days?.[dayIdx + 1];
       const neighborIdx = role === "meet" ? dayIdx - 1 : dayIdx + 1;
       const neighborSpots = getDayVisitSpots(neighborDay, neighborIdx === 0, neighborIdx === schedule.days.length - 1);
-      const baseSpots = [...daySpots, ...neighborSpots];
+      const scheduledIds = new Set((schedule.days || []).flatMap(d => (d.entries || []).map(en => en.spotId)));
+      const candidateSpots = getOrderedSpots().filter(spot =>
+        spot?.lat && spot?.lng && !scheduledIds.has(spot.id) && isScheduleVisitSpot(spot, false, false)
+      );
+      const baseSpots = [...daySpots, ...neighborSpots, ...candidateSpots];
       if (!baseSpots.length) return null;
       const lat = baseSpots.reduce((sum, spot) => sum + Number(spot.lat), 0) / baseSpots.length;
       const lng = baseSpots.reduce((sum, spot) => sum + Number(spot.lng), 0) / baseSpots.length;
+      const anchor = baseSpots
+        .map(spot => ({ spot, dist: schedDistKm({ lat, lng }, spot) }))
+        .sort((a, b) => a.dist - b.dist)[0]?.spot;
+      const anchorName = anchor?.name ? `${anchor.name}周辺` : "中心街";
       return {
         id: `hotel-provisional-${day?.id || dayIdx}`,
-        name: "仮の宿泊エリア（中心街・駅目安）",
+        name: `仮の宿泊エリア（${anchorName}の中心街・駅目安）`,
         type: "spot",
         spotCategory: "hotel",
         sourceType: "provisional-hotel",
@@ -2802,7 +2810,8 @@
           provisionalReason: "出発空港と時刻を仮置きしています。本登録すると警告は消えます。",
         };
       }
-      const departT = timeToMinutes(schedule.tripMeetTime || day?.startTime || "09:00");
+      const checkinT = timeToMinutes(schedule.tripMeetTime || day?.startTime || "09:00");
+      const departT = checkinT + (Number(anchorSpot.airportCheckinOffsetMin) || 90);
       const arrivalT = departT + flightMinutes;
       return {
         role: "meet",
@@ -3231,7 +3240,7 @@
               nameBtn.title = "仮の宿泊エリアです。「変更」からホテルを登録してください";
               const findSpan = document.createElement("span");
               findSpan.className = "tl-hotel-find";
-              findSpan.textContent = "仮の宿泊エリア（中心街・駅目安）";
+              findSpan.textContent = step.anchorSpot?.name || "仮の宿泊エリア";
               nameBtn.appendChild(findSpan);
             } else {
               nameBtn.disabled = true;
@@ -3346,7 +3355,7 @@
             if (step.hotelProvisional) {
               const warnEl = document.createElement("span");
               warnEl.className = "tl-provisional-warn";
-              warnEl.textContent = "宿泊先を仮置きしています。ホテル登録で確定してください";
+              warnEl.textContent = `${step.anchorSpot?.name || "宿泊先"}を仮置きしています。ホテル登録で確定してください`;
               rightEl.appendChild(warnEl);
             }
           } else {

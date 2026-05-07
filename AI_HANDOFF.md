@@ -482,3 +482,13 @@ Shared notes for Claude / Codex agents working on this repo.
   - Default first-day airport meet time now renders at the provisional/registered departure airport check-in time, avoiding an immediate check-in warning when trip meet time is still the default.
   - Missing hotels now get a timeline-only provisional "仮の宿泊エリア（中心街・駅目安）" based on nearby visit spots, with a warning badge. It is not saved as a real hotel.
 - Checks: `node --check app.js` passed; inline scripts for `flight.html`, `schedule.html`, and `spots.html` passed `vm.Script`; touched-file mojibake scan returned no matches. Browser check confirmed `flight.html` no longer has the hour/minute split controls and rounds query times to 5-minute values.
+
+### 2026-05-07 Codex tripplan/schedule provisional follow-up
+
+- Updated `tripplan.html` spot-detail business-hour defaults in the trip planning step so empty hours render as `09:00` / `20:00`. This makes the native time picker open from the desired cursor position instead of the current time.
+- Updated `schedule.html` provisional hotel placement.
+  - Provisional hotels now also consider unplaced candidate spots, so the placeholder can be shown before auto-placement has put every spot onto a day.
+  - The provisional hotel label names the nearest anchor/candidate area, e.g. `仮の宿泊エリア（九份周辺の中心街・駅目安）`, and the warning repeats that specific placeholder.
+- Updated `schedule.html` provisional outbound flight timing.
+  - For a meet airport without a registered flight, the trip start time is treated as the check-in time and the provisional departure is set 90 minutes later. Example: start/check-in `09:00` -> flight departure `10:30`.
+- Checks: inline scripts for `schedule.html` and `tripplan.html` passed `vm.Script`; touched-file mojibake scan returned no matches; local HTTP 200 confirmed for `schedule.html` and `tripplan.html`.
