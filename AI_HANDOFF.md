@@ -467,3 +467,18 @@ Shared notes for Claude / Codex agents working on this repo.
 - Data audit: Taiwan local suggestions and China local suggestions have no exact duplicate recommended spot names. `太魯閣渓谷` exists in the Taiwan suggestions only; the wrong-China result came from ambiguous geocoding during add, not from duplicate local data.
 - Browser check: `spots.html` showed Taiwan suggestions in the expected order, with foods after spots and without add buttons. A live add of `太魯閣渓谷` placed the marker around Xibao/Taroko, Taiwan.
 - Checks: `node --check app.js` passed; `spots.html` inline scripts passed `vm.Script`; local HTTP 200 confirmed for `spots.html`; touched-file mojibake scan returned no matches.
+
+### 2026-05-07 Codex UI defaults follow-up
+
+- Updated area suggestion add buttons in `styles.css` / `app.js`.
+  - "スポット追加" is now a filled accent button with white text.
+  - "追加済み" gets the muted disabled style via the `added` class.
+- Updated spot business-hours defaults in `app.js`.
+  - New/no-hours spots now open the hours slider at 09:00-20:00 instead of all day.
+- Updated `flight.html` time inputs.
+  - Replaced split hour/minute selects with one text-style time input per field plus a 5-minute datalist.
+  - Incoming values such as `09:03` are rounded to `09:05`; no hour/minute split UI remains.
+- Updated `schedule.html`.
+  - Default first-day airport meet time now renders at the provisional/registered departure airport check-in time, avoiding an immediate check-in warning when trip meet time is still the default.
+  - Missing hotels now get a timeline-only provisional "仮の宿泊エリア（中心街・駅目安）" based on nearby visit spots, with a warning badge. It is not saved as a real hotel.
+- Checks: `node --check app.js` passed; inline scripts for `flight.html`, `schedule.html`, and `spots.html` passed `vm.Script`; touched-file mojibake scan returned no matches. Browser check confirmed `flight.html` no longer has the hour/minute split controls and rounds query times to 5-minute values.

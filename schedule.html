@@ -770,6 +770,10 @@
       padding: 2px 9px;
       white-space: nowrap;
     }
+    .tl-hotel-btn--provisional {
+      border-color: rgba(184, 124, 0, 0.34);
+      background: linear-gradient(135deg, rgba(255, 193, 7, 0.18), rgba(255,255,255,0.78));
+    }
     .tl-stay-input {
       width: 42px; flex-shrink: 0;
       font: inherit; font-size: 0.76rem; color: var(--text);
@@ -1872,9 +1876,15 @@
           })()
         : null;
       // 非初日: 前の夜の宿泊先が登録済みならその座標を出発点に使う
+      let meetHotelProvisional = false;
       if (!meetSpot && !isFirst) {
-        const h = schedule.hotels?.[schedule.days[dayIdx - 1]?.id];
+        const prevNightId = schedule.days[dayIdx - 1]?.id;
+        const h = schedule.hotels?.[prevNightId];
         if (h?.lat && h?.lng) meetSpot = h;
+        else {
+          meetSpot = buildProvisionalHotelSpot(day, dayIdx, "meet");
+          meetHotelProvisional = !!meetSpot;
+        }
       }
 
       let dismissSpot = isLast
@@ -1886,9 +1896,14 @@
           })()
         : null;
       // 非最終日: 当夜の宿泊先が登録済みならその座標を終着点に使う
+      let dismissHotelProvisional = false;
       if (!dismissSpot && !isLast) {
         const h = schedule.hotels?.[day.id];
         if (h?.lat && h?.lng) dismissSpot = h;
+        else {
+          dismissSpot = buildProvisionalHotelSpot(day, dayIdx, "dismiss");
+          dismissHotelProvisional = !!dismissSpot;
+        }
       }
 
       let startTime, endTime, meetName, dismissName;
@@ -1916,6 +1931,13 @@
         : null;
       const effectiveMeetFlight = meetFlight || provisionalMeetFlight;
       const meetFlightArrivalSpot = getFlightArrivalSpot(meetFlight) || implicitMeetArrivalSpot;
+      if (isFirst && meetSpot?.spotCategory === "airport" && effectiveMeetFlight?.time) {
+        const isDefaultMeetTime = !schedule.tripMeetTime || schedule.tripMeetTime === "09:00";
+        if (isDefaultMeetTime) {
+          const checkinT = timeToMinutes(effectiveMeetFlight.time) - (Number(meetSpot.airportCheckinOffsetMin) || 90);
+          startTime = minutesToTime(Math.max(0, checkinT));
+        }
+      }
       const rawDismissFlightForDay = (isLast && dismissSpot?.spotCategory === "airport")
         ? getFlightForAnchor("dismiss", dismissSpot, day.date)
         : null;
@@ -1988,6 +2010,7 @@
         hotelNightDayId: !isFirst ? (schedule.days[dayIdx - 1]?.id ?? null) : null,
         hotelCheckin:    !isFirst ? (schedule.days[dayIdx - 1]?.date ?? null) : null,
         hotelCheckout:   !isFirst ? (day.date ?? null) : null,
+        hotelProvisional: meetHotelProvisional,
         overflow: meetOverflow,
         airportCheckinWarning: meetAirportCheckinWarning,
         airportCheckinDeadlineStr: meetAirportCheckinDeadlineStr,
@@ -2147,6 +2170,7 @@
         hotelNightDayId: !isLast ? (day.id ?? null) : null,
         hotelCheckin:    !isLast ? (day.date ?? null) : null,
         hotelCheckout:   !isLast ? (schedule.days[dayIdx + 1]?.date ?? null) : null,
+        hotelProvisional: dismissHotelProvisional,
         overflow: dismissOverflow,
         airportCheckinWarning: dismissAirportCheckinWarning,
         airportCheckinDeadlineStr: dismissAirportCheckinDeadlineStr,
@@ -2677,6 +2701,33 @@
       });
     }
 
+    function getDayVisitSpots(day, isFirst = false, isLast = false) {
+      return (day?.entries || [])
+        .map(en => getSpotById(en.spotId))
+        .filter(spot => spot && spot.lat && spot.lng && isScheduleVisitSpot(spot, isFirst, isLast));
+    }
+
+    function buildProvisionalHotelSpot(day, dayIdx, role) {
+      const daySpots = getDayVisitSpots(day, dayIdx === 0, dayIdx === schedule.days.length - 1);
+      const neighborDay = role === "meet" ? schedule.days?.[dayIdx - 1] : schedule.days?.[dayIdx + 1];
+      const neighborIdx = role === "meet" ? dayIdx - 1 : dayIdx + 1;
+      const neighborSpots = getDayVisitSpots(neighborDay, neighborIdx === 0, neighborIdx === schedule.days.length - 1);
+      const baseSpots = [...daySpots, ...neighborSpots];
+      if (!baseSpots.length) return null;
+      const lat = baseSpots.reduce((sum, spot) => sum + Number(spot.lat), 0) / baseSpots.length;
+      const lng = baseSpots.reduce((sum, spot) => sum + Number(spot.lng), 0) / baseSpots.length;
+      return {
+        id: `hotel-provisional-${day?.id || dayIdx}`,
+        name: "仮の宿泊エリア（中心街・駅目安）",
+        type: "spot",
+        spotCategory: "hotel",
+        sourceType: "provisional-hotel",
+        lat,
+        lng,
+        provisional: true,
+      };
+    }
+
     function isScheduleVisitSpot(spot, isFirst = false, isLast = false) {
       return !!spot
         && spot.spotCategory !== "hotel"
@@ -3142,6 +3193,7 @@
             const nameBtn = document.createElement("button");
             nameBtn.type = "button";
             nameBtn.className = "tl-hotel-btn tl-hotel-name-btn";
+            if (step.hotelProvisional) nameBtn.classList.add("tl-hotel-btn--provisional");
 
             const iconSpan = document.createElement("span");
             iconSpan.textContent = "🏨";
@@ -3174,6 +3226,13 @@
               } else {
                 nameBtn.disabled = true;
               }
+            } else if (step.hotelProvisional) {
+              nameBtn.disabled = true;
+              nameBtn.title = "仮の宿泊エリアです。「変更」からホテルを登録してください";
+              const findSpan = document.createElement("span");
+              findSpan.className = "tl-hotel-find";
+              findSpan.textContent = "仮の宿泊エリア（中心街・駅目安）";
+              nameBtn.appendChild(findSpan);
             } else {
               nameBtn.disabled = true;
               nameBtn.title = "「変更」からホテルを登録してください";
@@ -3284,6 +3343,12 @@
             rowDiv.appendChild(changeBtn);
 
             rightEl.appendChild(rowDiv);
+            if (step.hotelProvisional) {
+              const warnEl = document.createElement("span");
+              warnEl.className = "tl-provisional-warn";
+              warnEl.textContent = "宿泊先を仮置きしています。ホテル登録で確定してください";
+              rightEl.appendChild(warnEl);
+            }
           } else {
             // 集合/解散場所（通常アンカー）
             const dotColor = step.type === "meet" ? "var(--accent-teal, #70d6c5)" : "var(--accent-pink, #ff8fb1)";

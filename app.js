@@ -1391,8 +1391,8 @@ function fillBusinessHoursInputs(hours) {
     if (noHoursAtAll) {
       if (enabledInput) enabledInput.checked = true;
       row.classList.add("spot-hours-range--enabled");
-      if (openInput) openInput.value = 0;
-      if (closeInput) closeInput.value = 1440;
+      if (openInput) openInput.value = 540;
+      if (closeInput) closeInput.value = 1200;
       updateBusinessHoursRange(row);
       setExtraHoursVisible(day, false);
       return;
@@ -2980,6 +2980,7 @@ function renderAreaSuggestionsV2(suggestions) {
       useBtn.className = "area-suggest-add-btn";
       const setAdded = () => {
         useBtn.disabled = true;
+        useBtn.classList.add("added");
         useBtn.textContent = "追加済み";
         useBtn.title = "このスポットは追加済みです";
       };
@@ -2997,6 +2998,7 @@ function renderAreaSuggestionsV2(suggestions) {
             renderAreaSuggestionsV2(suggestions);
           } else {
             useBtn.disabled = false;
+            useBtn.classList.remove("added");
             useBtn.textContent = "スポット追加";
           }
         });

@@ -2518,20 +2518,21 @@ body.budget-hidden [data-budget-ui] {
   padding: 6px 14px;
   border-radius: 999px;
   border: 1.5px solid var(--accent);
-  background: none;
-  color: var(--accent);
+  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  color: #fff;
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 800;
   transition: background 0.15s, color 0.15s;
 }
 
 .area-suggest-add-btn:hover:not(:disabled) {
-  background: var(--accent);
+  background: var(--accent-deep);
   color: #fff;
 }
 
 .area-suggest-add-btn.added {
-  border-color: var(--muted);
+  border-color: rgba(95, 109, 115, 0.28);
+  background: rgba(95, 109, 115, 0.12);
   color: var(--muted);
   cursor: default;
 }
