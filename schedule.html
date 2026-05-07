@@ -759,6 +759,17 @@
       padding: 2px 9px;
       white-space: nowrap;
     }
+    .tl-provisional-warn {
+      flex-shrink: 0;
+      font-size: 0.74rem;
+      font-weight: 900;
+      color: #8a5a00;
+      background: rgba(255, 193, 7, 0.18);
+      border: 1.5px solid rgba(184, 124, 0, 0.34);
+      border-radius: 999px;
+      padding: 2px 9px;
+      white-space: nowrap;
+    }
     .tl-stay-input {
       width: 42px; flex-shrink: 0;
       font: inherit; font-size: 0.76rem; color: var(--text);
@@ -1894,17 +1905,48 @@
       const meetFlight = (isFirst && meetSpot?.spotCategory === "airport")
         ? getFlightForAnchor("meet", meetSpot, day.date)
         : null;
-      const implicitMeetArrivalSpot = (isFirst && meetSpot?.spotCategory === "airport" && !meetFlight)
-        ? getTripSideAirport(day, "meet")
+      const suggestedMeetArrivalSpot = (isFirst && meetSpot?.spotCategory === "airport" && !meetFlight)
+        ? airportDataToTimelineSpot(suggestMeetFlightArrivalAirport(day, meetSpot))
         : null;
+      const implicitMeetArrivalSpot = suggestedMeetArrivalSpot || ((isFirst && meetSpot?.spotCategory === "airport" && !meetFlight)
+        ? getTripSideAirport(day, "meet")
+        : null);
+      const provisionalMeetFlight = (!meetFlight && implicitMeetArrivalSpot)
+        ? buildProvisionalFlight("meet", meetSpot, day, implicitMeetArrivalSpot)
+        : null;
+      const effectiveMeetFlight = meetFlight || provisionalMeetFlight;
       const meetFlightArrivalSpot = getFlightArrivalSpot(meetFlight) || implicitMeetArrivalSpot;
-      const dismissFlightForDay = (isLast && dismissSpot?.spotCategory === "airport")
+      const rawDismissFlightForDay = (isLast && dismissSpot?.spotCategory === "airport")
         ? getFlightForAnchor("dismiss", dismissSpot, day.date)
         : null;
-      const dismissFlightDepartureSpot = getFlightDepartureSpot(dismissFlightForDay);
-      const implicitDismissDepartureSpot = (isLast && dismissSpot?.spotCategory === "airport" && !dismissFlightForDay)
-        ? getTripSideAirport(day, "dismiss")
+      const suggestedDismissDepartureSpot = (isLast && dismissSpot?.spotCategory === "airport")
+        ? airportDataToTimelineSpot(suggestDismissFlightDepartureAirport(day, dismissSpot))
         : null;
+      let dismissFlightForDay = rawDismissFlightForDay || null;
+      let dismissFlightDepartureSpot = getFlightDepartureSpot(dismissFlightForDay);
+      const dismissDepartureLooksWrong = dismissFlightForDay
+        && dismissSpot?.spotCategory === "airport"
+        && (!dismissFlightDepartureSpot || sameAirportLike(dismissFlightDepartureSpot, dismissSpot));
+      if (dismissDepartureLooksWrong && suggestedDismissDepartureSpot) {
+        dismissFlightDepartureSpot = suggestedDismissDepartureSpot;
+        dismissFlightForDay = {
+          ...dismissFlightForDay,
+          airport: suggestedDismissDepartureSpot.name,
+          departureSpotId: suggestedDismissDepartureSpot.id || "",
+          arrivalAirport: dismissFlightForDay.arrivalAirport || dismissSpot.name,
+          arrivalSpotId: dismissFlightForDay.arrivalSpotId || dismissSpot.id || "",
+          provisional: true,
+          provisionalReason: "帰り便の出発空港を仮補正しています。本登録すると警告は消えます。",
+        };
+      }
+      const implicitDismissDepartureSpot = suggestedDismissDepartureSpot || ((isLast && dismissSpot?.spotCategory === "airport" && !dismissFlightForDay)
+        ? getTripSideAirport(day, "dismiss")
+        : null);
+      const provisionalDismissFlight = (!dismissFlightForDay && implicitDismissDepartureSpot)
+        ? buildProvisionalFlight("dismiss", dismissSpot, day, implicitDismissDepartureSpot)
+        : null;
+      if (provisionalDismissFlight) dismissFlightForDay = provisionalDismissFlight;
+      if (!dismissFlightDepartureSpot && dismissFlightForDay) dismissFlightDepartureSpot = getFlightDepartureSpot(dismissFlightForDay) || implicitDismissDepartureSpot;
       const dismissTravelTarget = dismissFlightDepartureSpot || implicitDismissDepartureSpot || dismissSpot;
       if (isLast) {
         endTime     = schedule.tripDismissTime  || "18:00";
@@ -1932,9 +1974,9 @@
         if (meetSpot.airportCheckinTime) {
           deadlineT = timeToMinutes(meetSpot.airportCheckinTime);
           meetAirportCheckinDeadlineStr = meetSpot.airportCheckinTime;
-        } else if (meetFlight?.time) {
+        } else if (effectiveMeetFlight?.time) {
           const off = meetSpot.airportCheckinOffsetMin || 90;
-          deadlineT = timeToMinutes(meetFlight.time) - off;
+          deadlineT = timeToMinutes(effectiveMeetFlight.time) - off;
           meetAirportCheckinDeadlineStr = minutesToTime(deadlineT);
         }
         if (deadlineT !== null && t > deadlineT) { meetOverflow = true; meetAirportCheckinWarning = true; }
@@ -1949,25 +1991,26 @@
         overflow: meetOverflow,
         airportCheckinWarning: meetAirportCheckinWarning,
         airportCheckinDeadlineStr: meetAirportCheckinDeadlineStr,
-        meetFlight: meetFlight || null,
+        meetFlight: effectiveMeetFlight || null,
         meetFlightArrivalSpot: meetFlightArrivalSpot || null,
       });
-      if (meetFlight || implicitMeetArrivalSpot) {
-        const departT = meetFlight?.time ? timeToMinutes(meetFlight.time) : t;
-        const arriveT = meetFlight?.arrivalTime ? timeToMinutes(meetFlight.arrivalTime) : departT;
-        const meetStayMin = getAirportStayMinutes(meetSpot, meetFlight, Math.max(0, departT - t) || 90);
+      if (effectiveMeetFlight || implicitMeetArrivalSpot) {
+        const departT = effectiveMeetFlight?.time ? timeToMinutes(effectiveMeetFlight.time) : t;
+        const arriveT = effectiveMeetFlight?.arrivalTime ? timeToMinutes(effectiveMeetFlight.arrivalTime) : departT;
+        const meetStayMin = getAirportStayMinutes(meetSpot, effectiveMeetFlight, Math.max(0, departT - t) || 90);
         if (meetSpot?.spotCategory === "airport") {
           steps.push({ type: "airportStay", duration: meetStayMin, role: "meet", airport: meetSpot, editable: false });
         }
-        if (meetFlight) {
+        if (effectiveMeetFlight) {
           steps.push({
             type: "flight",
             role: "meet",
             time: departT,
             leaveTime: arriveT,
-            flight: meetFlight,
+            flight: effectiveMeetFlight,
             fromSpot: meetSpot,
             toSpot: meetFlightArrivalSpot,
+            provisional: !!effectiveMeetFlight.provisional,
           });
         }
         t = arriveT;
@@ -2491,10 +2534,59 @@
         });
     }
 
+    function airportName(ap) {
+      return ap?.displayName || ap?.name || "";
+    }
+
+    function airportDataId(ap) {
+      return ap?.id || (ap?.iata ? `airport-${String(ap.iata).toLowerCase()}` : "");
+    }
+
+    function sameAirportLike(a, b) {
+      if (!a || !b) return false;
+      if (window.sameTripAirport?.(a, b)) return true;
+      const aid = a.airportId || airportDataId(a);
+      const bid = b.airportId || airportDataId(b);
+      if (aid && bid && aid === bid) return true;
+      return normalizeAirportName(a.name || a.displayName) === normalizeAirportName(b.name || b.displayName);
+    }
+
+    function airportDataToTimelineSpot(ap) {
+      if (!ap) return null;
+      const name = airportName(ap);
+      const apId = airportDataId(ap);
+      const existing = (activeList?.spots || []).find(s =>
+        s.spotCategory === "airport" && (
+          (apId && s.airportId === apId) || window.sameTripAirport?.(s, ap) || normalizeAirportName(s.name) === normalizeAirportName(name)
+        )
+      );
+      if (existing) return existing;
+      return {
+        id: apId || `airport-provisional-${normalizeAirportName(name)}`,
+        name,
+        type: "spot",
+        spotCategory: "airport",
+        sourceType: "provisional-flight",
+        airportId: apId,
+        iata: ap.iata || ap.code || null,
+        airportCountry: ap.country || null,
+        airportCity: ap.city || null,
+        lat: ap.lat,
+        lng: ap.lng,
+        defaultStayMinutes: 90,
+      };
+    }
+
     function findAirportSpotByName(name) {
       const n = String(name || "").trim();
       if (!n) return null;
-      return (activeList?.spots || []).find(s => String(s.name || "").trim() === n && s.spotCategory === "airport")
+      const airport = findAirportData(n);
+      return (activeList?.spots || []).find(s =>
+          s.spotCategory === "airport"
+          && airport
+          && (s.airportId === airport.id || window.sameTripAirport?.(s, airport))
+        )
+        || (activeList?.spots || []).find(s => String(s.name || "").trim() === n && s.spotCategory === "airport")
         || (activeList?.spots || []).find(s => String(s.name || "").trim() === n)
         || null;
     }
@@ -2621,10 +2713,10 @@
     function suggestDismissFlightDepartureAirport(day, fallbackSpot) {
       const daySpots = (day?.entries || [])
         .map(en => getSpotById(en.spotId))
-        .filter(s => s && !isDismissSpot(s) && s.lat && s.lng);
+        .filter(s => s && !isDismissSpot(s) && s.spotCategory !== "airport" && s.lat && s.lng);
       const baseSpots = daySpots.length
         ? daySpots
-        : (activeList?.spots || []).filter(s => s && !isDismissSpot(s) && s.lat && s.lng);
+        : (activeList?.spots || []).filter(s => s && !isDismissSpot(s) && s.spotCategory !== "airport" && s.lat && s.lng);
       const suggestions = getNearbyAirports(baseSpots, 4).filter(ap => ap.name !== fallbackSpot?.name);
       return suggestions[0] || null;
     }
@@ -2632,12 +2724,47 @@
     function suggestMeetFlightArrivalAirport(day, fallbackSpot) {
       const daySpots = (day?.entries || [])
         .map(en => getSpotById(en.spotId))
-        .filter(s => s && !isMeetSpot(s) && s.lat && s.lng);
+        .filter(s => s && !isMeetSpot(s) && s.spotCategory !== "airport" && s.lat && s.lng);
       const baseSpots = daySpots.length
         ? daySpots
-        : (activeList?.spots || []).filter(s => s && !isMeetSpot(s) && !isDismissSpot(s) && s.lat && s.lng);
+        : (activeList?.spots || []).filter(s => s && !isMeetSpot(s) && !isDismissSpot(s) && s.spotCategory !== "airport" && s.lat && s.lng);
       const suggestions = getNearbyAirports(baseSpots, 4).filter(ap => ap.name !== fallbackSpot?.name);
       return suggestions[0] || null;
+    }
+
+    function buildProvisionalFlight(role, anchorSpot, day, endpointSpot) {
+      if (!anchorSpot || !endpointSpot) return null;
+      const flightMinutes = 120;
+      if (role === "dismiss") {
+        const arrivalT = timeToMinutes(schedule.tripDismissTime || day?.endTime || "18:00");
+        const departT = Math.max(0, arrivalT - flightMinutes);
+        return {
+          role: "dismiss",
+          airport: endpointSpot.name,
+          arrivalAirport: anchorSpot.name,
+          date: day?.date || "",
+          time: minutesToTime(departT),
+          arrivalTime: minutesToTime(arrivalT),
+          departureSpotId: endpointSpot.id || "",
+          arrivalSpotId: anchorSpot.id || "",
+          provisional: true,
+          provisionalReason: "出発空港と時刻を仮置きしています。本登録すると警告は消えます。",
+        };
+      }
+      const departT = timeToMinutes(schedule.tripMeetTime || day?.startTime || "09:00");
+      const arrivalT = departT + flightMinutes;
+      return {
+        role: "meet",
+        airport: anchorSpot.name,
+        arrivalAirport: endpointSpot.name,
+        date: day?.date || "",
+        time: minutesToTime(departT),
+        arrivalTime: minutesToTime(arrivalT),
+        departureSpotId: anchorSpot.id || "",
+        arrivalSpotId: endpointSpot.id || "",
+        provisional: true,
+        provisionalReason: "到着空港と時刻を仮置きしています。本登録すると警告は消えます。",
+      };
     }
 
     function renderAirportSuggestions() {
@@ -2668,7 +2795,10 @@
     async function addAirportSpot(category, ap) {
       if (!activeList) return;
       if (!Array.isArray(activeList.spots)) activeList.spots = [];
-      const existing = activeList.spots.find(s => s.name === ap.name && s.spotCategory === "airport");
+      const apId = ap.id || (ap.iata ? `airport-${String(ap.iata).toLowerCase()}` : "");
+      const existing = activeList.spots.find(s => s.spotCategory === "airport" && (
+        s.airportId === apId || s.name === ap.name || window.sameTripAirport?.(s, ap)
+      ));
       // 同カテゴリを他スポットから除去
       activeList.spots = activeList.spots.map(s => {
         const roles = getSpotRoles(s).filter(r => r !== category);
@@ -2689,6 +2819,10 @@
           budget: 0,
           type: "spot",
           spotCategory: "airport",
+          airportId: apId,
+          iata: ap.iata || ap.code || null,
+          airportCountry: ap.country || null,
+          airportCity: ap.city || null,
           spotRole: category,
           spotRoles: [category],
           lat: ap.lat,
@@ -3307,7 +3441,7 @@
           const flt = step.flight || {};
           const parts = [];
           if (flt.flightNumber) parts.push(flt.flightNumber);
-          parts.push("離陸");
+          parts.push(flt.time ? `離陸 ${flt.time}` : "離陸");
           if (flt.arrivalTime) parts.push(`着陸 ${flt.arrivalTime}`);
           if (flt.arrivalAirport) parts.push(`→ ${flt.arrivalAirport}`);
           if (flt.pricePerPerson) parts.push(`¥${Number(flt.pricePerPerson).toLocaleString()}/名`);
@@ -3326,6 +3460,12 @@
           if (flt.memo) p.set("memo", flt.memo);
           flightBtn.addEventListener("click", () => { location.href = `./flight.html?${p}`; });
           rightEl.appendChild(flightBtn);
+          if (step.provisional || flt.provisional) {
+            const warnEl = document.createElement("span");
+            warnEl.className = "tl-provisional-warn";
+            warnEl.textContent = flt.provisionalReason || "仮の航空券です。本登録してください";
+            rightEl.appendChild(warnEl);
+          }
           row.appendChild(leftEl);
           row.appendChild(rightEl);
 
@@ -3714,7 +3854,7 @@
           flightBtn2.title = "クリックして航空券を登録・確認する";
           const parts2 = [];
           if (flt.flightNumber) parts2.push(flt.flightNumber);
-          parts2.push("離陸");
+          parts2.push(flt.time ? `離陸 ${flt.time}` : "離陸");
           if (flt.arrivalTime) parts2.push(`着陸 ${flt.arrivalTime}`);
           if (flt.arrivalAirport) parts2.push(`→ ${flt.arrivalAirport}`);
           if (flt.pricePerPerson) parts2.push(`¥${Number(flt.pricePerPerson).toLocaleString()}/名`);
@@ -3733,6 +3873,12 @@
           if (flt.memo) p2.set("memo", flt.memo);
           flightBtn2.addEventListener("click", () => { location.href = `./flight.html?${p2}`; });
           deptRight.appendChild(flightBtn2);
+          if (flt.provisional) {
+            const warnEl = document.createElement("span");
+            warnEl.className = "tl-provisional-warn";
+            warnEl.textContent = flt.provisionalReason || "仮の航空券です。本登録してください";
+            deptRight.appendChild(warnEl);
+          }
           if (step.airportCheckinWarning) {
             const warnEl = document.createElement("span");
             warnEl.className = "tl-overflow-warn";
@@ -4117,9 +4263,15 @@
       if (!rawName) { input.focus(); return; }
       const airportMatch = findAirportData(rawName);
       const name = airportMatch?.name || rawName;
+      const airportId = airportMatch?.id || (airportMatch?.iata ? `airport-${String(airportMatch.iata).toLowerCase()}` : "");
 
       // 同名スポットが既に登録されている場合はそちらを使用
-      const existing = (activeList.spots || []).find(s => s.name === name || s.name === rawName);
+      const existing = (activeList.spots || []).find(s =>
+        s.name === name || s.name === rawName
+        || (airportMatch && s.spotCategory === "airport" && (
+          s.airportId === airportId || window.sameTripAirport?.(s, airportMatch)
+        ))
+      );
       if (existing) {
         const label = category === "meet" ? "集合" : "解散";
         alert(`「${name}」は既に登録済みです。このスポットを${label}場所として設定します。`);
@@ -4170,6 +4322,11 @@
         } catch {}
       }
 
+      if (spotCategory === "airport" && !airportMatch) {
+        alert("空港として追加する場合は、空港テーブルから選択できる名称またはIATAコードを入力してください。");
+        return;
+      }
+
       if (lat === null || lng === null) {
         alert(`「${name}」の座標が見つかりませんでした。\nより具体的な名称（例：新千歳空港、東京駅）で入力してください。`);
         return;
@@ -4183,6 +4340,10 @@
         budget: 0,
         type: "spot",
         spotCategory,
+        airportId: airportMatch ? airportId : null,
+        iata: airportMatch?.iata || airportMatch?.code || null,
+        airportCountry: airportMatch?.country || null,
+        airportCity: airportMatch?.city || null,
         spotRole: category,
         spotRoles: [category],
         lat,

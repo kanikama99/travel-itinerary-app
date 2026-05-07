@@ -254,6 +254,8 @@ let geoFilterCorner1   = null;
 let geoFilterRectLayer = null;
 let geoFilterMarkers   = [];
 const spotCategorySelect = document.getElementById("spotCategorySelect");
+const spotAirportMasterInput = document.getElementById("spotAirportMasterInput");
+const spotAirportMasterList = document.getElementById("spotAirportMasterList");
 const spotCategoryAddForm = document.getElementById("spotCategoryAddForm");
 const spotCategoryNewName = document.getElementById("spotCategoryNewName");
 const spotCategoryNewAddBtn = document.getElementById("spotCategoryNewAddBtn");
@@ -319,6 +321,7 @@ listNameInput.addEventListener("keydown", (e) => {
 
 setupAutocomplete(placeInput, placeDropdown);
 setupSpotPhotoControls();
+setupAirportMasterInput();
 
 spotCategorySelect.addEventListener("change", () => {
   if (spotCategorySelect.value === "__add_new__") {
@@ -347,8 +350,15 @@ spotCategoryNewName.addEventListener("keydown", (e) => {
 setupBusinessHoursControls();
 ["spotTakeoffTime", "spotAirportCheckinTime", "spotAirportCheckinOffset"].forEach(id => {
   document.getElementById(id)?.addEventListener("change", () => {
+    if (id !== "spotAirportCheckinOffset") {
+      const input = document.getElementById(id);
+      if (input) input.value = roundTimeToFiveMinutes(input.value);
+    }
     if (spotCategorySelect?.value === "airport") syncAirportStayInputs();
   });
+});
+document.getElementById("spotLandingTime")?.addEventListener("change", e => {
+  e.target.value = roundTimeToFiveMinutes(e.target.value);
 });
 
 if (areaSuggestToggle) areaSuggestToggle.addEventListener("click", toggleAreaSuggestPanel);
@@ -488,6 +498,7 @@ function getActiveList(d) {
 
 async function saveLocation() {
   const rawInput = placeInput.value.trim();
+  const preferredSuggestionName = placeInput.dataset.preferredSuggestionName || "";
   if (!rawInput) {
     setFeedback("スポット名か Google Maps URL のどちらかを入力してください。", true);
     return;
@@ -504,19 +515,44 @@ async function saveLocation() {
     const location = {
       ...resolved,
       id: createStableId(),
-      name: resolved.name || fallbackName(state.spots.length + 1),
+      name: preferredSuggestionName && preferredSuggestionName === rawInput
+        ? preferredSuggestionName
+        : (resolved.name || fallbackName(state.spots.length + 1)),
       description: "",
       type: "spot",
       spotCategory,
     };
+    if (spotCategory === "airport") {
+      const airport = findAirportMaster(location.name || rawInput);
+      if (!airport) {
+        throw new Error("空港スポットは空港テーブルから選択できる空港だけ登録できます。空港名またはIATAコードで選択してください。");
+      }
+      location.name = getAirportDisplayName(airport);
+      location.airportId = getAirportId(airport);
+      location.iata = airport.iata || airport.code || null;
+      location.airportCountry = airport.country || null;
+      location.airportCity = airport.city || null;
+      location.lat = airport.lat;
+      location.lng = airport.lng;
+    }
     await maybeAttachGoogleBusinessHours(location);
-    const duplicate = state.spots.find(s => s.name === location.name);
+    const duplicate = state.spots.find(s =>
+      s.name === location.name
+      || (location.spotCategory === "airport" && s.spotCategory === "airport" && (
+        s.airportId === location.airportId || window.sameTripAirport?.(s, location)
+      ))
+    );
     if (duplicate) {
+      if (location.spotCategory === "airport") {
+        setFeedback(`「${location.name}」は既に空港スポットとして登録されています。`, true);
+        return;
+      }
       if (!window.confirm(`「${location.name}」はすでに登録されています。\n同じ名前で追加しますか？`)) return;
     }
     state.spots = [...state.spots, location];
     persistState();
     form.reset();
+    delete placeInput.dataset.preferredSuggestionName;
     setFeedback(`「${location.name}」を追加しました。`, false);
     render();
   } catch (error) {
@@ -803,10 +839,56 @@ function spotMinutesToTime(value) {
   return `${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}`;
 }
 
+function roundTimeToFiveMinutes(value) {
+  const mins = spotTimeToMinutes(value);
+  if (mins === null) return "";
+  const rounded = Math.min(23 * 60 + 55, Math.max(0, Math.round(mins / 5) * 5));
+  return spotMinutesToTime(rounded);
+}
+
+function findAirportMaster(value) {
+  return window.findTripAirport ? window.findTripAirport(value) : null;
+}
+
+function getAirportDisplayName(airport) {
+  return airport?.displayName || airport?.name || "";
+}
+
+function getAirportId(airport) {
+  return airport?.id || (airport?.iata ? `airport-${String(airport.iata).toLowerCase()}` : "");
+}
+
+function setupAirportMasterInput() {
+  if (!spotAirportMasterInput || !spotAirportMasterList) return;
+  spotAirportMasterList.innerHTML = "";
+  (window.TRIP_AIRPORTS || []).forEach(ap => {
+    const opt = document.createElement("option");
+    opt.value = getAirportDisplayName(ap);
+    opt.label = `${ap.iata || ""} ${ap.country || ""} ${ap.city || ""}`.trim();
+    spotAirportMasterList.appendChild(opt);
+  });
+  spotAirportMasterInput.addEventListener("change", () => {
+    const airport = findAirportMaster(spotAirportMasterInput.value);
+    if (!airport) return;
+    applyAirportMasterToMenu(airport);
+  });
+}
+
+function applyAirportMasterToMenu(airport) {
+  if (!airport) return;
+  const displayName = getAirportDisplayName(airport);
+  if (spotAirportMasterInput) spotAirportMasterInput.value = displayName;
+  if (spotNameInput) spotNameInput.value = displayName;
+}
+
+function findAirportForSpot(spot) {
+  return findAirportMaster(spot?.airportId || spot?.iata || spot?.name || "");
+}
+
 function getAirportStayMinutesFromTimes(takeoffTime, checkinTime, offsetMin = 90) {
-  const takeoff = spotTimeToMinutes(takeoffTime);
+  const takeoff = spotTimeToMinutes(roundTimeToFiveMinutes(takeoffTime));
   if (takeoff === null) return Math.max(0, Number(offsetMin) || 90);
-  const checkin = spotTimeToMinutes(checkinTime);
+  const checkin = spotTimeToMinutes(roundTimeToFiveMinutes(checkinTime));
   if (checkin !== null && checkin <= takeoff) return Math.max(0, takeoff - checkin);
   return Math.max(0, Number(offsetMin) || 90);
 }
@@ -817,6 +899,8 @@ function syncAirportStayInputs() {
   const takeoffInput = document.getElementById("spotTakeoffTime");
   const checkinInput = document.getElementById("spotAirportCheckinTime");
   const offsetInput = document.getElementById("spotAirportCheckinOffset");
+  if (takeoffInput?.value) takeoffInput.value = roundTimeToFiveMinutes(takeoffInput.value);
+  if (checkinInput?.value) checkinInput.value = roundTimeToFiveMinutes(checkinInput.value);
   const takeoff = spotTimeToMinutes(takeoffInput?.value);
   const offset = Math.max(0, parseInt(offsetInput?.value, 10) || 90);
   if (offsetInput && !offsetInput.value) offsetInput.value = String(offset);
@@ -1316,11 +1400,13 @@ function updateSpotCategoryFields(cat, spot) {
 
   if (cat === "airport" && spot) {
     const el = id => document.getElementById(id);
-    if (el("spotTakeoffTime"))          el("spotTakeoffTime").value          = spot.takeoffTime          || "";
-    if (el("spotLandingTime"))          el("spotLandingTime").value          = spot.landingTime          || "";
+    const airport = findAirportForSpot(spot);
+    if (spotAirportMasterInput) spotAirportMasterInput.value = getAirportDisplayName(airport) || spot.name || "";
+    if (el("spotTakeoffTime"))          el("spotTakeoffTime").value          = roundTimeToFiveMinutes(spot.takeoffTime) || "";
+    if (el("spotLandingTime"))          el("spotLandingTime").value          = roundTimeToFiveMinutes(spot.landingTime) || "";
     if (el("spotAirportCheckinOffset")) el("spotAirportCheckinOffset").value = spot.airportCheckinOffsetMin || 90;
     if (el("spotAirportCheckinTime")) {
-      el("spotAirportCheckinTime").value = spot.airportCheckinTime || "";
+      el("spotAirportCheckinTime").value = roundTimeToFiveMinutes(spot.airportCheckinTime) || "";
       if (!el("spotAirportCheckinTime").value && spot.takeoffTime) {
         el("spotAirportCheckinTime").value = spotMinutesToTime(Math.max(0, spotTimeToMinutes(spot.takeoffTime) - (Number(spot.airportCheckinOffsetMin) || 90)));
       }
@@ -1328,6 +1414,7 @@ function updateSpotCategoryFields(cat, spot) {
     syncAirportStayInputs();
   } else if (cat === "airport") {
     const el = id => document.getElementById(id);
+    if (spotAirportMasterInput) spotAirportMasterInput.value = "";
     if (el("spotAirportCheckinOffset") && !el("spotAirportCheckinOffset").value) el("spotAirportCheckinOffset").value = "90";
     syncAirportStayInputs();
   }
@@ -1435,6 +1522,10 @@ function saveSpotDescription() {
   // カテゴリ固有フィールド
   const extraFields = {};
   const categoryFieldReset = {
+    airportId: null,
+    iata: null,
+    airportCountry: null,
+    airportCity: null,
     takeoffTime: null,
     landingTime: null,
     airportCheckinTime: null,
@@ -1443,15 +1534,36 @@ function saveSpotDescription() {
     hotelCheckoutTime: null,
   };
   let nextDefaultStayMinutes = readSpotDurationMinutes();
+  let canonicalName = spotNameInput.value.trim() || state.spots[targetIndex].name;
   if (newCategory === "airport") {
     const g = id => document.getElementById(id);
-    extraFields.takeoffTime          = g("spotTakeoffTime")?.value          || null;
-    extraFields.landingTime          = g("spotLandingTime")?.value          || null;
+    const airport = findAirportMaster(spotAirportMasterInput?.value || spotNameInput.value);
+    if (!airport) {
+      setFeedback("空港カテゴリでは、空港テーブルから空港を選択してください。", true);
+      spotAirportMasterInput?.focus();
+      return;
+    }
+    const duplicate = state.spots.find((s, i) => i !== targetIndex && s.spotCategory === "airport" && (
+      s.airportId === getAirportId(airport) || window.sameTripAirport?.(s, airport)
+    ));
+    if (duplicate) {
+      setFeedback(`「${getAirportDisplayName(airport)}」は既に空港スポットとして登録されています。表記ゆれの別スポットは作成できません。`, true);
+      return;
+    }
+    canonicalName = getAirportDisplayName(airport);
+    extraFields.airportId = getAirportId(airport);
+    extraFields.iata = airport.iata || airport.code || null;
+    extraFields.airportCountry = airport.country || null;
+    extraFields.airportCity = airport.city || null;
+    if (Number.isFinite(Number(airport.lat))) extraFields.lat = Number(airport.lat);
+    if (Number.isFinite(Number(airport.lng))) extraFields.lng = Number(airport.lng);
+    extraFields.takeoffTime          = roundTimeToFiveMinutes(g("spotTakeoffTime")?.value) || null;
+    extraFields.landingTime          = roundTimeToFiveMinutes(g("spotLandingTime")?.value) || null;
     if (!g("spotAirportCheckinTime")?.value && extraFields.takeoffTime) {
       const offForDefault = parseInt(g("spotAirportCheckinOffset")?.value, 10) || 90;
       g("spotAirportCheckinTime").value = spotMinutesToTime(Math.max(0, spotTimeToMinutes(extraFields.takeoffTime) - offForDefault));
     }
-    extraFields.airportCheckinTime   = g("spotAirportCheckinTime")?.value   || null;
+    extraFields.airportCheckinTime   = roundTimeToFiveMinutes(g("spotAirportCheckinTime")?.value) || null;
     const off = parseInt(g("spotAirportCheckinOffset")?.value);
     extraFields.airportCheckinOffsetMin = Number.isFinite(off) && off > 0 ? off : 90;
     nextDefaultStayMinutes = syncAirportStayInputs();
@@ -1465,7 +1577,7 @@ function saveSpotDescription() {
   state.spots[targetIndex] = {
     ...state.spots[targetIndex],
     ...categoryFieldReset,
-    name: spotNameInput.value.trim() || state.spots[targetIndex].name,
+    name: canonicalName,
     budget: shouldShowBudget() ? Math.max(0, parseInt(spotBudgetInput.value, 10) || 0) : (spot.budget || 0),
     description: spotDescriptionInput.value.trim(),
     type: "spot",
@@ -2415,14 +2527,19 @@ async function addSpotFromSuggestion(suggestion) {
     suggestion.osmCategory || "",
     suggestion.osmType || ""
   );
+  const airport = spotCategory === "airport" ? findAirportMaster(suggestion.name || suggestion.display) : null;
+  if (spotCategory === "airport" && !airport) {
+    setFeedback("空港スポットは空港テーブルから選択できる空港だけ登録できます。", true);
+    return;
+  }
   const lat = Number(suggestion.lat);
   const lng = Number(suggestion.lng);
   const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
   const location = {
     id: createStableId(),
-    name: suggestion.name,
-    lat: hasCoords ? lat : null,
-    lng: hasCoords ? lng : null,
+    name: airport ? getAirportDisplayName(airport) : suggestion.name,
+    lat: airport ? airport.lat : (hasCoords ? lat : null),
+    lng: airport ? airport.lng : (hasCoords ? lng : null),
     url: suggestion.url || "",
     sourceUrl: suggestion.url || "",
     sourceType: suggestion.sourceType || "search",
@@ -2432,8 +2549,24 @@ async function addSpotFromSuggestion(suggestion) {
     osmCategory: suggestion.osmCategory || "",
     osmType: suggestion.osmType || "",
   };
+  if (airport) {
+    location.airportId = getAirportId(airport);
+    location.iata = airport.iata || airport.code || null;
+    location.airportCountry = airport.country || null;
+    location.airportCity = airport.city || null;
+  }
   if (hasCoords && location.sourceType !== "local-suggestion") {
     await maybeAttachGoogleBusinessHours(location);
+  }
+  const duplicate = state.spots.find(s =>
+    s.name === location.name
+    || (location.spotCategory === "airport" && s.spotCategory === "airport" && (
+      s.airportId === location.airportId || window.sameTripAirport?.(s, location)
+    ))
+  );
+  if (duplicate) {
+    setFeedback(`「${location.name}」は既に登録されています。`, true);
+    return;
   }
   state.spots = [...state.spots, location];
   persistState();
@@ -2634,6 +2767,7 @@ function renderAreaSuggestions(suggestions) {
 
     const fillSpotInput = () => {
       placeInput.value = item.name;
+      placeInput.dataset.preferredSuggestionName = item.name;
       placeInput.focus();
       placeInput.scrollIntoView({ behavior: "smooth", block: "center" });
     };
@@ -2657,6 +2791,7 @@ function renderAreaSuggestions(suggestions) {
     useBtn.title = "スポットを追加欄に入力";
     useBtn.addEventListener("click", fillSpotInput);
 
+    const isFood = item.display === "ご当地フード";
     if (item.display === "候補エリア") {
       const subareaBtn = document.createElement("button");
       subareaBtn.type = "button";
@@ -2669,6 +2804,8 @@ function renderAreaSuggestions(suggestions) {
         }
       });
       card.append(nameSpan, googleBtn, subareaBtn, useBtn);
+    } else if (isFood) {
+      card.append(nameSpan, googleBtn);
     } else {
       card.append(nameSpan, googleBtn, useBtn);
     }

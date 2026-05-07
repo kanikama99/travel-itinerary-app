@@ -19,6 +19,10 @@
     .flight-field-label { font-size: 0.86rem; font-weight: 700; color: var(--accent-deep); }
     .flight-input { width: 100%; font: inherit; font-size: 0.94rem; color: var(--text); border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 12px; background: rgba(255,255,255,0.9); outline: none; }
     .flight-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgb(var(--accent-rgb, 255,122,69) / 0.12); }
+    .flight-time-picker { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; }
+    .flight-time-select { width: 100%; font: inherit; font-size: 0.94rem; color: var(--text); border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 10px; background: rgba(255,255,255,0.9); outline: none; }
+    .flight-time-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgb(var(--accent-rgb, 255,122,69) / 0.12); }
+    .flight-time-sep { color: var(--accent-deep); font-weight: 800; }
     .flight-sites { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
     .flight-site-btn, .flight-save-btn { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border: 1.5px solid rgb(var(--accent-rgb, 255,122,69) / 0.24); border-radius: 12px; background: rgba(255,255,255,0.72); color: var(--text); font: inherit; font-weight: 800; padding: 12px; cursor: pointer; text-decoration: none; text-align: center; }
     .flight-site-btn:hover, .flight-save-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
@@ -41,11 +45,11 @@
       <div class="flight-grid">
         <div class="flight-field">
           <label class="flight-field-label" for="flightFrom">出発地・空港</label>
-          <input id="flightFrom" class="flight-input" type="text" placeholder="例：関西国際空港" />
+          <input id="flightFrom" class="flight-input" type="text" list="flightAirportOptions" placeholder="例：関西国際空港 / KIX" />
         </div>
         <div class="flight-field">
           <label class="flight-field-label" for="flightTo">到着地・空港</label>
-          <input id="flightTo" class="flight-input" type="text" placeholder="例：羽田空港" />
+          <input id="flightTo" class="flight-input" type="text" list="flightAirportOptions" placeholder="例：羽田空港 / HND" />
         </div>
         <div class="flight-field">
           <label class="flight-field-label" for="flightSearchDate">搭乗日</label>
@@ -61,6 +65,7 @@
         <button class="flight-site-btn" type="button" onclick="searchSkyscanner()">Skyscanner</button>
         <button class="flight-site-btn" type="button" onclick="searchTravelko()">トラベルコ</button>
       </div>
+      <p id="flightSearchStatus" class="flight-note"></p>
       <p class="flight-note">将来アフィリエイト化しやすいよう、予約サイト別の検索ボタンに分けています。提携先が決まったら各URLにアフィリエイトIDを付与できます。</p>
     </section>
 
@@ -69,11 +74,11 @@
       <div class="flight-grid">
         <div class="flight-field">
           <label class="flight-field-label" for="flightAirport">出発空港</label>
-          <input id="flightAirport" class="flight-input" type="text" placeholder="例：関西国際空港" />
+          <input id="flightAirport" class="flight-input" type="text" list="flightAirportOptions" placeholder="例：関西国際空港 / KIX" />
         </div>
         <div class="flight-field">
           <label class="flight-field-label" for="flightArrivalAirport">到着空港</label>
-          <input id="flightArrivalAirport" class="flight-input" type="text" placeholder="例：羽田空港" />
+          <input id="flightArrivalAirport" class="flight-input" type="text" list="flightAirportOptions" placeholder="例：羽田空港 / HND" />
         </div>
         <div class="flight-field">
           <label class="flight-field-label" for="flightDate">搭乗日</label>
@@ -85,11 +90,21 @@
         </div>
         <div class="flight-field">
           <label class="flight-field-label" for="flightTime">離陸時刻</label>
-          <input id="flightTime" class="flight-input" type="time" step="300" />
+          <div class="flight-time-picker" data-time-picker="flightTime">
+            <select id="flightTimeHour" class="flight-time-select" aria-label="離陸時"></select>
+            <span class="flight-time-sep">:</span>
+            <select id="flightTimeMinute" class="flight-time-select" aria-label="離陸分"></select>
+            <input id="flightTime" type="hidden" />
+          </div>
         </div>
         <div class="flight-field">
           <label class="flight-field-label" for="flightArrivalTime">着陸時刻</label>
-          <input id="flightArrivalTime" class="flight-input" type="time" step="300" />
+          <div class="flight-time-picker" data-time-picker="flightArrivalTime">
+            <select id="flightArrivalTimeHour" class="flight-time-select" aria-label="着陸時"></select>
+            <span class="flight-time-sep">:</span>
+            <select id="flightArrivalTimeMinute" class="flight-time-select" aria-label="着陸分"></select>
+            <input id="flightArrivalTime" type="hidden" />
+          </div>
         </div>
         <div class="flight-field" data-budget-ui>
           <label class="flight-field-label" for="flightPrice">1名あたり予約金額（円）</label>
@@ -103,6 +118,8 @@
       <button id="saveFlightBtn" class="flight-save-btn" type="button">この航空券情報を保存してスケジュールに戻る</button>
       <p id="flightSaveStatus" class="flight-note"></p>
     </section>
+
+    <datalist id="flightAirportOptions"></datalist>
 
   </div>
 
@@ -203,29 +220,142 @@
         || AIRPORT_DATA.find(ap => key.includes(normalizeAirportName(ap.name.replace(/（.*?）|\(.*?\)/g, ""))));
     }
 
+    function airportDisplayName(airport) {
+      return airport?.displayName || airport?.name || "";
+    }
+
+    function airportId(airport) {
+      return airport?.id || (airport?.iata ? `airport-${String(airport.iata).toLowerCase()}` : "");
+    }
+
+    function minutesToTime(mins) {
+      const safe = Math.max(0, Math.min(23 * 60 + 55, Math.round(Number(mins) || 0)));
+      return `${String(Math.floor(safe / 60)).padStart(2, "0")}:${String(safe % 60).padStart(2, "0")}`;
+    }
+
+    function timeToMinutes(value) {
+      const m = String(value || "").match(/^(\d{1,2}):(\d{2})$/);
+      if (!m) return null;
+      return Math.max(0, Math.min(23 * 60 + 59, Number(m[1]) * 60 + Number(m[2])));
+    }
+
+    function roundTimeToFiveMinutes(value) {
+      const mins = timeToMinutes(value);
+      if (mins === null) return "";
+      return minutesToTime(Math.round(mins / 5) * 5);
+    }
+
+    function fillNumberSelect(select, values) {
+      if (!select || select.options.length) return;
+      values.forEach(value => {
+        const opt = document.createElement("option");
+        opt.value = value;
+        opt.textContent = value;
+        select.appendChild(opt);
+      });
+    }
+
+    function setupTimePicker(baseId) {
+      const hourEl = document.getElementById(`${baseId}Hour`);
+      const minuteEl = document.getElementById(`${baseId}Minute`);
+      const hiddenEl = document.getElementById(baseId);
+      if (!hourEl || !minuteEl || !hiddenEl) return;
+      fillNumberSelect(hourEl, Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")));
+      fillNumberSelect(minuteEl, Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0")));
+      const sync = () => { hiddenEl.value = `${hourEl.value}:${minuteEl.value}`; };
+      hourEl.addEventListener("change", sync);
+      minuteEl.addEventListener("change", sync);
+      setTimePickerValue(baseId, hiddenEl.value || "00:00");
+    }
+
+    function setTimePickerValue(baseId, value) {
+      const rounded = roundTimeToFiveMinutes(value) || "00:00";
+      const [hour, minute] = rounded.split(":");
+      const hourEl = document.getElementById(`${baseId}Hour`);
+      const minuteEl = document.getElementById(`${baseId}Minute`);
+      const hiddenEl = document.getElementById(baseId);
+      if (hourEl) hourEl.value = hour;
+      if (minuteEl) minuteEl.value = minute;
+      if (hiddenEl) hiddenEl.value = rounded;
+      return rounded;
+    }
+
+    function getTimePickerValue(baseId) {
+      const hourEl = document.getElementById(`${baseId}Hour`);
+      const minuteEl = document.getElementById(`${baseId}Minute`);
+      const hiddenEl = document.getElementById(baseId);
+      if (hourEl && minuteEl) {
+        const rounded = roundTimeToFiveMinutes(`${hourEl.value}:${minuteEl.value}`);
+        return setTimePickerValue(baseId, rounded);
+      }
+      const rounded = roundTimeToFiveMinutes(hiddenEl?.value || "");
+      if (hiddenEl) hiddenEl.value = rounded;
+      return rounded;
+    }
+
+    function fillAirportOptions() {
+      const list = document.getElementById("flightAirportOptions");
+      if (!list) return;
+      list.innerHTML = "";
+      (window.TRIP_AIRPORTS || AIRPORT_DATA).forEach(ap => {
+        const opt = document.createElement("option");
+        opt.value = airportDisplayName(ap);
+        opt.label = `${ap.iata || ""} ${ap.country || ""} ${ap.city || ""}`.trim();
+        list.appendChild(opt);
+      });
+    }
+
+    function canonicalizeAirportInput(input, required = false) {
+      const airport = findAirportData(input?.value || "");
+      if (airport && input) input.value = airportDisplayName(airport);
+      if (!airport && required) {
+        throw new Error("出発空港・到着空港は空港テーブルから選択してください。空港名またはIATAコードで検索できます。");
+      }
+      return airport;
+    }
+
+    function setupFlightInputs() {
+      fillAirportOptions();
+      ["flightFrom", "flightTo", "flightAirport", "flightArrivalAirport"].forEach(id => {
+        const input = document.getElementById(id);
+        input?.addEventListener("change", () => canonicalizeAirportInput(input, false));
+      });
+      setupTimePicker("flightTime");
+      setupTimePicker("flightArrivalTime");
+    }
+
     function ensureAirportSpot(activeList, name, fields = {}) {
-      const airportName = String(name || "").trim();
+      const known = findAirportData(name);
+      if (!known) return null;
+      const airportName = airportDisplayName(known);
       if (!activeList || !airportName) return null;
       if (!Array.isArray(activeList.spots)) activeList.spots = [];
-      const known = findAirportData(airportName);
       const exactId = fields.preferredId
         ? activeList.spots.find(spot => spot.id === fields.preferredId)
         : null;
       const existing = exactId || activeList.spots.find(spot =>
-        String(spot.name || "").trim() === airportName && (spot.spotCategory === "airport" || spot.sourceType === "flight")
-      ) || activeList.spots.find(spot => String(spot.name || "").trim() === airportName);
+        spot.spotCategory === "airport" && (
+          spot.airportId === airportId(known)
+          || String(spot.name || "").trim() === airportName
+          || window.sameTripAirport?.(spot, known)
+        )
+      );
       const patch = {
         name: airportName,
         type: "spot",
         spotCategory: "airport",
         sourceType: "flight",
+        airportId: airportId(known),
+        iata: known.iata || known.code || null,
+        airportCountry: known.country || null,
+        airportCity: known.city || null,
       };
       if (Number.isFinite(Number(fields.lat ?? known?.lat))) patch.lat = Number(fields.lat ?? known.lat);
       if (Number.isFinite(Number(fields.lng ?? known?.lng))) patch.lng = Number(fields.lng ?? known.lng);
       const hasStay = Number.isFinite(Number(fields.defaultStayMinutes));
       if (hasStay) patch.defaultStayMinutes = Number(fields.defaultStayMinutes);
-      if (fields.takeoffTime) patch.takeoffTime = fields.takeoffTime;
-      if (fields.landingTime) patch.landingTime = fields.landingTime;
+      if (fields.takeoffTime) patch.takeoffTime = roundTimeToFiveMinutes(fields.takeoffTime);
+      if (fields.landingTime) patch.landingTime = roundTimeToFiveMinutes(fields.landingTime);
       if (existing) {
         Object.assign(existing, patch);
         return existing;
@@ -242,8 +372,10 @@
       const time = params.get("time") || "";
       if (airport) {
         document.getElementById("flightRegistrationCard").classList.remove("hidden");
-        document.getElementById("flightAirport").value = airport;
-        document.getElementById("flightFrom").value = airport;
+        const known = findAirportData(airport);
+        const name = airportDisplayName(known) || airport;
+        document.getElementById("flightAirport").value = name;
+        document.getElementById("flightFrom").value = name;
       }
       if (date) {
         document.getElementById("flightDate").value = date;
@@ -251,46 +383,61 @@
         window.CalendarPicker?.updateDisplay(document.getElementById("flightDate"));
         window.CalendarPicker?.updateDisplay(document.getElementById("flightSearchDate"));
       }
-      if (time) document.getElementById("flightTime").value = time;
+      if (time) setTimePickerValue("flightTime", time);
       const arrivalAirport = params.get("arrivalAirport") || "";
       const arrivalTime    = params.get("arrivalTime")    || "";
       const flightNumber   = params.get("flightNumber")   || "";
       const price          = params.get("price")          || "";
       const memo           = params.get("memo")           || "";
-      if (arrivalAirport) document.getElementById("flightArrivalAirport").value = arrivalAirport;
-      if (arrivalTime)    document.getElementById("flightArrivalTime").value    = arrivalTime;
+      if (arrivalAirport) {
+        const knownArrival = findAirportData(arrivalAirport);
+        document.getElementById("flightArrivalAirport").value = airportDisplayName(knownArrival) || arrivalAirport;
+      }
+      if (arrivalTime)    setTimePickerValue("flightArrivalTime", arrivalTime);
       if (flightNumber)   document.getElementById("flightNumber").value         = flightNumber;
       if (price)          document.getElementById("flightPrice").value          = price;
       if (memo)           document.getElementById("flightMemo").value           = memo;
-      if (arrivalAirport) document.getElementById("flightTo").value = arrivalAirport;
+      if (arrivalAirport) document.getElementById("flightTo").value = document.getElementById("flightArrivalAirport").value;
     }
 
     function searchUrl(site) {
-      const from = document.getElementById("flightFrom").value.trim();
-      const to = document.getElementById("flightTo").value.trim();
+      const fromAirport = canonicalizeAirportInput(document.getElementById("flightFrom"), true);
+      const toAirport = canonicalizeAirportInput(document.getElementById("flightTo"), true);
+      const from = airportDisplayName(fromAirport);
+      const to = airportDisplayName(toAirport);
       const date = document.getElementById("flightSearchDate").value;
       const q = encodeURIComponent(`${from} ${to} ${date} 航空券`);
       if (site === "google") return `https://www.google.com/travel/flights?q=${q}`;
       if (site === "skyscanner") return `https://www.skyscanner.jp/transport/flights/?preferdirects=false&adultsv2=${encodeURIComponent(document.getElementById("flightPassengers").value || "1")}&query=${q}`;
       return `https://www.tour.ne.jp/j_air/?keyword=${q}`;
     }
-    function searchGoogleFlights() { window.open(searchUrl("google"), "_blank"); }
-    function searchSkyscanner() { window.open(searchUrl("skyscanner"), "_blank"); }
-    function searchTravelko() { window.open(searchUrl("travelko"), "_blank"); }
+    function openFlightSearch(site) {
+      const status = document.getElementById("flightSearchStatus");
+      try { window.open(searchUrl(site), "_blank"); }
+      catch (e) {
+        if (status) status.textContent = e.message;
+        else alert(e.message);
+      }
+    }
+    function searchGoogleFlights() { openFlightSearch("google"); }
+    function searchSkyscanner() { openFlightSearch("skyscanner"); }
+    function searchTravelko() { openFlightSearch("travelko"); }
 
     document.getElementById("saveFlightBtn").addEventListener("click", () => {
       const status = document.getElementById("flightSaveStatus");
-      const airport = document.getElementById("flightAirport").value.trim();
       const date = document.getElementById("flightDate").value;
-      if (!airport || !date) { status.textContent = "出発空港と搭乗日を入力してください"; return; }
+      if (!date) { status.textContent = "搭乗日を入力してください"; return; }
       try {
+        const departureAirport = canonicalizeAirportInput(document.getElementById("flightAirport"), true);
+        const arrivalAirportData = canonicalizeAirportInput(document.getElementById("flightArrivalAirport"), true);
+        const airport = airportDisplayName(departureAirport);
+        const arrivalAirport = airportDisplayName(arrivalAirportData);
         const params = new URLSearchParams(location.search);
         const { listsData, activeList, all, schedule } = getActiveListAndSchedule();
         if (!activeList) throw new Error("しおりが見つかりません");
         if (!schedule.flights) schedule.flights = {};
-        const time = document.getElementById("flightTime").value || "";
-        const arrivalAirport = document.getElementById("flightArrivalAirport").value.trim();
-        const arrivalTime = document.getElementById("flightArrivalTime").value || "";
+        const time = getTimePickerValue("flightTime") || "";
+        const arrivalTime = getTimePickerValue("flightArrivalTime") || "";
         const role = params.get("role") || "flight";
         const anchorSpotId = params.get("spotId") || "";
         const departureSpot = ensureAirportSpot(activeList, airport, {
@@ -341,6 +488,7 @@
     });
 
     applyTheme();
+    setupFlightInputs();
     initFromParams();
   </script>
   <script src="./calendar.js"></script>

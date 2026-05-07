@@ -403,6 +403,22 @@ Shared notes for Claude / Codex agents working on this repo.
 - Updated `api/resolve.js` to validate Google Maps hosts before server-side fetch; allowed `google.com`, `maps.google.com`, `goo.gl`, and `maps.app.goo.gl`.
 - Checks: `node --check` passed for touched JS files; all HTML inline scripts passed `vm.Script`; touched-file mojibake scan passed; Browser Use loaded `spots.html`, `schedule.html`, `flight.html`, `print.html`, `checklist.html`, `travelchecklist.html`, `settings.html`, and `bookmarks.html` with no console errors.
 
+### 2026-05-07 Codex airport table and local suggestion fixes
+
+- Expanded `airports.js` into a richer local airport table with `id`, IATA, country, city, and aliases. `findTripAirport()` now resolves common aliases such as `東京国際空港`, `Tokyo Haneda Airport`, `HND`, and `airport-hnd` to `羽田空港 (HND)`.
+- Updated `flight.html`.
+  - Departure/arrival airport inputs now use the local airport table via datalist and validation; arbitrary airport strings are rejected before search/save.
+  - Flight-created airport spots are saved with canonical airport name, `airportId`, IATA, country/city, and table coordinates.
+  - Takeoff/landing times are normalized to 5-minute increments on display/save.
+- Updated `spots.html` / `app.js`.
+  - Airport category spot menu now has an airport-table input; saving an airport category requires a matching table airport and saves the canonical name.
+  - Airport duplicate detection uses `airportId` / normalized airport aliases, preventing `羽田空港` / `東京国際空港` / `Tokyo Haneda Airport` from becoming separate airport spots.
+  - Local area suggestions hide the "追加欄に入力" button for `ご当地フード`.
+  - Local area suggestion names are preserved when added through the normal spot input, so `九份` is not replaced by a geocoding result such as `Jiufen`.
+- Updated `schedule.html` airport add paths to save `airportId` / IATA and reject airport-category additions that are not in the airport table.
+- Checks: `node --check` passed for `airports.js` and `app.js`; inline scripts for `flight.html`, `schedule.html`, `spots.html` passed `vm.Script`; touched-file mojibake scan passed; local HTTP 200 confirmed for `flight.html`, `spots.html`, and `schedule.html`.
+- Browser Use could not be completed in this run because the Codex app reported a usage-limit rejection. If available later, visually confirm `flight.html` datalist/time controls and `spots.html` local suggestions.
+
 ### 2026-05-06 Codex airport UX follow-up
 
 - Updated `schedule.html` again for airport trip planning.
@@ -427,3 +443,15 @@ Shared notes for Claude / Codex agents working on this repo.
   - Outbound flight arrival airport is shown as its own timeline row.
   - Return flight arrival airport is shown after the flight row.
 - Checks: inline scripts in `schedule.html`, `print.html`, and `flight.html` passed `vm.Script`; mojibake scan passed; Browser Use loaded `print.html` and `schedule.html` with no console warnings/errors.
+
+### 2026-05-07 Codex flight time and provisional airport flight follow-up
+
+- Updated `flight.html` time entry for takeoff/landing.
+  - Replaced native `type="time"` controls with hour/minute selects so the browser cannot show 1-minute options.
+  - Minute choices are fixed to `00, 05, 10, ... 55`; incoming query params and saved values are rounded to the nearest 5 minutes.
+- Updated `schedule.html` airport-anchor behavior.
+  - When meet/dismiss is an airport and no confirmed flight is registered, the timeline now creates a provisional flight using the nearest airport to non-airport trip spots, with provisional takeoff/landing times prefilled.
+  - Provisional flight rows show a warning badge. Opening the flight page from that row carries the provisional airport/time values; saving the real flight removes the provisional warning.
+  - Return flights with a missing/wrong departure endpoint that resolves to the dismiss airport are treated as provisional and corrected to the nearest airport suggestion until re-saved.
+  - Airport suggestions for these provisional endpoints ignore airport spots and use actual non-airport spots as the distance base.
+- Checks: `node --check` passed for `airports.js` and `app.js`; inline scripts for `flight.html`, `schedule.html`, and `spots.html` passed `vm.Script`; local HTTP 200 confirmed for `flight.html` and `schedule.html`; touched-file mojibake scan returned no matches.

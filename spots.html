@@ -286,20 +286,26 @@
 
     <div id="spotAirportSection" class="spot-category-fields hidden">
       <p class="spot-menu-sublabel">✈️ 空港専用</p>
+      <label class="spot-menu-label">
+        空港テーブルから選択
+        <input id="spotAirportMasterInput" type="text" class="spot-airport-master-input" list="spotAirportMasterList" placeholder="例：羽田、HND、Tokyo Haneda" />
+        <datalist id="spotAirportMasterList"></datalist>
+        <span class="spot-menu-note">空港カテゴリでは、この表の正式名称でスポット名を保存します。</span>
+      </label>
       <div class="spot-airport-time-row">
         <label class="spot-menu-label">
           離陸予定時刻
-          <input id="spotTakeoffTime" type="time" class="spot-time-field" />
+          <input id="spotTakeoffTime" type="time" step="300" min="00:00" class="spot-time-field" />
         </label>
         <label class="spot-menu-label">
           着陸予定時刻
-          <input id="spotLandingTime" type="time" class="spot-time-field" />
+          <input id="spotLandingTime" type="time" step="300" min="00:00" class="spot-time-field" />
         </label>
       </div>
       <div class="spot-menu-label">
         チェックイン予定時刻
         <div class="spot-checkin-row">
-          <input id="spotAirportCheckinTime" type="time" class="spot-time-field" />
+          <input id="spotAirportCheckinTime" type="time" step="300" min="00:00" class="spot-time-field" />
           <span class="spot-menu-note">または離陸</span>
           <input id="spotAirportCheckinOffset" type="number" min="0" max="300" step="15" class="spot-offset-field" />
           <span class="spot-menu-note">分前</span>
@@ -430,6 +436,7 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="./airports.js"></script>
   <script src="./local_area_suggestions.js"></script>
   <script src="./app.js"></script>
   <script src="./theme.js"></script>
