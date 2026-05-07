@@ -1760,16 +1760,27 @@
       if (!schedule?.days) return;
       if (!schedule.transitCache) schedule.transitCache = {};
       const pairs = [];
+      const queuedKeys = new Set();
+      const queueRoutePair = (fromSpot, toSpot) => {
+        if (!fromSpot?.lat || !fromSpot?.lng || !toSpot?.lat || !toSpot?.lng) return;
+        const key = transitCacheKey(fromSpot.lat, fromSpot.lng, toSpot.lat, toSpot.lng);
+        if (queuedKeys.has(key) || !shouldFetchRouteForKey(key)) return;
+        queuedKeys.add(key);
+        pairs.push({ key, fromLat: fromSpot.lat, fromLng: fromSpot.lng, toLat: toSpot.lat, toLng: toSpot.lng });
+      };
+      schedule.days.forEach((day, idx) => {
+        const plan = generatePlan(day, idx, schedule.days.length);
+        (plan.steps || []).forEach(step => {
+          if (step.type === "travel") queueRoutePair(step.fromSpot, step.toSpot);
+        });
+      });
       for (const day of schedule.days) {
         const entries = day.entries || [];
         for (let i = 0; i < entries.length - 1; i++) {
           const a = getSpotById(entries[i].spotId);
           const b = getSpotById(entries[i + 1].spotId);
           if (a?.lat && a?.lng && b?.lat && b?.lng && a.spotCategory !== "airport" && b.spotCategory !== "airport") {
-            const key = transitCacheKey(a.lat, a.lng, b.lat, b.lng);
-            if (shouldFetchRouteForKey(key)) {
-              pairs.push({ key, fromLat: a.lat, fromLng: a.lng, toLat: b.lat, toLng: b.lng });
-            }
+            queueRoutePair(a, b);
           }
         }
       }
@@ -1787,8 +1798,7 @@
         const meetFlight = getFlightForAnchor("meet", globalMeet, firstDay.date);
         const routeOrigin = getFlightArrivalSpot(meetFlight) || getTripSideAirport(firstDay, "meet") || globalMeet;
         if (routeOrigin?.lat && routeOrigin?.lng && firstSpot?.lat && firstSpot?.lng) {
-          const key = transitCacheKey(routeOrigin.lat, routeOrigin.lng, firstSpot.lat, firstSpot.lng);
-          if (shouldFetchRouteForKey(key)) pairs.push({ key, fromLat: routeOrigin.lat, fromLng: routeOrigin.lng, toLat: firstSpot.lat, toLng: firstSpot.lng });
+          queueRoutePair(routeOrigin, firstSpot);
         }
       }
 
@@ -1802,8 +1812,7 @@
         const dismissFlight = getFlightForAnchor("dismiss", globalDismiss, lastDay.date);
         const routeDest = getFlightDepartureSpot(dismissFlight) || getTripSideAirport(lastDay, "dismiss") || globalDismiss;
         if (lastSpot?.lat && lastSpot?.lng && routeDest?.lat && routeDest?.lng) {
-          const key = transitCacheKey(lastSpot.lat, lastSpot.lng, routeDest.lat, routeDest.lng);
-          if (shouldFetchRouteForKey(key)) pairs.push({ key, fromLat: lastSpot.lat, fromLng: lastSpot.lng, toLat: routeDest.lat, toLng: routeDest.lng });
+          queueRoutePair(lastSpot, routeDest);
         }
       }
 
@@ -1815,16 +1824,14 @@
         const lastEnt = [...(d.entries || [])].reverse().find(en => !isDismissSpot(getSpotById(en.spotId)));
         const lastSp  = lastEnt ? getSpotById(lastEnt.spotId) : null;
         if (lastSp?.lat && lastSp?.lng) {
-          const key = transitCacheKey(lastSp.lat, lastSp.lng, hotel.lat, hotel.lng);
-          if (shouldFetchRouteForKey(key)) pairs.push({ key, fromLat: lastSp.lat, fromLng: lastSp.lng, toLat: hotel.lat, toLng: hotel.lng });
+          queueRoutePair(lastSp, hotel);
         }
 
         const nextDay  = schedule.days[idx + 1];
         const firstEnt = nextDay?.entries?.find(en => !isMeetSpot(getSpotById(en.spotId)));
         const firstSp  = firstEnt ? getSpotById(firstEnt.spotId) : null;
         if (firstSp?.lat && firstSp?.lng) {
-          const key = transitCacheKey(hotel.lat, hotel.lng, firstSp.lat, firstSp.lng);
-          if (shouldFetchRouteForKey(key)) pairs.push({ key, fromLat: hotel.lat, fromLng: hotel.lng, toLat: firstSp.lat, toLng: firstSp.lng });
+          queueRoutePair(hotel, firstSp);
         }
       });
 
@@ -2070,6 +2077,10 @@
           const ckey = transitCacheKey(prevSpot.lat, prevSpot.lng, spot.lat, spot.lng);
           travelInfo = schedule.transitCache?.[ckey] || null;
           if (travelInfo && !travelInfo.failed && travelInfo.durationMin) travelDuration = travelInfo.durationMin;
+          else if (!travelInfo) {
+            travelInfo = estimateRouteFallback(prevSpot.lat, prevSpot.lng, spot.lat, spot.lng, getTravelMode(), "経路取得前の概算");
+            travelDuration = travelInfo.durationMin;
+          }
         }
         const prevEntry = day.entries.find(en => en.spotId === prevSpot?.id);
         if (prevEntry?.travelToNextMinutes) travelDuration = prevEntry.travelToNextMinutes;
@@ -2129,6 +2140,9 @@
         const ckey = transitCacheKey(prevSpot.lat, prevSpot.lng, dismissTravelTarget.lat, dismissTravelTarget.lng);
         finalTravelInfo = schedule.transitCache?.[ckey] || null;
         if (finalTravelInfo && !finalTravelInfo.failed && finalTravelInfo.durationMin) {
+          finalTravelDuration = finalTravelInfo.durationMin;
+        } else if (!finalTravelInfo) {
+          finalTravelInfo = estimateRouteFallback(prevSpot.lat, prevSpot.lng, dismissTravelTarget.lat, dismissTravelTarget.lng, getTravelMode(), "経路取得前の概算");
           finalTravelDuration = finalTravelInfo.durationMin;
         }
       }

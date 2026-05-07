@@ -702,10 +702,10 @@ textarea:focus {
 .cluster-label {
   display: inline-block;
   background: rgba(255, 250, 238, 0.98);
-  border: 1px solid rgba(166, 97, 54, 0.18);
+  border: 2.5px solid rgba(166, 97, 54, 0.58);
   color: var(--text);
-  border-radius: 14px;
-  box-shadow: 0 10px 20px rgb(var(--shadow-base-rgb) / 0.18);
+  border-radius: 13px;
+  box-shadow: 0 10px 20px rgb(var(--shadow-base-rgb) / 0.2);
   font-family: "Zen Kaku Gothic New", sans-serif;
   font-size: 0.94rem;
   font-weight: 700;
@@ -785,12 +785,14 @@ textarea:focus {
   display: block;
   content: "";
   position: absolute;
-  width: 18px;
+  width: 12px;
   height: 12px;
   background: rgba(255, 250, 238, 0.98);
-  border: 1px solid rgba(166, 97, 54, 0.18);
-  box-shadow: 0 5px 10px rgb(var(--shadow-base-rgb) / 0.06);
+  border: 2.5px solid rgba(166, 97, 54, 0.58);
+  box-shadow: none;
   pointer-events: none;
+  transform: rotate(45deg);
+  z-index: -1;
 }
 
 .leaflet-tooltip.spot-label::after {
@@ -803,20 +805,18 @@ textarea:focus {
 .leaflet-tooltip-right.spot-label::after,
 .leaflet-tooltip-left.spot-label::after {
   top: 50%;
-  height: 8px;
-  border-top: 1px solid rgba(166, 97, 54, 0.18);
-  border-bottom: 1px solid rgba(166, 97, 54, 0.18);
-  background: rgba(255, 250, 238, 0.98);
+  height: 3px;
+  background: rgba(166, 97, 54, 0.58);
+  border-radius: 999px;
   transform: translateY(-50%);
 }
 
 .leaflet-tooltip-top.spot-label::after,
 .leaflet-tooltip-bottom.spot-label::after {
   left: 50%;
-  width: 8px;
-  border-left: 1px solid rgba(166, 97, 54, 0.18);
-  border-right: 1px solid rgba(166, 97, 54, 0.18);
-  background: rgba(255, 250, 238, 0.98);
+  width: 3px;
+  background: rgba(166, 97, 54, 0.58);
+  border-radius: 999px;
   transform: translateX(-50%);
 }
 
@@ -860,39 +860,35 @@ textarea:focus {
 .spot-label-gap-334.leaflet-tooltip-bottom::after { height: 328px; }
 
 .leaflet-tooltip-right.spot-label::before {
-  left: -14px;
+  left: -7px;
   top: 50%;
   margin-top: -6px;
+  border-top: 0;
   border-right: 0;
-  border-radius: 999px 0 0 999px;
 }
 
 .leaflet-tooltip-left.spot-label::before {
-  right: -14px;
+  right: -7px;
   top: 50%;
   margin-top: -6px;
+  border-bottom: 0;
   border-left: 0;
-  border-radius: 0 999px 999px 0;
 }
 
 .leaflet-tooltip-top.spot-label::before {
   left: 50%;
-  bottom: -14px;
-  width: 12px;
-  height: 18px;
+  bottom: -7px;
   margin-left: -6px;
   border-top: 0;
-  border-radius: 0 0 999px 999px;
+  border-left: 0;
 }
 
 .leaflet-tooltip-bottom.spot-label::before {
   left: 50%;
-  top: -14px;
-  width: 12px;
-  height: 18px;
+  top: -7px;
   margin-left: -6px;
+  border-right: 0;
   border-bottom: 0;
-  border-radius: 999px 999px 0 0;
 }
 
 .leaflet-tooltip.spot-label:hover::before {

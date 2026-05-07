@@ -504,3 +504,31 @@ Shared notes for Claude / Codex agents working on this repo.
   - Auto-placement now uses the same provisional airport context as the timeline: first-day airport meet uses the suggested/registered arrival airport and flight arrival time as the starting anchor; last-day airport dismiss uses the suggested/registered departure airport and check-in deadline as the day limit.
   - Provisional return flights now treat the trip dismiss time as the local departure time, so `18:00` departure yields a `16:30` check-in limit with the default 90-minute airport stay.
 - Checks: inline scripts for `flight.html`, `schedule.html`, and `tripplan.html` passed `vm.Script`; touched-page mojibake scan returned no matches; local HTTP 200 confirmed for all three pages; Browser Use confirmed `flight.html` time inputs have `type=time` and `step=300`, and rounded query times from `09:03`/`11:07` to valid 5-minute values.
+
+### 2026-05-07 Codex map labels, provisional route fetch, print editor follow-up
+
+- Updated map label styling in `styles.css`.
+  - Spot/cluster label borders are thicker and the spot label tail is now a compact pointer plus a slim connector, instead of the previous wide filled neck. Placement collision logic in `app.js` was left intact.
+- Updated `schedule.html`.
+  - `scheduleTransitFetches()` now queues every generated `travel` step from `generatePlan()`, so provisional hotels and provisional airport endpoints also get route cache entries.
+  - When a route is not cached yet but both endpoints have coordinates, the timeline immediately uses a distance-based estimated duration instead of showing 20 minutes while waiting.
+- Updated `print.html`.
+  - Text color control is now an `A` button with an underline color swatch.
+  - Font-size input and font select widths were reduced.
+  - Removed the separate "要素倍率" control; the existing倍率 controls now apply to either the selected cover layer or selected print element.
+  - Cover/back-cover layers now support click-select, drag-to-move, corner handle resize, and rotate-handle rotation.
+- Checks: `node --check` / `vm.Script` passed for `app.js`, `schedule.html`, and `print.html`; local HTTP 200 confirmed for `spots.html`, `schedule.html`, and `print.html`; touched-file mojibake scan returned no matches. Browser Use could not run because the Codex app reported a usage-limit rejection.
+
+### 2026-05-07 Codex print editor polish and auto-place scenarios
+
+- Updated `print.html`.
+  - Added text color preset swatches next to the A/underline color picker.
+  - Enlarged the cover/back-cover rotate handle.
+  - Removed the old visible-object button area; hidden objects now live in the right-side hidden list and can be restored by dragging back onto the preview or clicking the restore button.
+  - Added an "初期配置に戻す" button for the selected cover/back-cover layer or selected print element scale.
+  - Fixed preview text layers so selecting text focuses the editable text node and input changes are saved.
+  - Moved the hidden list beside the preview area without changing the book/page dimensions; it stacks below only on narrow screens.
+- Schedule auto-place scenario check:
+  - Ran the real `schedule.html` auto-placement logic in a Node DOM/localStorage harness for domestic Osaka, Asia Taipei, and Europe Paris patterns.
+  - Domestic suggested ITM, Asia suggested TPE, Europe suggested CDG; all scenarios produced day plans without skipped spots, overflow warnings, check-in warnings, or missing-coordinate warnings.
+- Checks: `node --check app.js` passed; inline scripts for `schedule.html` and `print.html` passed `vm.Script`; local HTTP 200 confirmed for `schedule.html` and `print.html`; `print.html` loaded in Browser Use with no console warnings/errors. Touched-file mojibake scan returned no matches.
