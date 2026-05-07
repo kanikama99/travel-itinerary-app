@@ -2795,8 +2795,8 @@
       if (!anchorSpot || !endpointSpot) return null;
       const flightMinutes = 120;
       if (role === "dismiss") {
-        const arrivalT = timeToMinutes(schedule.tripDismissTime || day?.endTime || "18:00");
-        const departT = Math.max(0, arrivalT - flightMinutes);
+        const departT = timeToMinutes(schedule.tripDismissTime || day?.endTime || "18:00");
+        const arrivalT = departT + flightMinutes;
         return {
           role: "dismiss",
           airport: endpointSpot.name,
@@ -4437,6 +4437,52 @@
 
     // ── 自動配置 ──────────────────────────────────────────────────
 
+    function getAutoPlacementMeetContext(day, idx, totalDays, fallbackStartMin) {
+      if (idx !== 0) {
+        const hotel = schedule.hotels?.[schedule.days[idx - 1]?.id];
+        if (hotel?.lat && hotel?.lng) return { anchor: hotel, startMin: fallbackStartMin };
+        return {
+          anchor: buildProvisionalHotelSpot(day, idx, "meet"),
+          startMin: fallbackStartMin,
+        };
+      }
+      const meetAnchor = activeList?.spots?.find(isMeetSpot) || null;
+      if (meetAnchor?.spotCategory !== "airport") return { anchor: meetAnchor, startMin: fallbackStartMin };
+      const flight = getFlightForAnchor("meet", meetAnchor, day.date);
+      const arrivalSpot = getFlightArrivalSpot(flight)
+        || airportDataToTimelineSpot(suggestMeetFlightArrivalAirport(day, meetAnchor));
+      const effectiveFlight = flight || buildProvisionalFlight("meet", meetAnchor, day, arrivalSpot);
+      const arrivalMin = timeToMinutes(effectiveFlight?.arrivalTime);
+      return {
+        anchor: arrivalSpot || meetAnchor,
+        startMin: arrivalMin !== null ? arrivalMin : fallbackStartMin,
+      };
+    }
+
+    function getAutoPlacementDismissContext(day, idx, totalDays, fallbackEndMin) {
+      if (idx !== totalDays - 1) {
+        const hotel = schedule.hotels?.[day.id];
+        if (hotel?.lat && hotel?.lng) return { anchor: hotel, endMin: fallbackEndMin };
+        return {
+          anchor: buildProvisionalHotelSpot(day, idx, "dismiss"),
+          endMin: fallbackEndMin,
+        };
+      }
+      const dismissAnchor = activeList?.spots?.find(isDismissSpot) || null;
+      if (dismissAnchor?.spotCategory !== "airport") return { anchor: dismissAnchor, endMin: fallbackEndMin };
+      const flight = getFlightForAnchor("dismiss", dismissAnchor, day.date);
+      const departureSpot = getFlightDepartureSpot(flight)
+        || airportDataToTimelineSpot(suggestDismissFlightDepartureAirport(day, dismissAnchor));
+      const effectiveFlight = flight || buildProvisionalFlight("dismiss", dismissAnchor, day, departureSpot);
+      const takeoffMin = timeToMinutes(effectiveFlight?.time);
+      const stayMin = getAirportStayMinutes(departureSpot || dismissAnchor, effectiveFlight, 90);
+      const limitMin = takeoffMin !== null ? Math.max(0, takeoffMin - stayMin) : fallbackEndMin;
+      return {
+        anchor: departureSpot || dismissAnchor,
+        endMin: Math.min(fallbackEndMin, limitMin),
+      };
+    }
+
     function pickAutoPlaceDay(spot) {
       const totalDays = schedule.days.length;
 
@@ -4459,7 +4505,7 @@
 
           const isFirst = idx === 0;
           const isLast  = idx === totalDays - 1;
-          const startMin = timeToMinutes(isFirst ? (schedule.tripMeetTime    || "09:00") : (day.startTime || "09:00"));
+          let startMin = timeToMinutes(isFirst ? (schedule.tripMeetTime    || "09:00") : (day.startTime || "09:00"));
           let endMin = timeToMinutes(isLast ? (schedule.tripDismissTime || "18:00") : (day.endTime || "21:00"));
           const airportLimitT = getDismissAirportScheduleLimit(idx);
           if (airportLimitT !== null) endMin = Math.min(endMin, airportLimitT);
@@ -4471,26 +4517,12 @@
             .filter(s => isScheduleVisitSpot(s, isFirst, isLast));
           daySpots.push(spot);
 
-          // 集合地点（初日は集合スポット、非初日は前夜ホテル座標）
-          let meetAnchor = null;
-          if (isFirst) {
-            meetAnchor = activeList?.spots?.find(isMeetSpot) || null;
-          } else {
-            const h = schedule.hotels?.[schedule.days[idx - 1]?.id];
-            if (h?.lat && h?.lng) meetAnchor = h;
-          }
-          // 解散地点（最終日は解散スポット、非最終日は当夜ホテル座標）
-          let dismissAnchor = null;
-          if (isLast) {
-            dismissAnchor = activeList?.spots?.find(isDismissSpot) || null;
-            if (dismissAnchor?.spotCategory === "airport") {
-              const flight = getFlightForAnchor("dismiss", dismissAnchor, day.date);
-              dismissAnchor = getFlightDepartureSpot(flight) || getTripSideAirport(day, "dismiss") || dismissAnchor;
-            }
-          } else {
-            const h = schedule.hotels?.[day.id];
-            if (h?.lat && h?.lng) dismissAnchor = h;
-          }
+          const meetCtx = getAutoPlacementMeetContext(day, idx, totalDays, startMin);
+          const dismissCtx = getAutoPlacementDismissContext(day, idx, totalDays, endMin);
+          const meetAnchor = meetCtx.anchor;
+          const dismissAnchor = dismissCtx.anchor;
+          startMin = meetCtx.startMin;
+          endMin = dismissCtx.endMin;
 
           // 逐次移動時間で総所要時間を推定（キャッシュ優先・ペアごとに算出）
           let used = 0;

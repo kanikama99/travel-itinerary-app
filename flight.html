@@ -86,11 +86,11 @@
         </div>
         <div class="flight-field">
           <label class="flight-field-label" for="flightTime">離陸時刻</label>
-          <input id="flightTime" class="flight-input" type="text" inputmode="numeric" list="flightTimeOptions" placeholder="09:00" pattern="[0-9]{1,2}:[0-9]{2}" />
+          <input id="flightTime" class="flight-input" type="time" min="00:00" max="23:55" step="300" placeholder="09:00" />
         </div>
         <div class="flight-field">
           <label class="flight-field-label" for="flightArrivalTime">着陸時刻</label>
-          <input id="flightArrivalTime" class="flight-input" type="text" inputmode="numeric" list="flightTimeOptions" placeholder="11:00" pattern="[0-9]{1,2}:[0-9]{2}" />
+          <input id="flightArrivalTime" class="flight-input" type="time" min="00:00" max="23:55" step="300" placeholder="11:00" />
         </div>
         <div class="flight-field" data-budget-ui>
           <label class="flight-field-label" for="flightPrice">1名あたり予約金額（円）</label>
@@ -106,8 +106,6 @@
     </section>
 
     <datalist id="flightAirportOptions"></datalist>
-    <datalist id="flightTimeOptions"></datalist>
-
   </div>
 
   <nav class="page-nav-bar page-nav-bar--start">
@@ -232,18 +230,7 @@
       return minutesToTime(Math.round(mins / 5) * 5);
     }
 
-    function fillTimeOptions() {
-      const list = document.getElementById("flightTimeOptions");
-      if (!list || list.options.length) return;
-      Array.from({ length: 24 * 12 }, (_, i) => minutesToTime(i * 5)).forEach(value => {
-        const opt = document.createElement("option");
-        opt.value = value;
-        list.appendChild(opt);
-      });
-    }
-
     function setupTimePicker(baseId) {
-      fillTimeOptions();
       const input = document.getElementById(baseId);
       if (!input) return;
       input.addEventListener("blur", () => setTimePickerValue(baseId, input.value));

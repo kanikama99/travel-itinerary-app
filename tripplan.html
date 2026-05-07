@@ -286,8 +286,7 @@
 
       spots.forEach(spot => {
         const dur      = splitDuration(spot.defaultStayMinutes ?? 60);
-        const savedHrs = getSimpleHours(spot.businessHours);
-        const hrs      = { open: savedHrs.open || "09:00", close: savedHrs.close || "20:00" };
+        const hrs      = getSimpleHours(spot.businessHours);
         const catLabel = CAT_LABELS[spot.spotCategory] || "📍 その他";
         const pri      = spot.priority || 3;
 
@@ -328,9 +327,9 @@
             <div class="spotset-field spotset-field-full">
               <label class="spotset-label">営業時間（全曜日一括）</label>
               <div class="spotset-hours-row">
-                <input type="time" step="900" value="${esc(hrs.open)}" class="spotset-input" data-field="hoursOpen" />
+                <input type="time" step="900" value="${esc(hrs.open)}" class="spotset-input" data-field="hoursOpen" data-empty-focus-value="09:00" />
                 <span class="spotset-unit">〜</span>
-                <input type="time" step="900" value="${esc(hrs.close)}" class="spotset-input" data-field="hoursClose" />
+                <input type="time" step="900" value="${esc(hrs.close)}" class="spotset-input" data-field="hoursClose" data-empty-focus-value="20:00" />
                 <span class="spotset-hours-hint">曜日別設定はスポットメニューで</span>
               </div>
             </div>
@@ -345,6 +344,26 @@
         listEl.appendChild(card);
 
         card.querySelector(".spotset-name-btn")?.addEventListener("click", () => openSpotMenu(spot.id));
+        card.querySelectorAll("[data-empty-focus-value]").forEach(el => {
+          el.addEventListener("focus", () => {
+            if (el.value) return;
+            el.dataset.tempFocusValue = "1";
+            el.value = el.dataset.emptyFocusValue || "";
+          });
+          el.addEventListener("input", () => {
+            delete el.dataset.tempFocusValue;
+          });
+          el.addEventListener("change", () => {
+            delete el.dataset.tempFocusValue;
+          });
+          el.addEventListener("blur", () => {
+            if (el.dataset.tempFocusValue === "1") {
+              el.value = "";
+              delete el.dataset.tempFocusValue;
+            }
+          });
+        });
+
         card.querySelectorAll("[data-field]").forEach(el => {
           const ev = el.tagName === "TEXTAREA" ? "input" : "change";
           el.addEventListener(ev, () => saveSpot(spot.id, card));

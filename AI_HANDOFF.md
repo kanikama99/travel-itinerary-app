@@ -492,3 +492,15 @@ Shared notes for Claude / Codex agents working on this repo.
 - Updated `schedule.html` provisional outbound flight timing.
   - For a meet airport without a registered flight, the trip start time is treated as the check-in time and the provisional departure is set 90 minutes later. Example: start/check-in `09:00` -> flight departure `10:30`.
 - Checks: inline scripts for `schedule.html` and `tripplan.html` passed `vm.Script`; touched-file mojibake scan returned no matches; local HTTP 200 confirmed for `schedule.html` and `tripplan.html`.
+
+### 2026-05-07 Codex flight/tripplan/auto-place follow-up
+
+- Updated `flight.html`.
+  - Flight takeoff/landing inputs are native `type=time` controls again, with `step=300` so the clock-style UI is preserved while 5-minute rounding remains on load/save.
+- Updated `tripplan.html`.
+  - Business-hour inputs stay empty when no hours are saved.
+  - On focus only, empty start/end hour inputs temporarily seed `09:00` / `20:00` so the native time picker opens from those positions. If the user leaves without editing, the field returns to empty and nothing is saved.
+- Updated `schedule.html` auto-placement.
+  - Auto-placement now uses the same provisional airport context as the timeline: first-day airport meet uses the suggested/registered arrival airport and flight arrival time as the starting anchor; last-day airport dismiss uses the suggested/registered departure airport and check-in deadline as the day limit.
+  - Provisional return flights now treat the trip dismiss time as the local departure time, so `18:00` departure yields a `16:30` check-in limit with the default 90-minute airport stay.
+- Checks: inline scripts for `flight.html`, `schedule.html`, and `tripplan.html` passed `vm.Script`; touched-page mojibake scan returned no matches; local HTTP 200 confirmed for all three pages; Browser Use confirmed `flight.html` time inputs have `type=time` and `step=300`, and rounded query times from `09:03`/`11:07` to valid 5-minute values.
