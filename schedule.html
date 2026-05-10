@@ -1875,7 +1875,17 @@
           updated = true;
         }
       });
-      if (updated) { saveSchedule(schedule); renderDays(); }
+      if (updated) {
+        const removed = schedule.autoPlacement?.lastRunAt
+          ? enforceAutoPlacementCapacity("route-cache-updated")
+          : [];
+        saveSchedule(schedule);
+        saveAutoPlacementTrace("route-cache-updated", {
+          removed,
+          routeUpdates: results.map(({ key, result }) => ({ key, durationMin: result.durationMin, estimated: !!result.estimated, failed: !!result.failed, error: result.error || "" })),
+        });
+        renderDays();
+      }
     }
 
     function generatePlan(day, dayIdx, totalDays, options = {}) {
@@ -4563,6 +4573,118 @@
       return candidates.length > 0 ? candidates[0].idx : null;
     }
 
+    function collectAutoPlacementSkips(day, idx, reason = "") {
+      const plan = generatePlan(day, idx, schedule.days.length, { strictCapacity: true });
+      const toSkip = [...plan.skipped];
+      plan.steps
+        .filter(s => s.type === "spot" && s.outsideHours)
+        .forEach(s => toSkip.push(s.name));
+      const dismissStep = plan.steps.find(s => s.type === "dismiss");
+      if ((dismissStep?.overflow || dismissStep?.airportCheckinWarning) && !toSkip.length) {
+        const lastSpotStep = [...plan.steps].reverse().find(s => s.type === "spot");
+        if (lastSpotStep) toSkip.push(lastSpotStep.name);
+      }
+      return [...new Set(toSkip)].map(name => ({ name, dayId: day.id, dayIndex: idx, reason }));
+    }
+
+    function enforceAutoPlacementCapacity(reason = "auto-placement") {
+      const removed = [];
+      schedule.days.forEach((day, idx) => {
+        let maxRetry = (day.entries || []).length + 2;
+        while (maxRetry-- > 0) {
+          const toSkip = collectAutoPlacementSkips(day, idx, reason);
+          if (!toSkip.length) break;
+          removed.push(...toSkip);
+          autoPlaceSkippedNames.push(...toSkip.map(item => item.name));
+          const skippedNames = new Set(toSkip.map(item => item.name));
+          day.entries = (day.entries || []).filter(en => !skippedNames.has(getSpotById(en.spotId)?.name));
+        }
+      });
+      autoPlaceSkippedNames = [...new Set(autoPlaceSkippedNames)];
+      return removed;
+    }
+
+    function buildAutoPlacementTrace(eventName, details = {}) {
+      const lines = [];
+      const now = new Date();
+      lines.push(`=== Schedule Auto Placement Trace (${now.toLocaleString("ja-JP")}) ===`);
+      lines.push(`event: ${eventName}`);
+      lines.push(`list: ${activeList?.name || ""} (${activeList?.id || ""})`);
+      lines.push(`trip: ${schedule.tripMeetDate || ""} ${schedule.tripMeetTime || ""} ${schedule.tripMeetPlace || ""} -> ${schedule.tripDismissDate || ""} ${schedule.tripDismissTime || ""} ${schedule.tripDismissPlace || ""}`);
+      lines.push(`travelMode: ${getTravelMode()}`);
+      lines.push(`autoPlacementLastRunAt: ${schedule.autoPlacement?.lastRunAt || ""}`);
+      if (details.removed?.length) {
+        lines.push(`removedAfterCheck: ${details.removed.map(item => `Day${item.dayIndex + 1}:${item.name}(${item.reason})`).join(", ")}`);
+      } else {
+        lines.push("removedAfterCheck: none");
+      }
+      if (details.routeUpdates?.length) {
+        lines.push("routeUpdates:");
+        details.routeUpdates.forEach(item => {
+          lines.push(`  - ${item.key}: ${item.durationMin || "-"}min estimated=${item.estimated} failed=${item.failed}${item.error ? ` error=${item.error}` : ""}`);
+        });
+      }
+      if (autoPlaceSkippedNames.length) lines.push(`skippedNames: ${autoPlaceSkippedNames.join(", ")}`);
+      const cacheCount = Object.keys(schedule.transitCache || {}).length;
+      lines.push(`transitCacheCount: ${cacheCount}`);
+
+      (schedule.days || []).forEach((day, idx) => {
+        const isFirst = idx === 0;
+        const isLast = idx === schedule.days.length - 1;
+        const startStr = isFirst ? (schedule.tripMeetTime || "09:00") : (day.startTime || "09:00");
+        const endStr = isLast ? (schedule.tripDismissTime || "18:00") : (day.endTime || "21:00");
+        const meetCtx = getAutoPlacementMeetContext(day, idx, schedule.days.length, timeToMinutes(startStr));
+        const dismissCtx = getAutoPlacementDismissContext(day, idx, schedule.days.length, timeToMinutes(endStr));
+        lines.push("");
+        lines.push(`Day${idx + 1} ${day.date || ""} inputWindow=${startStr}-${endStr} effectiveWindow=${minutesToTime(meetCtx.startMin)}-${minutesToTime(dismissCtx.endMin)}`);
+        lines.push(`  meetAnchor=${meetCtx.anchor?.name || "(none)"}`);
+        lines.push(`  dismissAnchor=${dismissCtx.anchor?.name || "(none)"}`);
+        lines.push(`  entries=${(day.entries || []).map(en => getSpotById(en.spotId)?.name || en.spotId).join(" -> ") || "(none)"}`);
+        const plan = generatePlan(day, idx, schedule.days.length);
+        (plan.steps || []).forEach(step => {
+          if (step.type === "travel") {
+            const info = step.travelInfo;
+            lines.push(`    travel ${step.fromSpot?.name || "(none)"} -> ${step.toSpot?.name || "(none)"} duration=${step.duration} noCoords=${!!step.noCoords} estimated=${!!info?.estimated} failed=${!!info?.failed}`);
+          } else if (step.type === "spot") {
+            lines.push(`    spot ${minutesToTime(step.time)}-${minutesToTime(step.leaveTime)} ${step.name} duration=${step.duration} overflow=${!!step.overflow} outsideHours=${!!step.outsideHours}`);
+          } else if (step.type === "meet" || step.type === "dismiss") {
+            lines.push(`    ${step.type} ${minutesToTime(step.time)} ${step.name} overflow=${!!step.overflow} checkinWarn=${!!step.airportCheckinWarning}`);
+          } else if (step.type === "flight") {
+            lines.push(`    flight ${minutesToTime(step.time)}-${minutesToTime(step.leaveTime)} ${step.flight?.airport || ""} -> ${step.flight?.arrivalAirport || ""} provisional=${!!step.provisional}`);
+          } else if (step.type === "airportStay") {
+            lines.push(`    airportStay role=${step.role} duration=${step.duration}`);
+          } else if (step.type === "airportPoint") {
+            lines.push(`    airportPoint ${minutesToTime(step.time)} ${step.name}`);
+          }
+        });
+        if (plan.skipped?.length) lines.push(`    planSkipped=${plan.skipped.join(", ")}`);
+      });
+      return lines.join("\n");
+    }
+
+    async function saveAutoPlacementTrace(eventName, details = {}) {
+      if (!schedule?.autoPlacement?.lastRunAt && eventName !== "auto-placement") return;
+      const text = buildAutoPlacementTrace(eventName, details);
+      try {
+        localStorage.setItem("spot-map-last-auto-placement-trace.v1", text);
+      } catch {}
+      try {
+        const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+        await fetch("./api/debug-trace", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            kind: "schedule-auto-placement",
+            listId: activeList?.id || schedule.listId || "list",
+            stamp,
+            text,
+          }),
+        });
+      } catch (e) {
+        console.warn("自動配置トレースのファイル保存に失敗しました", e);
+      }
+    }
+
     function runAutoPlacement() {
       autoPlaceSkippedNames = [];
       ensureDaysFromTripDates();
@@ -4598,30 +4720,15 @@
         if (!day.stayTimes) day.stayTimes = {};
         day.stayTimes[spot.id] = (schedule.defaultStayTimes?.[spot.id]) ?? getSpotStayDefault(spot);
       });
-      // 終了時刻を超えるスポットを削除（ホテル到着含む）
-      schedule.days.forEach((day, idx) => {
-        let maxRetry = (day.entries || []).length + 2;
-        while (maxRetry-- > 0) {
-          const plan = generatePlan(day, idx, schedule.days.length, { strictCapacity: true });
-          const toSkip = [...plan.skipped];
-          plan.steps
-            .filter(s => s.type === "spot" && s.outsideHours)
-            .forEach(s => toSkip.push(s.name));
-          // ホテル/空港到着（dismiss）が終了時刻やチェックイン締切を超えていたら最後のスポットも除去
-          const dismissStep = plan.steps.find(s => s.type === "dismiss");
-          if ((dismissStep?.overflow || dismissStep?.airportCheckinWarning) && !toSkip.length) {
-            const lastSpotStep = [...plan.steps].reverse().find(s => s.type === "spot");
-            if (lastSpotStep) toSkip.push(lastSpotStep.name);
-          }
-          if (!toSkip.length) break;
-          autoPlaceSkippedNames.push(...toSkip);
-          const skippedNames = new Set(toSkip);
-          day.entries = (day.entries || []).filter(en => !skippedNames.has(getSpotById(en.spotId)?.name));
-        }
-      });
+      const removed = enforceAutoPlacementCapacity("initial-auto-placement");
       autoPlaceSkippedNames = [...new Set(autoPlaceSkippedNames)];
+      schedule.autoPlacement = {
+        lastRunAt: new Date().toISOString(),
+        traceVersion: 1,
+      };
       saveSchedule(schedule);
-      return { ok: true, skipped: [...autoPlaceSkippedNames] };
+      saveAutoPlacementTrace("auto-placement", { removed });
+      return { ok: true, skipped: [...autoPlaceSkippedNames], removed };
     }
 
     if (window.__SCHEDULE_TEST_MODE__) {
@@ -4631,6 +4738,8 @@
         pickAutoPlaceDay,
         getAutoPlacementMeetContext,
         getAutoPlacementDismissContext,
+        enforceAutoPlacementCapacity,
+        buildAutoPlacementTrace,
         parseClockMinutes,
         timeToMinutes,
         minutesToTime,

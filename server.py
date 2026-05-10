@@ -49,6 +49,9 @@ class AppHandler(SimpleHTTPRequestHandler):
         if self.path == "/api/place-hours":
             self.handle_place_hours()
             return
+        if self.path == "/api/debug-trace":
+            self.handle_debug_trace()
+            return
         self.send_error(404, "Not Found")
 
     def handle_resolve(self):
@@ -71,6 +74,48 @@ class AppHandler(SimpleHTTPRequestHandler):
             return
 
         self.send_json(200, {"url": expanded})
+
+    def handle_debug_trace(self):
+        payload = self.read_json_body()
+        if payload is None:
+            return
+
+        kind = safe_trace_part(payload.get("kind") or "debug")
+        list_id = safe_trace_part(payload.get("listId") or "list")
+        text = str(payload.get("text") or "")
+        if not text.strip():
+            self.send_json(400, {"error": "trace text is empty"})
+            return
+
+        trace_dir = os.path.join(BASE_DIR, "debug_logs")
+        os.makedirs(trace_dir, exist_ok=True)
+        existing = [
+            name for name in os.listdir(trace_dir)
+            if name.startswith(f"{kind}-{list_id}-") and name.endswith(".txt")
+        ]
+        existing.sort(reverse=True)
+        for old_name in existing[20:]:
+            try:
+                os.remove(os.path.join(trace_dir, old_name))
+            except OSError:
+                pass
+
+        stamp = safe_trace_part(payload.get("stamp") or "")
+        if not stamp:
+            from datetime import datetime
+            stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        filename = f"{kind}-{list_id}-{stamp}.txt"
+        path = os.path.join(trace_dir, filename)
+        with open(path, "w", encoding="utf-8", newline="\n") as f:
+            f.write(text)
+            if not text.endswith("\n"):
+                f.write("\n")
+
+        self.send_json(200, {
+            "ok": True,
+            "file": filename,
+            "path": path,
+        })
 
     def handle_suggest(self):
         payload = self.read_json_body()
@@ -195,6 +240,18 @@ def resolve_google_maps_url(url):
         raise ValueError("Google Maps のURLとして展開できませんでした。")
 
     return final_url
+
+
+def safe_trace_part(value):
+    text = str(value or "").strip().lower()
+    chars = []
+    for ch in text:
+        if ch.isalnum() or ch in ("-", "_"):
+            chars.append(ch)
+        elif ch in (" ", ".", ":"):
+            chars.append("-")
+    cleaned = "".join(chars).strip("-_")
+    return cleaned[:80] or "trace"
 
 
 def suggest_places(query):

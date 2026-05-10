@@ -19,6 +19,18 @@ Shared notes for Claude / Codex agents working on this repo.
 
 ## Recent Work Log
 
+### 2026-05-10 Codex auto-placement trace and route-cache guard
+
+- Updated `schedule.html`.
+  - Auto-placement cleanup is now reusable as `enforceAutoPlacementCapacity()`.
+  - After route cache updates, auto-generated schedules are rechecked and the last overflowing spot is removed if the real/estimated route duration makes hotel/airport arrival exceed the effective end time.
+  - Auto-placement writes a trace via `saveAutoPlacementTrace()` after initial placement and after route-cache updates. The trace also stays in localStorage key `spot-map-last-auto-placement-trace.v1`.
+  - Trace includes input/effective windows, meet/dismiss anchors, entries, travel durations, provisional flights, airport stays, overflow/check-in flags, removed spots, and route updates.
+- Updated `server.py`.
+  - Added `POST /api/debug-trace`, writing recent trace files under `debug_logs/` and keeping the newest 20 per list/kind.
+- Expanded `tests/schedule_auto_place.test.mjs` with a route-cache update scenario where a later long final leg forces a spot removal.
+- Checks: `node tests/schedule_auto_place.test.mjs`, `node tests/settings_debug_log.test.mjs`, schedule inline `vm.Script`, `server.py` AST parse, `node --check tests/schedule_auto_place.test.mjs`, and added-line mojibake scan.
+
 ### 2026-05-10 Codex debug log provisional context
 
 - Updated `settings.js` debug log generation for "AIに現状を伝える".

@@ -218,6 +218,33 @@ runScenario(
   },
 );
 
+{
+  const spots = [
+    spot("meet", "京都駅", 34.9858, 135.7588, { spotRoles: ["meet"] }),
+    spot("dismiss", "京都駅", 34.9858, 135.7588, { spotRoles: ["dismiss"] }),
+    spot("a", "清水寺", 34.9949, 135.7850, { defaultStayMinutes: 60 }),
+    spot("b", "金閣寺", 35.0394, 135.7292, { defaultStayMinutes: 60 }),
+  ];
+  const api = boot(spots, baseSchedule({ tripMeetTime: "09:00", tripDismissTime: "14:00" }));
+  const result = api.runAutoPlacement();
+  assert.equal(result.ok, true);
+  const state = api.getState();
+  const day = state.schedule.days[0];
+  assert.ok(day.entries.length >= 1, "initial placement should place at least one spot");
+  const lastSpot = spots.find(s => s.id === day.entries.at(-1).spotId);
+  state.schedule.transitCache[`transit|${lastSpot.lat},${lastSpot.lng}|${spots[1].lat},${spots[1].lng}`] = {
+    mode: "transit",
+    durationMin: 240,
+    transfers: null,
+    segments: ["test long final leg"],
+  };
+  const removed = api.enforceAutoPlacementCapacity("route-cache-updated");
+  assert.ok(removed.length >= 1, "route-cache update should remove a spot that now exceeds the end time");
+  const plan = api.generatePlan(day, 0, state.schedule.days.length, { strictCapacity: true });
+  assertNoOverflow(plan, "route-cache enforced plan should stay within end time");
+  assert.match(api.buildAutoPlacementTrace("test-route-cache", { removed }), /route-cache-updated/);
+}
+
 runScenario(
   "registered inbound flight keeps trip start and places visits after arrival",
   [
