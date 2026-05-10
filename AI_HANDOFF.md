@@ -19,6 +19,19 @@ Shared notes for Claude / Codex agents working on this repo.
 
 ## Recent Work Log
 
+### 2026-05-10 Codex print toolbar usability pass
+
+- Updated `print.html` print-page controls into a grouped sticky toolbar.
+  - Top row now separates output, add actions, and map style.
+  - Selection tools now live in a dedicated selected-item toolbar; cover/back-cover layers show rotation/color/font/z-order/delete controls, while normal print elements show only scale/reset controls.
+  - Page navigation and page-order chips are grouped below the main toolbar.
+  - The hidden list remains beside the preview, with the same drag/click restore behavior.
+- Improved selection sync in `print.html`.
+  - Toolbar state is restored after re-rendering, cleared when clicking blank preview space, and cleared when moving to a page that does not contain the selected item.
+  - Text layer insertion no longer assumes the back cover is the sixth page; it uses the current page id and moves to the edited cover/back-cover page.
+- Checks: `print.html` inline script parsed with `vm.Script`; touched-file mojibake scan returned no matches; local HTTP 200 confirmed for `print.html`.
+- Browser Use could not connect to the in-app browser backend in this session, and local Playwright is not installed, so visual browser confirmation is still recommended when available.
+
 ### 2026-05-10 Codex remove manual debug log UI
 
 - Removed the settings-page "AIに現状を伝える" section from `settings.html`.
