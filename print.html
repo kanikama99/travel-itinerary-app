@@ -390,9 +390,11 @@
       if(ctrl&&e.key==="v"&&!inInput&&internalClipboard){
         e.preventDefault();pushHistory();
         const ctx=getContext(),layers=defaultCoverLayers(ctx,internalClipboard.kind);
-        const newLayer={...internalClipboard,id:makeLayerId(),x:Math.min(95,(Number(internalClipboard.x)||50)+5),y:Math.min(95,(Number(internalClipboard.y)||50)+5),z:Math.max(1,...layers.map(l=>Number(l.z)||1))+1};
+        const nx=Math.min(95,(Number(internalClipboard.x)||50)+5),ny=Math.min(95,(Number(internalClipboard.y)||50)+5);
+        const newLayer={...internalClipboard,id:makeLayerId(),x:nx,y:ny,z:Math.max(1,...layers.map(l=>Number(l.z)||1))+1};
         layers.push(newLayer);
         saveCoverLayers(internalClipboard.kind,layers);
+        internalClipboard={...internalClipboard,x:nx,y:ny};
         selectedCoverLayer={kind:internalClipboard.kind,id:newLayer.id};
         selectedPrintElement=null;
         render();setTimeout(pushHistory,0);return;
