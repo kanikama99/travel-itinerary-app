@@ -19,6 +19,17 @@ Shared notes for Claude / Codex agents working on this repo.
 
 ## Recent Work Log
 
+### 2026-05-10 Codex print page names and schedule hardening
+
+- Updated `print.html`.
+  - Hidden spot entries now render as `[spot detail] name` style in code output UI text, without the old visible index prefix.
+  - Page names can be renamed by double-clicking either the page-order chip text or the center page indicator.
+  - Custom page renames continue to update the custom page title data, and fixed page renames are stored in `cover.pageNames`.
+  - Print page headings for map, spots, schedule, and packing now follow renamed page labels.
+  - Schedule print rendering now guards against non-array `days` and `entries`, null day data, and bad/missing dates instead of throwing.
+- Checks: `print.html` inline script parsed with `vm.Script`; local HTTP 200 confirmed for `print.html`; schedule row scenarios passed for normal rows, hotel rows, missing spots, malformed entries, and empty inputs.
+- Browser Use still could not connect to the in-app browser backend in this session.
+
 ### 2026-05-10 Codex print hidden-list toolbar fix
 
 - Updated `print.html` hidden-list UX.

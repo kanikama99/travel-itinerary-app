@@ -1,5 +1,6 @@
 (function () {
   const SETTINGS_KEY = "spot-map-settings.v1";
+  const TRIP_PAGES = ["spots.html","tripplan.html","schedule.html","checklist.html","travelchecklist.html","print.html"];
 
   const bgThemes = {
     warm: "radial-gradient(circle at 8% 10%, rgba(255,210,87,.55), transparent 22%), radial-gradient(circle at 92% 14%, rgba(112,214,197,.34), transparent 20%), radial-gradient(circle at 80% 80%, rgba(255,143,177,.28), transparent 18%), linear-gradient(180deg,#fff8ea 0%,#ffeccd 100%)",
@@ -53,11 +54,21 @@
     document.body.classList.toggle("budget-hidden", !shouldShowBudget());
   }
 
+  function saveLastTripPage() {
+    const path = window.location.pathname;
+    const filename = path.split(/[/\\]/).pop() || "";
+    if (TRIP_PAGES.some(p => filename === p)) {
+      try { sessionStorage.setItem("lastTripPage", window.location.href); } catch {}
+    }
+  }
+
   function injectCurrentTripLink() {
     const nav = document.querySelector(".drawer-nav");
     if (!nav || nav.querySelector("[data-current-trip-link]")) return;
+    let lastPage = "./spots.html";
+    try { lastPage = sessionStorage.getItem("lastTripPage") || "./spots.html"; } catch {}
     const link = document.createElement("a");
-    link.href = "./spots.html";
+    link.href = lastPage;
     link.className = "drawer-nav-item";
     link.dataset.currentTripLink = "true";
     link.innerHTML = '<span class="drawer-nav-icon">🧭</span><span>現在のしおりのページに戻る</span>';
@@ -65,6 +76,7 @@
   }
 
   applyTheme();
+  saveLastTripPage();
   injectCurrentTripLink();
   window.TripTheme = { applyTheme, injectCurrentTripLink };
 })();
