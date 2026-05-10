@@ -998,6 +998,8 @@
       transition: background 0.15s, color 0.15s;
     }
     .trip-airport-btn:hover { background: var(--accent); color: #fff; }
+    .trip-airport-btn.is-active { background: var(--accent); color: #fff; font-weight: 900; border-color: var(--accent); }
+    .trip-airport-btn.is-active:hover { background: var(--accent-deep); border-color: var(--accent-deep); }
 
     @media (max-width: 760px) {
       .schedule-shell { padding: 28px 0 80px; }
@@ -2562,13 +2564,19 @@
       return 2 * R * Math.asin(Math.sqrt(h));
     }
 
+    const ISLAND_COUNTRIES = new Set(["日本", "台湾", "シンガポール", "フィリピン", "オーストラリア", "イギリス", "香港"]);
+
     function getNearbyAirports(spots, count = 3) {
       const withCoords = (spots || []).filter(s => s.lat && s.lng);
       if (!withCoords.length) return [];
-      return AIRPORT_DATA
+      const sorted = AIRPORT_DATA
         .map(ap => ({ ...ap, minDist: Math.min(...withCoords.map(s => schedDistKm(s, ap))) }))
-        .sort((a, b) => a.minDist - b.minDist)
-        .slice(0, count);
+        .sort((a, b) => a.minDist - b.minDist);
+      const nearestCountry = sorted[0]?.country;
+      if (nearestCountry && ISLAND_COUNTRIES.has(nearestCountry)) {
+        return sorted.filter(ap => ap.country === nearestCountry).slice(0, count);
+      }
+      return sorted.slice(0, count);
     }
 
     function normalizeAirportName(value) {
@@ -2861,6 +2869,32 @@
       };
     }
 
+    function isAirportSelected(category, ap) {
+      const placeKey = category === "meet" ? "tripMeetPlace" : "tripDismissPlace";
+      const currentName = schedule[placeKey] || "";
+      if (!currentName) return false;
+      const apId = ap.id || (ap.iata ? `airport-${String(ap.iata).toLowerCase()}` : "");
+      const spots = activeList?.spots || [];
+      return spots.some(s =>
+        s.spotCategory === "airport" &&
+        getSpotRoles(s).includes(category) &&
+        (s.airportId === apId || s.name === ap.name || window.sameTripAirport?.(s, ap))
+      );
+    }
+
+    function removeAirportSpot(category) {
+      if (!activeList) return;
+      activeList.spots = (activeList.spots || []).map(s => {
+        const roles = getSpotRoles(s).filter(r => r !== category);
+        return { ...s, spotRoles: roles, spotRole: roles[0] || "" };
+      });
+      const key = category === "meet" ? "tripMeetPlace" : "tripDismissPlace";
+      schedule[key] = "";
+      saveActiveList();
+      saveSchedule(schedule);
+      renderAll();
+    }
+
     function renderAirportSuggestions() {
       const spots = activeList?.spots || [];
       const airports = getNearbyAirports(spots, 3);
@@ -2877,10 +2911,17 @@
         airports.forEach(ap => {
           const btn = document.createElement("button");
           btn.type = "button";
-          btn.className = "trip-airport-btn";
+          const active = isAirportSelected(cat, ap);
+          btn.className = "trip-airport-btn" + (active ? " is-active" : "");
           btn.textContent = ap.name;
-          btn.title = `登録スポットから約${Math.round(ap.minDist)}km`;
-          btn.addEventListener("click", () => addAirportSpot(cat, ap));
+          btn.title = active ? "クリックで解除" : `登録スポットから約${Math.round(ap.minDist)}km`;
+          btn.addEventListener("click", () => {
+            if (isAirportSelected(cat, ap)) {
+              removeAirportSpot(cat);
+            } else {
+              addAirportSpot(cat, ap);
+            }
+          });
           btns.appendChild(btn);
         });
       }
