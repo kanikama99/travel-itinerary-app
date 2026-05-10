@@ -19,6 +19,17 @@ Shared notes for Claude / Codex agents working on this repo.
 
 ## Recent Work Log
 
+### 2026-05-10 Codex print hidden-list toolbar fix
+
+- Updated `print.html` hidden-list UX.
+  - Moved the hidden list from the right preview side into the print toolbar.
+  - Added a selected print-element "非表示へ" button, so users do not have to discover drag-only hiding.
+  - Hidden-list entries are now generated from saved hidden element keys, not only fixed known IDs. This restores dynamic map cards such as `map-card-0` after they have been hidden and removed from the DOM.
+  - Map hidden-list labels are rebuilt from the current map groups, so hidden map cards appear as `地図: ...`.
+  - Centralized hide/restore handlers for toolbar drop, preview drop, click restore, spot cards, and generic print elements.
+- Checks: `print.html` inline script parsed with `vm.Script`; touched-file mojibake scan returned no matches; local HTTP 200 confirmed for `print.html`.
+- Browser Use still could not connect to the in-app browser backend in this session, so visual browser confirmation is still recommended when available.
+
 ### 2026-05-10 Codex print toolbar usability pass
 
 - Updated `print.html` print-page controls into a grouped sticky toolbar.
