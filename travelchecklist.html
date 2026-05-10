@@ -9,9 +9,14 @@
     .tcl-shell{width:min(1220px,calc(100% - 32px));margin:0 auto;padding:40px 0 80px;display:grid;gap:18px}
     .tcl-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);padding:20px 22px}
     .tcl-list{display:grid;gap:10px;margin-top:4px}
-    .tcl-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,.6);border:1px solid rgb(var(--accent-rgb,255,122,69)/.14);border-radius:10px;transition:opacity .2s,background .15s}
+    .tcl-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,.6);border:1px solid rgb(var(--accent-rgb,255,122,69)/.14);border-radius:10px;transition:opacity .2s,background .15s;position:relative}
     .tcl-item.is-na{opacity:.45}
     .tcl-item.is-done .tcl-label{text-decoration:line-through;color:var(--muted)}
+    .tcl-item.dragging{opacity:.4}
+    .tcl-item.drop-before::before{content:"";position:absolute;left:0;right:0;top:-6px;height:3px;background:var(--accent);border-radius:999px;z-index:1}
+    .tcl-item.drop-after::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:3px;background:var(--accent);border-radius:999px;z-index:1}
+    .tcl-drag-handle{cursor:grab;color:var(--muted);font-size:1rem;opacity:.45;user-select:none;flex-shrink:0;line-height:1}
+    .tcl-drag-handle:hover{opacity:1;color:var(--accent-deep)}
     .tcl-checkbox{width:22px;height:22px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
     .tcl-label{flex:1;font-size:.98rem;font-weight:700;cursor:pointer;color:var(--text)}
     .tcl-na-btn{font:inherit;font-size:.75rem;font-weight:700;padding:4px 10px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.72);color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background .15s,color .15s}
@@ -146,12 +151,20 @@
       return "custom-" + Math.random().toString(36).slice(2, 9);
     }
 
+    let dragIdx = null;
+
     function render(items) {
       const list = document.getElementById("tclList");
       list.innerHTML = "";
       items.forEach((item, idx) => {
         const div = document.createElement("div");
         div.className = "tcl-item" + (item.done ? " is-done" : "") + (item.na ? " is-na" : "");
+        div.draggable = true;
+
+        const handle = document.createElement("span");
+        handle.className = "tcl-drag-handle";
+        handle.textContent = "⣿";
+        handle.title = "ドラッグして並べ替え";
 
         const chk = document.createElement("input");
         chk.type = "checkbox";
@@ -181,7 +194,42 @@
           render(items);
         });
 
-        div.append(chk, lbl, naBtn);
+        div.append(handle, chk, lbl, naBtn);
+
+        div.addEventListener("dragstart", e => {
+          dragIdx = idx;
+          e.dataTransfer.effectAllowed = "move";
+          setTimeout(() => div.classList.add("dragging"), 0);
+        });
+        div.addEventListener("dragend", () => {
+          div.classList.remove("dragging", "drop-before", "drop-after");
+          dragIdx = null;
+        });
+        div.addEventListener("dragover", e => {
+          if (dragIdx === null) return;
+          e.preventDefault();
+          const rect = div.getBoundingClientRect();
+          div.classList.remove("drop-before", "drop-after");
+          div.classList.add(e.clientY < rect.top + rect.height / 2 ? "drop-before" : "drop-after");
+        });
+        div.addEventListener("dragleave", e => {
+          if (!div.contains(e.relatedTarget)) div.classList.remove("drop-before", "drop-after");
+        });
+        div.addEventListener("drop", e => {
+          e.preventDefault();
+          const rect = div.getBoundingClientRect();
+          const insertBefore = e.clientY < rect.top + rect.height / 2;
+          div.classList.remove("drop-before", "drop-after");
+          if (dragIdx === null || dragIdx === idx) return;
+          const [moved] = items.splice(dragIdx, 1);
+          let insertAt = insertBefore ? idx : idx + 1;
+          if (dragIdx < insertAt) insertAt--;
+          items.splice(Math.max(0, Math.min(items.length, insertAt)), 0, moved);
+          dragIdx = null;
+          save(items);
+          render(items);
+        });
+
         list.appendChild(div);
       });
 

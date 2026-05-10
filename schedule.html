@@ -1950,13 +1950,14 @@
         startTime  = day.startTime || _prevHotel?.checkoutTime || "09:00";
         meetName   = "宿泊先";
       }
+      const hasFlights = Object.keys(schedule.flights||{}).length > 0;
       const meetFlight = (isFirst && meetSpot?.spotCategory === "airport")
         ? getFlightForAnchor("meet", meetSpot, day.date)
         : null;
-      const suggestedMeetArrivalSpot = (isFirst && meetSpot?.spotCategory === "airport" && !meetFlight)
+      const suggestedMeetArrivalSpot = (isFirst && meetSpot?.spotCategory === "airport" && !meetFlight && hasFlights)
         ? airportDataToTimelineSpot(suggestMeetFlightArrivalAirport(day, meetSpot))
         : null;
-      const implicitMeetArrivalSpot = suggestedMeetArrivalSpot || ((isFirst && meetSpot?.spotCategory === "airport" && !meetFlight)
+      const implicitMeetArrivalSpot = suggestedMeetArrivalSpot || ((isFirst && meetSpot?.spotCategory === "airport" && !meetFlight && hasFlights)
         ? getTripSideAirport(day, "meet")
         : null);
       const provisionalMeetFlight = (!meetFlight && implicitMeetArrivalSpot)
@@ -1987,7 +1988,7 @@
           provisionalReason: "帰り便の出発空港を仮補正しています。本登録すると警告は消えます。",
         };
       }
-      const implicitDismissDepartureSpot = suggestedDismissDepartureSpot || ((isLast && dismissSpot?.spotCategory === "airport" && !dismissFlightForDay)
+      const implicitDismissDepartureSpot = (hasFlights && suggestedDismissDepartureSpot) || ((isLast && dismissSpot?.spotCategory === "airport" && !dismissFlightForDay && hasFlights)
         ? getTripSideAirport(day, "dismiss")
         : null);
       const provisionalDismissFlight = (!dismissFlightForDay && implicitDismissDepartureSpot)
@@ -4482,6 +4483,7 @@
       const meetAnchor = activeList?.spots?.find(isMeetSpot) || null;
       if (meetAnchor?.spotCategory !== "airport") return { anchor: meetAnchor, startMin: fallbackStartMin };
       const flight = getFlightForAnchor("meet", meetAnchor, day.date);
+      if (!flight && !Object.keys(schedule.flights||{}).length) return { anchor: meetAnchor, startMin: fallbackStartMin };
       const arrivalSpot = getFlightArrivalSpot(flight)
         || airportDataToTimelineSpot(suggestMeetFlightArrivalAirport(day, meetAnchor));
       const effectiveFlight = flight || buildProvisionalFlight("meet", meetAnchor, day, arrivalSpot);
@@ -4504,6 +4506,7 @@
       const dismissAnchor = activeList?.spots?.find(isDismissSpot) || null;
       if (dismissAnchor?.spotCategory !== "airport") return { anchor: dismissAnchor, endMin: fallbackEndMin };
       const flight = getFlightForAnchor("dismiss", dismissAnchor, day.date);
+      if (!flight && !Object.keys(schedule.flights||{}).length) return { anchor: dismissAnchor, endMin: fallbackEndMin };
       const departureSpot = getFlightDepartureSpot(flight)
         || airportDataToTimelineSpot(suggestDismissFlightDepartureAirport(day, dismissAnchor));
       const effectiveFlight = flight || buildProvisionalFlight("dismiss", dismissAnchor, day, departureSpot);

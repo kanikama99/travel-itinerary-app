@@ -131,7 +131,7 @@ select:focus-visible {
 .hero-copy-wrap {
   position: relative;
   overflow: hidden;
-  min-height: 132px;
+  min-height: 200px;
   display: grid;
   align-content: center;
 }
