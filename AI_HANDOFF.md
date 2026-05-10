@@ -404,6 +404,33 @@ Shared notes for Claude / Codex agents working on this repo.
 - 文字化けパターン検索 OK。
 - HTTP 200 確認済み。
 
+### 2026-05-10 Claude 多機能追加（checklist/print/theme/hero幅）
+
+**変更したファイル**
+- `checklist.html`: グループカードのドラッグ&ドロップ並べ替え（⣿ハンドル追加）。アイテムドラッグと区別するため `dragGroupState` を分離。
+- `print.html`:
+  - `<link>` でYomigiフォント（日本語手書き）を追加。フォントセレクトを `'Yomogi', cursive` に変更。
+  - 「出力」「追加」「地図」ラベルを枠線上に配置（`.tool-group` に `position:relative; padding-top:24px`、`.tool-label` に `position:absolute; top:-11px`）。
+  - テキスト色をAボタン内ポップアップに統合（`#colorPopup`, `#colorPopupBtn`）。外側の直接露出テンプレート色を廃止。
+  - テキストレイヤーはデフォルトで `contenteditable` なし → ダブルクリックで編集開始、Escape/blur で終了。
+  - 太字（`fontWeight`）・斜体（`fontStyle`）ボタン追加（B/I）。
+  - undo/redo: `_hist[]` スタック。Ctrl+Z/Y で coverLayers の状態を復元。
+  - キーボードショートカット: Delete削除, Ctrl+C コピー, Ctrl+V ペースト（内部クリップボード＋クリップボード画像）, Ctrl++/-で拡大縮小, Ctrl+[/]でz順±1, Ctrl+Shift+[/]で最前面/最背面, 矢印キーでカバーレイヤー移動（選択なし時は左右でページ切替）。
+  - ページ順チップに `drop-before`/`drop-after` CSS インジケーター（マウス位置で左右どちらに挿入されるか表示）。
+  - 非表示リストに注釈追加（どの要素が非表示にできるか説明）。
+- `theme.js`: `saveLastTripPage()` で主要ページ（spots/tripplan/schedule/checklist/travelchecklist/print）をsessionStorageに保存。ハンバーガーメニューの「現在のしおりのページに戻る」がそのURLを参照する。
+- `schedule.html`, `checklist.html`, `travelchecklist.html`: ヒーローブロックのコンテナ幅を1220px（spots.htmlに合わせて統一）。
+
+**確認したこと**
+- `print.html` / `checklist.html` インラインスクリプト `vm.Script` 構文チェック OK。
+- 文字化けスキャン OK（全変更ファイル）。
+- HTTP 200 確認済み（checklist/travelchecklist/schedule/print）。
+
+**次のAIへの注意**
+- print.html の `coverLayerFont` セレクト `cursive` オプションは `'Yomogi', cursive` に変更済み。`spots.html` など他ページは未変更だがprint専用フォントなので問題ない。
+- undo/redo はカバーレイヤー（表紙/裏表紙）のみ対象。printElement（地図/スポット/日程/持ち物）の表示/非表示・スケールはundo対象外。
+- Ctrl+V は内部クリップボード（カバーレイヤーのコピー）を優先し、なければclipboard APIから画像を取得してカバーレイヤーとして追加。
+
 ## Next Things To Watch
 
 ### 2026-05-06 Codex 追記（営業時間・空港・チェックリスト）
