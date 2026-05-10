@@ -293,7 +293,10 @@ function buildDebugLog() {
       const pri  = `優先度${s.priority || 3}`;
       const cat  = s.spotCategory || "tourist";
       const coords = (s.lat && s.lng) ? `(${Number(s.lat).toFixed(4)}, ${Number(s.lng).toFixed(4)})` : "座標なし";
-      lines.push(`  ${i + 1}. [${cat}] ${s.name} / ${pri} / ${stay} / ${coords}`);
+      const roles = Array.isArray(s.spotRoles) && s.spotRoles.length ? ` / 役割:${s.spotRoles.join(",")}` : (s.spotRole ? ` / 役割:${s.spotRole}` : "");
+      const source = s.sourceType ? ` / source:${s.sourceType}` : "";
+      const airport = s.spotCategory === "airport" ? ` / airportId:${s.airportId || "-"} / IATA:${s.iata || "-"}` : "";
+      lines.push(`  ${i + 1}. [${cat}] ${s.name} / ${pri} / ${stay} / ${coords}${roles}${airport}${source}`);
       if (s.description) lines.push(`     メモ: ${s.description.slice(0, 80)}`);
     });
 
@@ -309,9 +312,34 @@ function buildDebugLog() {
         const days = sched.days || [];
         lines.push(`  日数: ${days.length}日`);
 
-        // タイムライン計算用ヘルパー
-        const t2m = str => { const [h, m] = (str || "0:0").split(":").map(Number); return h * 60 + m; };
-        const m2t = min => `${String(Math.floor(Math.abs(min) / 60)).padStart(2, "0")}:${String(Math.abs(min) % 60).padStart(2, "0")}`;
+        // タイムライン計算用ヘルパー。schedule.html の自動配置と同じ考え方で、仮宿泊・仮空港もログに出す。
+        const t2m = str => {
+          const m = String(str || "").match(/^(\d{1,2}):(\d{2})$/);
+          if (!m) return 0;
+          return Number(m[1]) * 60 + Number(m[2]);
+        };
+        const parseClock = str => {
+          const m = String(str || "").match(/^(\d{1,2}):(\d{2})$/);
+          if (!m) return null;
+          const h = Number(m[1]);
+          const min = Number(m[2]);
+          return (h >= 0 && h <= 23 && min >= 0 && min <= 59) ? h * 60 + min : null;
+        };
+        const m2t = min => `${String(Math.floor(Math.max(0, min) / 60) % 24).padStart(2, "0")}:${String(Math.max(0, min) % 60).padStart(2, "0")}`;
+        const m2dur = min => `${String(Math.floor(Math.abs(min) / 60)).padStart(2, "0")}:${String(Math.abs(min) % 60).padStart(2, "0")}`;
+        const getRoles = spot => {
+          const roles = Array.isArray(spot?.spotRoles) ? [...spot.spotRoles] : [];
+          if (spot?.spotRole && !roles.includes(spot.spotRole)) roles.push(spot.spotRole);
+          if ((spot?.spotCategory === "meet" || spot?.spotCategory === "dismiss") && !roles.includes(spot.spotCategory)) roles.push(spot.spotCategory);
+          return roles;
+        };
+        const isMeet = spot => getRoles(spot).includes("meet");
+        const isDismiss = spot => getRoles(spot).includes("dismiss");
+        const isVisitSpot = (spot, isFirst, isLast) => !!spot
+          && spot.spotCategory !== "hotel"
+          && spot.spotCategory !== "airport"
+          && !(isFirst && isMeet(spot))
+          && !(isLast && isDismiss(spot));
         const getStayMin = (spot, dayData) => {
           if (dayData?.stayTimes?.[spot.id]) return dayData.stayTimes[spot.id];
           if (sched.defaultStayTimes?.[spot.id]) return sched.defaultStayTimes[spot.id];
@@ -321,6 +349,13 @@ function buildDebugLog() {
           if (cat === "airport") return 90;
           if (cat === "hotel") return 0;
           return 90;
+        };
+        const getAirportStayMin = (airportSpot, flight = null, fallback = 90) => {
+          const takeoff = parseClock(flight?.time || airportSpot?.takeoffTime || "");
+          if (takeoff === null) return Number(airportSpot?.defaultStayMinutes) || fallback;
+          const checkin = parseClock(airportSpot?.airportCheckinTime || "");
+          if (checkin !== null && checkin <= takeoff) return Math.max(0, takeoff - checkin);
+          return Number(airportSpot?.airportCheckinOffsetMin) || Number(airportSpot?.defaultStayMinutes) || fallback;
         };
         const distKm = (a, b) => {
           if (!a?.lat || !a?.lng || !b?.lat || !b?.lng) return null;
@@ -334,27 +369,119 @@ function buildDebugLog() {
           if (d < 1) return 10; if (d < 5) return 20; if (d < 20) return 30;
           if (d < 80) return 60; return 90;
         };
+        const sameAirport = (a, b) => !!a && !!b && (
+          (a.airportId && (a.airportId === b.airportId || a.airportId === b.id))
+          || (a.iata && (a.iata === b.iata || a.iata === b.code))
+          || String(a.name || "").trim() === String(b.name || "").trim()
+        );
+        const findSpotByName = name => spots.find(s => String(s.name || "").trim() === String(name || "").trim()) || null;
+        const findFlight = (role, anchor, date) => {
+          if (!anchor || !sched.flights) return null;
+          return sched.flights[`${role}:${anchor.id || anchor.name}:${date || ""}`]
+            || sched.flights[`${role}:${anchor.name}:${date || ""}`]
+            || null;
+        };
+        const flightDepartureSpot = flight => flight ? (spots.find(s => s.id === flight.departureSpotId) || findSpotByName(flight.airport)) : null;
+        const flightArrivalSpot = flight => flight ? (spots.find(s => s.id === flight.arrivalSpotId) || findSpotByName(flight.arrivalAirport)) : null;
+        const airportCandidates = () => spots.filter(s => s.spotCategory === "airport" && !isMeet(s) && !isDismiss(s) && s.lat && s.lng);
+        const nearbyAirport = (baseSpots, fallbackSpot) => {
+          const airports = airportCandidates().filter(ap => !sameAirport(ap, fallbackSpot));
+          const bases = (baseSpots || []).filter(s => s?.lat && s?.lng);
+          if (!airports.length || !bases.length) return airports[0] || null;
+          return airports
+            .map(ap => ({ ap, score: Math.min(...bases.map(s => distKm(ap, s) ?? Infinity)) }))
+            .sort((a, b) => a.score - b.score)[0]?.ap || airports[0];
+        };
+        const dayVisitSpots = (dayData, isFirst, isLast) => (dayData?.entries || [])
+          .map(en => spots.find(s => s.id === en.spotId))
+          .filter(s => s?.lat && s?.lng && isVisitSpot(s, isFirst, isLast));
+        const provisionalHotel = (dayData, di, role) => {
+          const current = dayVisitSpots(dayData, di === 0, di === days.length - 1);
+          const neighborIdx = role === "meet" ? di - 1 : di + 1;
+          const neighbor = days[neighborIdx];
+          const neighborSpots = dayVisitSpots(neighbor, neighborIdx === 0, neighborIdx === days.length - 1);
+          const scheduled = new Set(days.flatMap(x => (x.entries || []).map(en => en.spotId)));
+          const candidates = spots.filter(s => s.lat && s.lng && !scheduled.has(s.id) && isVisitSpot(s, false, false));
+          const base = [...current, ...neighborSpots, ...candidates];
+          if (!base.length) return null;
+          const lat = base.reduce((sum, s) => sum + Number(s.lat), 0) / base.length;
+          const lng = base.reduce((sum, s) => sum + Number(s.lng), 0) / base.length;
+          const anchor = base.map(s => ({ s, d: distKm({ lat, lng }, s) ?? Infinity })).sort((a, b) => a.d - b.d)[0]?.s;
+          return { id: `hotel-provisional-${dayData?.id || di}`, name: `仮の宿泊エリア（${anchor?.name || "中心街"}周辺の中心街・駅目安）`, lat, lng, spotCategory: "hotel", provisional: true };
+        };
+        const getTripSideAirport = (dayData, role) => {
+          const visits = dayVisitSpots(dayData, false, false);
+          return nearbyAirport(visits.length ? visits : spots.filter(s => s.lat && s.lng && !isMeet(s) && !isDismiss(s) && s.spotCategory !== "airport"), role === "meet" ? spots.find(isMeet) : spots.find(isDismiss));
+        };
+        const meetContext = (dayData, di, fallbackStart) => {
+          if (di !== 0) {
+            const hotel = sched.hotels?.[days[di - 1]?.id];
+            return { anchor: hotel?.lat && hotel?.lng ? hotel : provisionalHotel(dayData, di, "meet"), start: fallbackStart, note: hotel?.name ? "前泊ホテル" : "仮宿泊" };
+          }
+          const meet = spots.find(isMeet) || null;
+          if (meet?.spotCategory !== "airport") return { anchor: meet, start: fallbackStart, note: "集合場所" };
+          const flight = findFlight("meet", meet, dayData.date);
+          const arrival = flightArrivalSpot(flight) || nearbyAirport(dayVisitSpots(dayData, true, false), meet) || getTripSideAirport(dayData, "meet");
+          const provisional = !flight && arrival;
+          const arrivalT = parseClock(flight?.arrivalTime || (provisional ? m2t(fallbackStart + (Number(meet.airportCheckinOffsetMin) || 90) + 120) : ""));
+          return { anchor: arrival || meet, start: arrivalT !== null ? Math.max(fallbackStart, arrivalT) : fallbackStart, note: provisional ? "仮往路フライト到着後" : "往路フライト到着後", flight, provisional };
+        };
+        const dismissContext = (dayData, di, fallbackEnd) => {
+          if (di !== days.length - 1) {
+            const hotel = sched.hotels?.[dayData.id];
+            return { anchor: hotel?.lat && hotel?.lng ? hotel : provisionalHotel(dayData, di, "dismiss"), end: fallbackEnd, note: hotel?.name ? "宿泊ホテル" : "仮宿泊" };
+          }
+          const dismiss = spots.find(isDismiss) || null;
+          if (dismiss?.spotCategory !== "airport") return { anchor: dismiss, end: fallbackEnd, note: "解散場所" };
+          const flight = findFlight("dismiss", dismiss, dayData.date);
+          const departure = flightDepartureSpot(flight) || nearbyAirport(dayVisitSpots(dayData, false, true), dismiss) || getTripSideAirport(dayData, "dismiss") || dismiss;
+          const provisional = !flight && departure;
+          const takeoff = parseClock(flight?.time || (provisional ? sched.tripDismissTime : ""));
+          const stay = getAirportStayMin(departure || dismiss, flight || { time: sched.tripDismissTime }, 90);
+          const limit = takeoff !== null ? Math.max(0, takeoff - stay) : fallbackEnd;
+          return { anchor: departure, end: Math.min(fallbackEnd, limit), note: provisional ? "仮復路フライトのチェックイン締切" : "復路フライトのチェックイン締切", flight, provisional, takeoff, stay };
+        };
 
         const scheduledIds = new Set();
         days.forEach(d => (d.entries || []).forEach(en => scheduledIds.add(en.spotId)));
+
+        const flights = Object.values(sched.flights || {});
+        if (flights.length) {
+          lines.push(`  航空券: ${flights.length}件`);
+          flights.forEach(f => lines.push(`    - [${f.role || "-"}] ${f.flightNumber || "便名未設定"} ${f.airport || ""} ${f.time || "--:--"} → ${f.arrivalAirport || ""} ${f.arrivalTime || "--:--"}${f.provisional ? "（仮）" : ""}`));
+        } else {
+          lines.push(`  航空券: 未登録（空港集合/解散では仮フライトで推定）`);
+        }
 
         days.forEach((d, di) => {
           const isFirst = di === 0;
           const isLast  = di === days.length - 1;
           const startStr = isFirst ? (sched.tripMeetTime || "09:00") : (d.startTime || "09:00");
           const endStr   = isLast  ? (sched.tripDismissTime || "18:00") : (d.endTime || "21:00");
-          const endT = t2m(endStr);
+          const inputStartT = t2m(startStr);
+          const inputEndT = t2m(endStr);
           const defTravel = d.travelMinutes || 20;
-          let t = t2m(startStr);
-          let prevSpot = null;
+          const meetCtx = meetContext(d, di, inputStartT);
+          const dismissCtx = dismissContext(d, di, inputEndT);
+          const endT = dismissCtx.end ?? inputEndT;
+          let t = meetCtx.start ?? inputStartT;
+          let prevSpot = meetCtx.anchor || null;
 
           lines.push(`\n  ── Day${di + 1} (${d.date || "日付未設定"}) ${startStr}〜${endStr} ──`);
+          if (t !== inputStartT || endT !== inputEndT) {
+            lines.push(`    実配置枠: ${m2t(t)}〜${m2t(endT)}（${meetCtx.note || "開始"} / ${dismissCtx.note || "終了"}を考慮）`);
+          }
 
           // 集合
           const meetName = isFirst ? (sched.tripMeetPlace || "集合場所") : "前泊先";
           lines.push(`    ${m2t(t)} 【集合】${meetName}`);
+          if (meetCtx.provisional) lines.push(`      ⚠ 往路フライト未登録: ${meetCtx.anchor?.name || "到着空港"}を仮到着空港として推定`);
+          if (!isFirst && meetCtx.anchor?.provisional) lines.push(`      ⚠ ${meetCtx.anchor.name}を出発点として仮置き`);
 
-          const entries = d.entries || [];
+          const entries = (d.entries || []).filter(en => {
+            const sp = spots.find(s => s.id === en.spotId);
+            return isVisitSpot(sp, isFirst, isLast);
+          });
           if (entries.length === 0) {
             lines.push(`    スポットなし`);
           } else {
@@ -374,14 +501,16 @@ function buildDebugLog() {
           }
 
           // 解散 or ホテル
-          const dismissName = isLast ? (sched.tripDismissPlace || "解散場所") : "ホテル";
-          const finalTravel = estimateTravel(prevSpot, null, defTravel);
+          const dismissName = isLast ? (dismissCtx.anchor?.name || sched.tripDismissPlace || "解散場所") : (dismissCtx.anchor?.name || "ホテル");
+          const finalTravel = estimateTravel(prevSpot, dismissCtx.anchor, defTravel);
           t += finalTravel;
-          const dismissOver = t > endT ? ` ⚠${m2t(t - endT)}超過` : "";
+          const dismissOver = t > endT ? ` ⚠${m2dur(t - endT)}超過` : "";
           lines.push(`    ${m2t(t)} 【${isLast ? "解散" : "ホテル到着"}】${dismissName}【移動${finalTravel}分】${dismissOver}`);
+          if (dismissCtx.provisional) lines.push(`      ⚠ 復路フライト未登録: 解散時刻 ${sched.tripDismissTime || "18:00"} を仮の出発時刻として、${m2t(endT)}までを配置上限にしています`);
+          if (!isLast && dismissCtx.anchor?.provisional) lines.push(`      ⚠ ${dismissCtx.anchor.name}を宿泊先として仮置き`);
 
           if (t > endT) {
-            lines.push(`    → 終了時刻 ${endStr} を ${m2t(t - endT)} 超過`);
+            lines.push(`    → 終了時刻 ${m2t(endT)} を ${m2dur(t - endT)} 超過`);
           }
 
           const hotel = sched.hotels?.[d.id];
@@ -392,8 +521,8 @@ function buildDebugLog() {
         const unscheduled = spots.filter(s =>
           !scheduledIds.has(s.id) &&
           s.spotCategory !== "hotel" &&
-          s.spotCategory !== "meet" &&
-          s.spotCategory !== "dismiss" &&
+          !isMeet(s) &&
+          !isDismiss(s) &&
           s.spotCategory !== "airport"
         );
         if (unscheduled.length > 0) {
@@ -419,6 +548,10 @@ function buildDebugLog() {
     lines.push(`[エラー] ${e.message}`);
   }
   return lines.join("\n");
+}
+
+if (window.__SETTINGS_TEST_MODE__) {
+  window.__settingsTestApi = { buildDebugLog };
 }
 
 const generateDebugLogBtn = document.getElementById("generateDebugLogBtn");

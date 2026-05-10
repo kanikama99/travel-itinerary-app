@@ -19,6 +19,16 @@ Shared notes for Claude / Codex agents working on this repo.
 
 ## Recent Work Log
 
+### 2026-05-10 Codex debug log provisional context
+
+- Updated `settings.js` debug log generation for "AIに現状を伝える".
+  - Spot rows now include roles, airportId/IATA, and sourceType.
+  - Schedule log now reports registered flights, or that airport meet/dismiss will use provisional flights when no flight is saved.
+  - Day logs now include effective placement windows after considering inbound arrival, return check-in limits, provisional hotels, and provisional airports.
+  - Unscheduled spot filtering now uses meet/dismiss roles instead of only spot categories.
+- Added `tests/settings_debug_log.test.mjs` to verify that a multi-day airport trip with no saved flights logs provisional inbound/outbound context, provisional hotel area, effective placement window, airport IDs, and no false unscheduled spots.
+- Checks: `node tests/settings_debug_log.test.mjs`, `node tests/schedule_auto_place.test.mjs`, `node --check settings.js`, `node --check tests/settings_debug_log.test.mjs`, touched-file mojibake scan, and local HTTP 200 for `settings.html`.
+
 ### 2026-05-10 Codex schedule auto-placement constraints
 
 - Updated `schedule.html` auto-placement and timeline generation.
