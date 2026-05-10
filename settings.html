@@ -117,21 +117,6 @@
       </div>
     </section>
 
-    <section class="panel settings-section">
-      <div class="panel-head">
-        <div>
-          <p class="panel-kicker">Debug</p>
-          <h2>AIに現状を伝える</h2>
-        </div>
-      </div>
-      <p class="settings-desc" style="margin-bottom:12px">現在のしおり・スポット・スケジュール情報をテキストとして出力します。AIへの問い合わせ時にコピーして貼り付けてください。</p>
-      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
-        <button id="generateDebugLogBtn" class="btn btn-outline" type="button">デバッグログを生成</button>
-        <button id="copyDebugLogBtn" class="btn btn-outline" type="button" style="display:none">クリップボードにコピー</button>
-      </div>
-      <textarea id="debugLogOutput" readonly style="display:none; margin-top:12px; width:100%; min-height:180px; font-family:monospace; font-size:0.78rem; border:1.5px solid var(--line); border-radius:10px; padding:10px; background:rgba(255,255,255,0.7); resize:vertical;"></textarea>
-    </section>
-
     <div style="display:flex; align-items:center; gap:12px; justify-content:flex-end; flex-wrap:wrap; padding:4px 0">
       <span id="settingsStatus" class="settings-desc" aria-live="polite">変更後は保存ボタンを押してください。</span>
       <button id="settingsSaveBtn" class="primary-button" type="button">設定を保存</button>

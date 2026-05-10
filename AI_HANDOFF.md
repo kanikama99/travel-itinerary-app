@@ -19,6 +19,13 @@ Shared notes for Claude / Codex agents working on this repo.
 
 ## Recent Work Log
 
+### 2026-05-10 Codex remove manual debug log UI
+
+- Removed the settings-page "AIに現状を伝える" section from `settings.html`.
+- Removed the now-unused manual debug log generator from `settings.js`.
+- Deleted `tests/settings_debug_log.test.mjs`; auto-placement diagnostics are now written automatically to `debug_logs/` via `schedule.html` / `server.py`.
+- Checks: `node --check settings.js`, `schedule.html` inline `vm.Script`, `node tests/schedule_auto_place.test.mjs`, touched-file mojibake scan, and local HTTP 200 for `settings.html`.
+
 ### 2026-05-10 Codex auto-placement trace and route-cache guard
 
 - Updated `schedule.html`.
