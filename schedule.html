@@ -73,6 +73,12 @@
       font-size: 0.84rem; font-weight: 700; color: var(--accent-deep);
     }
     .trip-summary.hidden { display: none; }
+    .trip-time-note {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.7;
+    }
     .trip-place-input {
       width: 100%;
       font: inherit; font-size: 0.94rem; color: var(--text);
@@ -1096,6 +1102,7 @@
           <span>🚗</span><span class="tl-hotel-find" id="rentalBtnLabel">レンタカーを手配する</span><span class="tl-hotel-chevron">›</span>
         </button>
       </div>
+      <p class="trip-time-note">空港を集合・解散場所にした場合、集合時刻は空港到着・チェックイン開始の目安として扱います。航空券が未登録の復路では、解散時刻を便の出発予定として仮置きし、観光スポットは現地到着後からチェックイン締切前までにだけ自動配置します。</p>
       <p id="tripSummary" class="trip-summary hidden"></p>
     </div>
 
@@ -1276,6 +1283,15 @@
       if (!t) return 0;
       const p = t.split(":");
       return parseInt(p[0] || 0) * 60 + (parseInt(p[1]) || 0);
+    }
+
+    function parseClockMinutes(t) {
+      const m = String(t || "").match(/^(\d{1,2}):(\d{2})$/);
+      if (!m) return null;
+      const h = Number(m[1]);
+      const min = Number(m[2]);
+      if (!Number.isFinite(h) || !Number.isFinite(min) || h < 0 || h > 23 || min < 0 || min > 59) return null;
+      return h * 60 + min;
     }
 
     function minutesToTime(mins) {
@@ -1938,13 +1954,6 @@
         : null;
       const effectiveMeetFlight = meetFlight || provisionalMeetFlight;
       const meetFlightArrivalSpot = getFlightArrivalSpot(meetFlight) || implicitMeetArrivalSpot;
-      if (isFirst && meetSpot?.spotCategory === "airport" && effectiveMeetFlight?.time) {
-        const isDefaultMeetTime = !schedule.tripMeetTime || schedule.tripMeetTime === "09:00";
-        if (isDefaultMeetTime) {
-          const checkinT = timeToMinutes(effectiveMeetFlight.time) - (Number(meetSpot.airportCheckinOffsetMin) || 90);
-          startTime = minutesToTime(Math.max(0, checkinT));
-        }
-      }
       const rawDismissFlightForDay = (isLast && dismissSpot?.spotCategory === "airport")
         ? getFlightForAnchor("dismiss", dismissSpot, day.date)
         : null;
@@ -2043,7 +2052,7 @@
             provisional: !!effectiveMeetFlight.provisional,
           });
         }
-        t = arriveT;
+        t = Math.max(t, arriveT);
         if (meetFlightArrivalSpot) {
           steps.push({
             type: "airportPoint",
@@ -4466,10 +4475,10 @@
       const arrivalSpot = getFlightArrivalSpot(flight)
         || airportDataToTimelineSpot(suggestMeetFlightArrivalAirport(day, meetAnchor));
       const effectiveFlight = flight || buildProvisionalFlight("meet", meetAnchor, day, arrivalSpot);
-      const arrivalMin = timeToMinutes(effectiveFlight?.arrivalTime);
+      const arrivalMin = parseClockMinutes(effectiveFlight?.arrivalTime);
       return {
         anchor: arrivalSpot || meetAnchor,
-        startMin: arrivalMin !== null ? arrivalMin : fallbackStartMin,
+        startMin: arrivalMin !== null ? Math.max(fallbackStartMin, arrivalMin) : fallbackStartMin,
       };
     }
 
@@ -4488,7 +4497,7 @@
       const departureSpot = getFlightDepartureSpot(flight)
         || airportDataToTimelineSpot(suggestDismissFlightDepartureAirport(day, dismissAnchor));
       const effectiveFlight = flight || buildProvisionalFlight("dismiss", dismissAnchor, day, departureSpot);
-      const takeoffMin = timeToMinutes(effectiveFlight?.time);
+      const takeoffMin = parseClockMinutes(effectiveFlight?.time);
       const stayMin = getAirportStayMinutes(departureSpot || dismissAnchor, effectiveFlight, 90);
       const limitMin = takeoffMin !== null ? Math.max(0, takeoffMin - stayMin) : fallbackEndMin;
       return {
@@ -4554,12 +4563,11 @@
       return candidates.length > 0 ? candidates[0].idx : null;
     }
 
-    document.getElementById("autoPlaceBtn").addEventListener("click", () => {
+    function runAutoPlacement() {
       autoPlaceSkippedNames = [];
       ensureDaysFromTripDates();
       if (schedule.days.length === 0) {
-        alert("先に集合日と解散日を設定してください。");
-        return;
+        return { ok: false, message: "先に集合日と解散日を設定してください。", skipped: [] };
       }
       const allSpots = getOrderedSpots();
       const activeSpotIds = new Set(allSpots.map(s => s.id));
@@ -4573,8 +4581,7 @@
         unscheduled = allSpots;
       }
       if (unscheduled.length === 0) {
-        alert("配置できるスポットがありません。");
-        return;
+        return { ok: false, message: "配置できるスポットがありません。", skipped: [] };
       }
       const others = unscheduled.filter(s => !isMeetSpot(s) && !isDismissSpot(s) && s.spotCategory !== "hotel" && s.spotCategory !== "airport");
       // 優先度の高い順（数値が小さいほど高優先、デフォルト3）で配置
@@ -4614,6 +4621,29 @@
       });
       autoPlaceSkippedNames = [...new Set(autoPlaceSkippedNames)];
       saveSchedule(schedule);
+      return { ok: true, skipped: [...autoPlaceSkippedNames] };
+    }
+
+    if (window.__SCHEDULE_TEST_MODE__) {
+      window.__scheduleTestApi = {
+        runAutoPlacement,
+        generatePlan,
+        pickAutoPlaceDay,
+        getAutoPlacementMeetContext,
+        getAutoPlacementDismissContext,
+        parseClockMinutes,
+        timeToMinutes,
+        minutesToTime,
+        getState: () => ({ activeList, schedule, autoPlaceSkippedNames }),
+      };
+    }
+
+    document.getElementById("autoPlaceBtn").addEventListener("click", () => {
+      const result = runAutoPlacement();
+      if (!result.ok && result.message) {
+        alert(result.message);
+        return;
+      }
       renderAll();
     });
 

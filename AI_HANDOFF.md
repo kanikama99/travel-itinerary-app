@@ -19,6 +19,18 @@ Shared notes for Claude / Codex agents working on this repo.
 
 ## Recent Work Log
 
+### 2026-05-10 Codex schedule auto-placement constraints
+
+- Updated `schedule.html` auto-placement and timeline generation.
+  - Added `parseClockMinutes()` so missing flight times are not treated as `00:00` in airport auto-placement contexts.
+  - First-day airport meet no longer rewrites the user's trip start time to a derived check-in time.
+  - After an inbound flight, sightseeing starts at the later of the user start time and the flight arrival time.
+  - Airport meet/dismiss time semantics are now explained in the trip settings card.
+  - Auto-placement core was factored into `runAutoPlacement()` and exposed only under `window.__SCHEDULE_TEST_MODE__`.
+- Added `tests/schedule_auto_place.test.mjs`.
+  - Covers domestic day trip, short day overflow skipping, registered inbound flight, explicit late start after arrival, registered return flight check-in limit, business-hour skipping, and multi-day provisional airport flights.
+- Checks: `node tests/schedule_auto_place.test.mjs`, `node --check tests/schedule_auto_place.test.mjs`, `node --check app.js`, `schedule.html` inline script `vm.Script`, touched-file mojibake scan, and local HTTP 200 for `schedule.html`.
+
 ### 2026-05-06 Codex airport stay/check-in linkage
 
 - Updated airport spot handling in `spots.html`, `app.js`, `schedule.html`, and `styles.css`.
