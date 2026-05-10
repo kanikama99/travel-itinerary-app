@@ -191,7 +191,7 @@
     function setSelectionToolbar(target,status,sub=""){const tb=document.getElementById("selectionToolbar"),box=document.getElementById("coverLayerStatus");if(tb)tb.dataset.target=target||"none";if(box)box.innerHTML=`${esc(status||"未選択")}${sub?`<small>${esc(sub)}</small>`:""}`}
     function clearSelectionToolbar(){setSelectionToolbar("none","未選択","プレビュー上の要素を選択")}
     function selectCoverLayer(kind,id){selectedCoverLayer={kind,id};selectedPrintElement=null;const ctx=getContext(),layers=defaultCoverLayers(ctx,kind),layer=layers.find(l=>l.id===id);document.querySelectorAll(".cover-layer").forEach(el=>el.classList.toggle("is-selected",el.dataset.coverKind===kind&&el.dataset.layerId===id));document.querySelectorAll(".print-element").forEach(el=>el.classList.remove("is-selected"));const scale=document.getElementById("coverLayerScale"),scaleNum=document.getElementById("coverLayerScaleNum"),rotate=document.getElementById("coverLayerRotate"),rotateNum=document.getElementById("coverLayerRotateNum"),color=document.getElementById("coverLayerColor"),fontSize=document.getElementById("coverLayerFontSize"),font=document.getElementById("coverLayerFont"),boldBtn=document.getElementById("boldBtn"),italicBtn=document.getElementById("italicBtn");setSelectionToolbar("cover",layer?`${kind==="back"?"裏表紙":"表紙"}: ${layer.type==="image"?"画像":"テキスト"}`:"未選択","ドラッグ/矢印キーで移動、倍率、回転、文字スタイル");if(scale&&layer)scale.value=Number(layer.scale)||100;if(scaleNum&&layer)scaleNum.value=Number(layer.scale)||100;if(rotate&&layer)rotate.value=Number(layer.rotate)||0;if(rotateNum&&layer)rotateNum.value=Number(layer.rotate)||0;if(color&&layer){color.value=layer.color||"#ce5428";updateColorPreview(color.value)}if(fontSize&&layer)fontSize.value=Number(layer.fontSize)||24;if(font&&layer)font.value=layer.fontFamily||"";if(boldBtn)boldBtn.classList.toggle("is-active",layer?.fontWeight==="bold");if(italicBtn)italicBtn.classList.toggle("is-active",layer?.fontStyle==="italic")}
-    function bindLayerPointer(el){let state=null;const applyLive=fields=>{const x=fields.x??state.x, y=fields.y??state.y, scale=fields.scale??state.scale, rotate=fields.rotate??state.rotate;if(fields.x!==undefined)el.style.left=`${x}%`;if(fields.y!==undefined)el.style.top=`${y}%`;el.style.transform=`translate(-50%,-50%) scale(${scale/100}) rotate(${rotate}deg)`;updateCoverLayer(state.kind,state.id,fields)};el.addEventListener("pointerdown",e=>{const action=e.target.dataset.layerAction||"move";if(e.button!==0)return;e.stopPropagation();e.preventDefault();selectCoverLayer(el.dataset.coverKind,el.dataset.layerId);const rect=el.closest("[data-cover-canvas]")?.getBoundingClientRect();if(!rect)return;const ctx=getContext(),layers=defaultCoverLayers(ctx,el.dataset.coverKind),layer=layers.find(l=>l.id===el.dataset.layerId);if(!layer)return;const cx=rect.left+rect.width*(Number(layer.x)||50)/100,cy=rect.top+rect.height*(Number(layer.y)||50)/100;state={action,kind:el.dataset.coverKind,id:el.dataset.layerId,rect,startX:e.clientX,startY:e.clientY,x:Number(layer.x)||50,y:Number(layer.y)||50,scale:Number(layer.scale)||100,rotate:Number(layer.rotate)||0,cx,cy};el.setPointerCapture?.(e.pointerId)});el.addEventListener("pointermove",e=>{if(!state)return;if(state.action==="move"){const x=Math.max(0,Math.min(100,state.x+(e.clientX-state.startX)/state.rect.width*100)),y=Math.max(0,Math.min(100,state.y+(e.clientY-state.startY)/state.rect.height*100));applyLive({x,y})}else if(state.action==="resize"){const dist0=Math.hypot(state.startX-state.cx,state.startY-state.cy)||1,dist=Math.hypot(e.clientX-state.cx,e.clientY-state.cy);const scale=Math.max(20,Math.min(400,Math.round(state.scale*dist/dist0)));syncScaleInputs(scale);applyLive({scale})}else if(state.action==="rotate"){const a0=Math.atan2(state.startY-state.cy,state.startX-state.cx),a1=Math.atan2(e.clientY-state.cy,e.clientX-state.cx);const rotate=Math.round(state.rotate+(a1-a0)*180/Math.PI);syncRotateInputs(rotate);applyLive({rotate})}});el.addEventListener("pointerup",()=>{if(state){state=null;render();setTimeout(pushHistory,50)}});el.addEventListener("pointercancel",()=>{state=null})}
+    function bindLayerPointer(el){let state=null;const applyLive=fields=>{const x=fields.x??state.x, y=fields.y??state.y, scale=fields.scale??state.scale, rotate=fields.rotate??state.rotate;if(fields.x!==undefined)el.style.left=`${x}%`;if(fields.y!==undefined)el.style.top=`${y}%`;el.style.transform=`translate(-50%,-50%) scale(${scale/100}) rotate(${rotate}deg)`;updateCoverLayer(state.kind,state.id,fields)};el.addEventListener("pointerdown",e=>{const action=e.target.dataset.layerAction||"move";if(e.button!==0)return;if(el.classList.contains("is-editing"))return;e.stopPropagation();e.preventDefault();selectCoverLayer(el.dataset.coverKind,el.dataset.layerId);const rect=el.closest("[data-cover-canvas]")?.getBoundingClientRect();if(!rect)return;const ctx=getContext(),layers=defaultCoverLayers(ctx,el.dataset.coverKind),layer=layers.find(l=>l.id===el.dataset.layerId);if(!layer)return;const cx=rect.left+rect.width*(Number(layer.x)||50)/100,cy=rect.top+rect.height*(Number(layer.y)||50)/100;state={action,kind:el.dataset.coverKind,id:el.dataset.layerId,rect,startX:e.clientX,startY:e.clientY,x:Number(layer.x)||50,y:Number(layer.y)||50,scale:Number(layer.scale)||100,rotate:Number(layer.rotate)||0,cx,cy};el.setPointerCapture?.(e.pointerId)});el.addEventListener("pointermove",e=>{if(!state)return;if(state.action==="move"){const x=Math.max(0,Math.min(100,state.x+(e.clientX-state.startX)/state.rect.width*100)),y=Math.max(0,Math.min(100,state.y+(e.clientY-state.startY)/state.rect.height*100));applyLive({x,y})}else if(state.action==="resize"){const dist0=Math.hypot(state.startX-state.cx,state.startY-state.cy)||1,dist=Math.hypot(e.clientX-state.cx,e.clientY-state.cy);const scale=Math.max(20,Math.min(400,Math.round(state.scale*dist/dist0)));syncScaleInputs(scale);applyLive({scale})}else if(state.action==="rotate"){const a0=Math.atan2(state.startY-state.cy,state.startX-state.cx),a1=Math.atan2(e.clientY-state.cy,e.clientX-state.cx);const rotate=Math.round(state.rotate+(a1-a0)*180/Math.PI);syncRotateInputs(rotate);applyLive({rotate})}});el.addEventListener("pointerup",()=>{if(state){state=null;render();setTimeout(pushHistory,50)}});el.addEventListener("pointercancel",()=>{state=null})}
     function focusEditableLayer(el){if(el.contentEditable!=="true")return;el.focus();let textNode=[...el.childNodes].find(n=>n.nodeType===Node.TEXT_NODE);if(!textNode){textNode=document.createTextNode("");el.insertBefore(textNode,el.firstChild)}const range=document.createRange();range.setStart(textNode,textNode.textContent.length);range.collapse(true);const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range)}
     function startEditLayer(el){if(!el.classList.contains("cover-layer-text"))return;el.contentEditable="true";el.classList.add("is-editing");focusEditableLayer(el)}
     function stopEditLayer(el){if(!el.classList.contains("cover-layer-text"))return;el.contentEditable="false";el.classList.remove("is-editing");const kind=el.dataset.coverKind,id=el.dataset.layerId,text=[...el.childNodes].filter(n=>n.nodeType===Node.TEXT_NODE).map(n=>n.textContent).join("").trim();const role=el.dataset.role;const ctx=getContext();updateCoverLayer(kind,id,{text});if(role==="title")saveCover(ctx.list.id,{...getContext().cover,title:text});if(role==="subtitle")saveCover(ctx.list.id,{...getContext().cover,subtitle:text})}
@@ -321,8 +321,8 @@
     const hb=document.getElementById("hamburgerBtn"),sd=document.getElementById("sideDrawer"),db=document.getElementById("drawerBackdrop");hb.onclick=()=>{const o=!sd.classList.contains("hidden");sd.classList.toggle("hidden",o);db.classList.toggle("hidden",o)};db.onclick=()=>{sd.classList.add("hidden");db.classList.add("hidden")};render();
 
     // ── 太字・斜体ボタン ──
-    document.getElementById("boldBtn")?.addEventListener("click",()=>{if(!selectedCoverLayer)return;pushHistory();const ctx=getContext(),layer=defaultCoverLayers(ctx,selectedCoverLayer.kind).find(l=>l.id===selectedCoverLayer.id);const fw=layer?.fontWeight==="bold"?"normal":"bold";updateSelectedLayer({fontWeight:fw});document.getElementById("boldBtn")?.classList.toggle("is-active",fw==="bold");render();setTimeout(pushHistory,0)});
-    document.getElementById("italicBtn")?.addEventListener("click",()=>{if(!selectedCoverLayer)return;pushHistory();const ctx=getContext(),layer=defaultCoverLayers(ctx,selectedCoverLayer.kind).find(l=>l.id===selectedCoverLayer.id);const fs=layer?.fontStyle==="italic"?"normal":"italic";updateSelectedLayer({fontStyle:fs});document.getElementById("italicBtn")?.classList.toggle("is-active",fs==="italic");render();setTimeout(pushHistory,0)});
+    document.getElementById("boldBtn")?.addEventListener("click",()=>{if(!selectedCoverLayer)return;pushHistory();const ctx=getContext(),layer=defaultCoverLayers(ctx,selectedCoverLayer.kind).find(l=>l.id===selectedCoverLayer.id);const fw=layer?.fontWeight==="bold"?"normal":"bold";updateSelectedLayer({fontWeight:fw});setTimeout(pushHistory,0)});
+    document.getElementById("italicBtn")?.addEventListener("click",()=>{if(!selectedCoverLayer)return;pushHistory();const ctx=getContext(),layer=defaultCoverLayers(ctx,selectedCoverLayer.kind).find(l=>l.id===selectedCoverLayer.id);const fs=layer?.fontStyle==="italic"?"normal":"italic";updateSelectedLayer({fontStyle:fs});setTimeout(pushHistory,0)});
 
     // ── 文字色ポップアップ ──
     (()=>{
@@ -372,9 +372,9 @@
       const ctrl=e.ctrlKey||e.metaKey;
 
       // Ctrl+Z undo
-      if(ctrl&&e.key==="z"&&!e.shiftKey){e.preventDefault();if(historyIdx>0){historyIdx--;applyHistory(history[historyIdx])}return}
+      if(ctrl&&e.key==="z"&&!e.shiftKey){e.preventDefault();if(_histIdx>0){_histIdx--;applyHistory(_hist[_histIdx])}return}
       // Ctrl+Y / Ctrl+Shift+Z redo
-      if((ctrl&&e.key==="y")||(ctrl&&e.shiftKey&&e.key==="z")){e.preventDefault();if(historyIdx<history.length-1){historyIdx++;applyHistory(history[historyIdx])}return}
+      if((ctrl&&e.key==="y")||(ctrl&&e.shiftKey&&e.key==="z")){e.preventDefault();if(_histIdx<_hist.length-1){_histIdx++;applyHistory(_hist[_histIdx])}return}
 
       // Ctrl+C コピー
       if(ctrl&&e.key==="c"&&!inInput){
@@ -419,7 +419,7 @@
       }
 
       // Ctrl+[ 1つ背面 / Ctrl+] 1つ前面
-      if(ctrl&&!e.shiftKey&&(e.key==="["||e.key==="]")){
+      if(ctrl&&!e.shiftKey&&(e.code==="BracketLeft"||e.code==="BracketRight")){
         e.preventDefault();
         if(!selectedCoverLayer)return;
         pushHistory();
@@ -427,20 +427,20 @@
         const layer=layers.find(l=>l.id===selectedCoverLayer.id);if(!layer)return;
         const sorted=[...layers].sort((a,b)=>(Number(a.z)||1)-(Number(b.z)||1));
         const idx=sorted.findIndex(l=>l.id===layer.id);
-        if(e.key==="]"&&idx<sorted.length-1){const above=sorted[idx+1];const tmp=layer.z;layer.z=above.z;above.z=tmp;}
-        else if(e.key==="["&&idx>0){const below=sorted[idx-1];const tmp=layer.z;layer.z=below.z;below.z=tmp;}
+        if(e.code==="BracketRight"&&idx<sorted.length-1){const above=sorted[idx+1];const tmp=layer.z;layer.z=above.z;above.z=tmp;}
+        else if(e.code==="BracketLeft"&&idx>0){const below=sorted[idx-1];const tmp=layer.z;layer.z=below.z;below.z=tmp;}
         saveCoverLayers(selectedCoverLayer.kind,layers);render();setTimeout(pushHistory,0);return;
       }
 
       // Ctrl+Shift+[ 最背面 / Ctrl+Shift+] 最前面
-      if(ctrl&&e.shiftKey&&(e.key==="["||e.key==="]")){
+      if(ctrl&&e.shiftKey&&(e.code==="BracketLeft"||e.code==="BracketRight")){
         e.preventDefault();
         if(!selectedCoverLayer)return;
         pushHistory();
         const ctx=getContext(),layers=defaultCoverLayers(ctx,selectedCoverLayer.kind);
         const layer=layers.find(l=>l.id===selectedCoverLayer.id);if(!layer)return;
         const zValues=layers.map(l=>Number(l.z)||1);const minZ=Math.min(...zValues),maxZ=Math.max(...zValues);
-        if(e.key==="]"){layers.forEach(l=>{if(l.id!==layer.id)l.z=Math.max(1,(Number(l.z)||1)-1)});layer.z=maxZ;}
+        if(e.code==="BracketRight"){layers.forEach(l=>{if(l.id!==layer.id)l.z=Math.max(1,(Number(l.z)||1)-1)});layer.z=maxZ;}
         else{layers.forEach(l=>{if(l.id!==layer.id)l.z=(Number(l.z)||1)+1});layer.z=minZ;}
         saveCoverLayers(selectedCoverLayer.kind,layers);render();setTimeout(pushHistory,0);return;
       }
