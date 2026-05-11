@@ -2179,6 +2179,15 @@ function buildMapGroups(points) {
   const topClusters = findRelativeClusters(points, overviewDiagonal * getClusterThreshold());
   const hasTopClusters = topClusters.some((c) => c.length >= 2);
 
+  // 全体図の広がりに対して1%・上限0.01度（≈1.1km）を枠の最小サイズとする
+  const allLats = points.map(p => p.lat);
+  const allLngs = points.map(p => p.lng);
+  const rawSpan = Math.max(
+    Math.max(...allLats) - Math.min(...allLats),
+    Math.max(...allLngs) - Math.min(...allLngs)
+  ) || 0.02;
+  const minFrameDeg = Math.min(0.01, Math.max(0.001, rawSpan * 0.01));
+
   const groups = [];
 
   if (hasTopClusters) {
@@ -2187,7 +2196,7 @@ function buildMapGroups(points) {
       return {
         type: "cluster",
         points: cluster,
-        bounds: boundsFromPoints(cluster, DETAIL_PADDING_RATIO),
+        bounds: boundsFromPoints(cluster, DETAIL_PADDING_RATIO, minFrameDeg),
         center: centerFromPoints(cluster),
       };
     });
@@ -2198,7 +2207,7 @@ function buildMapGroups(points) {
       overviewItems,
       bounds: boundsFromOverviewItems(overviewItems, points),
     });
-    addZoomGroupsRecursive(topClusters, groups, overviewItems, true);
+    addZoomGroupsRecursive(topClusters, groups, overviewItems, true, minFrameDeg);
   } else {
     groups.push({
       kind: "detail",
@@ -2236,16 +2245,16 @@ function contextSinglesForCluster(cluster, parentOverviewItems, allowContext) {
     .map(item => item.point);
 }
 
-function makeClusterOverviewItem(cluster) {
+function makeClusterOverviewItem(cluster, minSpanDeg = 0.001) {
   return {
     type: "cluster",
     points: cluster,
-    bounds: boundsFromPoints(cluster, DETAIL_PADDING_RATIO, 0.001),
+    bounds: boundsFromPoints(cluster, DETAIL_PADDING_RATIO, minSpanDeg),
     center: centerFromPoints(cluster),
   };
 }
 
-function addZoomGroupsRecursive(clusters, groups, parentOverviewItems, allowContext = true) {
+function addZoomGroupsRecursive(clusters, groups, parentOverviewItems, allowContext = true, minFrameDeg = 0.001) {
   clusters.filter((c) => c.length >= 2).forEach((cluster) => {
     const clusterDiagonal = rawDiagonalKm(cluster);
     const subClusters = findRelativeClusters(cluster, clusterDiagonal * getClusterThreshold());
@@ -2255,7 +2264,7 @@ function addZoomGroupsRecursive(clusters, groups, parentOverviewItems, allowCont
 
     const labels = groupPoints.map((p) => p.name);
     const title = `${labels.join(" / ")} の拡大図`;
-    const clusterBounds = boundsFromPoints(groupPoints, DETAIL_PADDING_RATIO, 0.001);
+    const clusterBounds = boundsFromPoints(groupPoints, DETAIL_PADDING_RATIO, minFrameDeg);
 
     // このクラスターに対応するMAP番号（次にpushされるgroup）
     const mapNum = groups.length + 1;
@@ -2272,7 +2281,7 @@ function addZoomGroupsRecursive(clusters, groups, parentOverviewItems, allowCont
     }
 
     if (contextSingles.length > 0) {
-      const nestedClusterItem = makeClusterOverviewItem(cluster);
+      const nestedClusterItem = makeClusterOverviewItem(cluster, minFrameDeg);
       nestedClusterItem.mapNumber = groups.length + 2;
       const overviewItems = [
         ...contextSingles.map(point => ({ type: "single", point })),
@@ -2285,14 +2294,14 @@ function addZoomGroupsRecursive(clusters, groups, parentOverviewItems, allowCont
         overviewItems,
         bounds: boundsFromOverviewItems(overviewItems, groupPoints, 0.08),
       });
-      addZoomGroupsRecursive([cluster], groups, overviewItems, false);
+      addZoomGroupsRecursive([cluster], groups, overviewItems, false, minFrameDeg);
       return;
     }
 
     if (hasUsefulSubClusters) {
       const overviewItems = subClusters.map((sc) => {
         if (sc.length === 1) return { type: "single", point: sc[0] };
-        return makeClusterOverviewItem(sc);
+        return makeClusterOverviewItem(sc, minFrameDeg);
       });
       groups.push({
         kind: "overview",
@@ -2301,7 +2310,7 @@ function addZoomGroupsRecursive(clusters, groups, parentOverviewItems, allowCont
         overviewItems,
         bounds: boundsFromOverviewItems(overviewItems, groupPoints, 0.08),
       });
-      addZoomGroupsRecursive(subClusters, groups, overviewItems, true);
+      addZoomGroupsRecursive(subClusters, groups, overviewItems, true, minFrameDeg);
     } else {
       groups.push({
         kind: "detail",
