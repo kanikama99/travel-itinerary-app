@@ -49,6 +49,7 @@ function defaultSettings() {
     calendarStyle: "standard",
     googlePlaceHoursEnabled: true,
     showBudget: true,
+    clusterThreshold: 0.12,
   };
 }
 
@@ -125,6 +126,9 @@ BG_THEMES.forEach((theme) => {
 const googlePlaceHoursEnabled = document.getElementById("googlePlaceHoursEnabled");
 const showBudgetEnabled = document.getElementById("showBudgetEnabled");
 const labelDragEnabled = document.getElementById("labelDragEnabled");
+const clusterThresholdRange = document.getElementById("clusterThresholdRange");
+const clusterThresholdValue = document.getElementById("clusterThresholdValue");
+const clusterThresholdReset = document.getElementById("clusterThresholdReset");
 const calStyleGroup = document.getElementById("calStyleGroup");
 const settingsSaveBtn = document.getElementById("settingsSaveBtn");
 const settingsStatus = document.getElementById("settingsStatus");
@@ -161,6 +165,29 @@ function clearKnownSavedData() {
 if (googlePlaceHoursEnabled) googlePlaceHoursEnabled.checked = draftSettings.googlePlaceHoursEnabled !== false;
 if (showBudgetEnabled) showBudgetEnabled.checked = draftSettings.showBudget !== false;
 if (labelDragEnabled) labelDragEnabled.checked = draftSettings.labelDragEnabled === true;
+
+const CLUSTER_THRESHOLD_DEFAULT = 0.12;
+function updateClusterThresholdDisplay(val) {
+  const pct = Math.round(val * 100);
+  if (clusterThresholdValue) clusterThresholdValue.textContent = pct + "%" + (Math.abs(val - CLUSTER_THRESHOLD_DEFAULT) < 0.001 ? "（デフォルト）" : "");
+}
+if (clusterThresholdRange) {
+  const initVal = typeof draftSettings.clusterThreshold === "number" ? draftSettings.clusterThreshold : CLUSTER_THRESHOLD_DEFAULT;
+  clusterThresholdRange.value = Math.round(initVal * 100);
+  updateClusterThresholdDisplay(initVal);
+  clusterThresholdRange.addEventListener("input", () => {
+    const val = Number(clusterThresholdRange.value) / 100;
+    draftSettings.clusterThreshold = val;
+    updateClusterThresholdDisplay(val);
+    markDirty();
+  });
+}
+clusterThresholdReset?.addEventListener("click", () => {
+  draftSettings.clusterThreshold = CLUSTER_THRESHOLD_DEFAULT;
+  if (clusterThresholdRange) clusterThresholdRange.value = Math.round(CLUSTER_THRESHOLD_DEFAULT * 100);
+  updateClusterThresholdDisplay(CLUSTER_THRESHOLD_DEFAULT);
+  markDirty();
+});
 
 googlePlaceHoursEnabled?.addEventListener("change", () => {
   draftSettings.googlePlaceHoursEnabled = googlePlaceHoursEnabled.checked;

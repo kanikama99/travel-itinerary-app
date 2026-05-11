@@ -1,6 +1,13 @@
 const STORAGE_KEY = "spot-map-organizer.v9";
 const LISTS_KEY = "spot-map-lists.v1";
-const RELATIVE_CLUSTER_THRESHOLD = 0.12;
+const RELATIVE_CLUSTER_THRESHOLD_DEFAULT = 0.12;
+function getClusterThreshold() {
+  try {
+    const v = JSON.parse(localStorage.getItem("spot-map-settings.v1") || "{}").clusterThreshold;
+    return typeof v === "number" && v > 0 ? v : RELATIVE_CLUSTER_THRESHOLD_DEFAULT;
+  } catch { return RELATIVE_CLUSTER_THRESHOLD_DEFAULT; }
+}
+const CONTEXT_CLUSTER_THRESHOLD_RATIO = 0.34;
 const MAP_PAD = 30;
 const LABEL_MIN_W = 92;
 const LABEL_MAX_W = 520;
@@ -1836,15 +1843,47 @@ function outOfBoundsArea(r, bounds) {
   return Math.max(0, (r.x2 - r.x1) * (r.y2 - r.y1) - insideW * insideH);
 }
 
+function connectorSegment(px, dir, rect) {
+  if (dir === "right") return { x1: px.x, y1: px.y, x2: rect.x1, y2: px.y };
+  if (dir === "left") return { x1: rect.x2, y1: px.y, x2: px.x, y2: px.y };
+  if (dir === "top") return { x1: px.x, y1: rect.y2, x2: px.x, y2: px.y };
+  return { x1: px.x, y1: px.y, x2: px.x, y2: rect.y1 };
+}
+
+function pointInsideRect(point, rect) {
+  return point.x >= rect.x1 && point.x <= rect.x2 && point.y >= rect.y1 && point.y <= rect.y2;
+}
+
+function connectorIntersectsRect(segment, rect) {
+  const horizontal = Math.abs(segment.y1 - segment.y2) < 0.001;
+  const minX = Math.min(segment.x1, segment.x2);
+  const maxX = Math.max(segment.x1, segment.x2);
+  const minY = Math.min(segment.y1, segment.y2);
+  const maxY = Math.max(segment.y1, segment.y2);
+  if (pointInsideRect({ x: segment.x1, y: segment.y1 }, rect) || pointInsideRect({ x: segment.x2, y: segment.y2 }, rect)) return true;
+  if (horizontal) return segment.y1 >= rect.y1 && segment.y1 <= rect.y2 && maxX >= rect.x1 && minX <= rect.x2;
+  return segment.x1 >= rect.x1 && segment.x1 <= rect.x2 && maxY >= rect.y1 && minY <= rect.y2;
+}
+
+function expandRect(r, pad = 0) {
+  return { x1: r.x1 - pad, x2: r.x2 + pad, y1: r.y1 - pad, y2: r.y2 + pad };
+}
+
 function chooseLabelPlacements(map, points, options = {}) {
   const viewRect = labelViewRect(map);
+  const pointPinRects = points.map(point => ({
+    id: point.id,
+    rect: pinRect(pointToLayerPx(map, point))
+  }));
   const placed = [
-    ...points.map(point => pinRect(pointToLayerPx(map, point))),
+    ...pointPinRects.map(item => item.rect),
     ...(options.initialRects || [])
   ];
+  const connectorRects = (options.initialConnectorRects || []).map(rect => ({ id: null, rect }));
   const sizeFor = options.sizeFor || estimateLabelSize;
   const dirOrder = options.preferredDirs || LABEL_DIRS;
   const distances = options.distances || LABEL_DISTANCES;
+  const connectorPad = Number(options.connectorPad ?? 3);
   const result = new Map();
   points.forEach((point) => {
     const px = pointToLayerPx(map, point);
@@ -1855,25 +1894,30 @@ function chooseLabelPlacements(map, points, options = {}) {
     for (const dir of dirOrder) {
       for (const distance of distances) {
         const r = labelRect(px, dir, point, distance, size);
+        const connector = connectorSegment(px, dir, r);
         const overlapPenalty = placed.reduce((sum, b) => sum + overlapArea(r, b), 0);
         const edgeOverflow = outOfBoundsArea(r, viewRect);
+        const connectorPenalty = connectorRects.some(b => b.id !== point.id && connectorIntersectsRect(connector, expandRect(b.rect, connectorPad))) ? 1 : 0;
         const distancePenalty = distance * 0.15;
-        const penalty = overlapPenalty + edgeOverflow * 12 + distancePenalty;
-        if (overlapPenalty === 0 && edgeOverflow === 0) {
+        const penalty = overlapPenalty + edgeOverflow * 12 + connectorPenalty * 100000 + distancePenalty;
+        if (overlapPenalty === 0 && edgeOverflow === 0 && connectorPenalty === 0) {
           placed.push(r);
-          result.set(point.id, { direction: dir, distance, rect: r });
+          connectorRects.push({ id: null, rect: r });
+          result.set(point.id, { direction: dir, distance, rect: r, connector });
           return;
         }
         if (penalty < fallbackPenalty) {
           fallbackPenalty = penalty;
-          fallback = { direction: dir, distance, rect: r };
+          fallback = { direction: dir, distance, rect: r, connector };
         }
       }
     }
     if (options.allowEdgeOverflow && fallback) {
       const overlapPenalty = placed.reduce((sum, b) => sum + overlapArea(fallback.rect, b), 0);
-      if (overlapPenalty === 0) {
+      const connectorPenalty = connectorRects.some(b => b.id !== point.id && connectorIntersectsRect(fallback.connector, expandRect(b.rect, connectorPad))) ? 1 : 0;
+      if (overlapPenalty === 0 && connectorPenalty === 0) {
         placed.push(fallback.rect);
+        connectorRects.push({ id: null, rect: fallback.rect });
         result.set(point.id, fallback);
       }
     }
@@ -1893,6 +1937,10 @@ function addMarkerToMap(map, point, placement = null) {
   const roles = getSpotRoles(point);
   const markerRole = roles.includes("meet") && roles.includes("dismiss") ? "meet-dismiss" : getSpotRole(point);
   const marker = L.marker([point.lat, point.lng], { icon: createMarkerIcon(point.type, point.spotCategory, markerRole) }).addTo(map);
+  if (!placement) {
+    marker.on("click", () => openSpotMenu(point.id));
+    return marker;
+  }
   const dir = placement ? placement.direction : "right";
   marker.bindTooltip(escapeHtml(point.name), {
     permanent: true,
@@ -2030,8 +2078,9 @@ function renderOverviewLayer(map, items, bounds) {
     _clusterItem: item
   }));
   const clusterPlacements = clusterPoints.length > 0
-    ? chooseLabelPlacements(map, clusterPoints, {
+      ? chooseLabelPlacements(map, clusterPoints, {
         initialRects: allPointRects,
+        initialConnectorRects: [],
         sizeFor: point => estimateClusterLabelSize(point._clusterItem),
         preferredDirs: ["right", "bottom", "top", "left"],
         distances: [34, 64, 94, 124, 154, 204, 264]
@@ -2039,8 +2088,9 @@ function renderOverviewLayer(map, items, bounds) {
     : new Map();
   const clusterRects = [...clusterPlacements.values()].map(p => p.rect).filter(Boolean);
   const placements = singles.length > 0
-    ? chooseLabelPlacements(map, singles, {
+      ? chooseLabelPlacements(map, singles, {
         initialRects: [...allPointRects, ...clusterRects],
+        initialConnectorRects: clusterRects,
         preferredDirs: clusters.length > 0 ? ["left", "bottom", "top", "right"] : LABEL_DIRS,
         distances: [34, 64, 94, 124, 154, 204, 264]
       })
@@ -2054,9 +2104,9 @@ function renderOverviewLayer(map, items, bounds) {
 
     L.rectangle(item.bounds, {
       color: "#ff7a45",
-      weight: 2,
+      weight: 3,
       fillOpacity: 0.06,
-      dashArray: "6 6",
+      className: "overview-zoom-frame",
     }).addTo(map);
 
     const mapLabel = item.mapNumber
@@ -2078,8 +2128,8 @@ function renderOverviewLayer(map, items, bounds) {
       const memberIcon = L.divIcon({
         className: "",
         html: `<div class="map-pin map-pin-cluster-member ${pinClass}"></div>`,
-        iconSize: [16, 16],
-        iconAnchor: [8, 8],
+        iconSize: [12, 12],
+        iconAnchor: [6, 6],
       });
       const memberMarker = L.marker([point.lat, point.lng], { icon: memberIcon }).addTo(map);
       memberMarker.on("click", () => openSpotMenu(point.id));
@@ -2126,7 +2176,7 @@ function renderDetailLayer(map, points, bounds) {
 
 function buildMapGroups(points) {
   const overviewDiagonal = rawDiagonalKm(points);
-  const topClusters = findRelativeClusters(points, overviewDiagonal * RELATIVE_CLUSTER_THRESHOLD);
+  const topClusters = findRelativeClusters(points, overviewDiagonal * getClusterThreshold());
   const hasTopClusters = topClusters.some((c) => c.length >= 2);
 
   const groups = [];
@@ -2146,9 +2196,9 @@ function buildMapGroups(points) {
       title: "全体図",
       caption: "近いスポットは全体図では範囲で表示し、拡大図で個別に確認できます。",
       overviewItems,
-      bounds: boundsFromPoints(points, OVERVIEW_PADDING_RATIO),
+      bounds: boundsFromOverviewItems(overviewItems, points),
     });
-    addZoomGroupsRecursive(topClusters, groups, overviewItems);
+    addZoomGroupsRecursive(topClusters, groups, overviewItems, true);
   } else {
     groups.push({
       kind: "detail",
@@ -2162,15 +2212,50 @@ function buildMapGroups(points) {
   return groups;
 }
 
-function addZoomGroupsRecursive(clusters, groups, parentOverviewItems) {
+function pointsFromOverviewItems(items = []) {
+  return items.flatMap(item => item.type === "single" ? [item.point] : item.points || []);
+}
+
+function nearestDistanceToClusterKm(point, cluster) {
+  return Math.min(...cluster.map(candidate => distanceKm(point, candidate)));
+}
+
+function contextSinglesForCluster(cluster, parentOverviewItems, allowContext) {
+  if (!allowContext || !parentOverviewItems) return [];
+  const parentPoints = pointsFromOverviewItems(parentOverviewItems);
+  const parentDiagonal = rawDiagonalKm(parentPoints);
+  if (!parentDiagonal) return [];
+  const thresholdKm = parentDiagonal * CONTEXT_CLUSTER_THRESHOLD_RATIO;
+  const clusterIds = new Set(cluster.map(point => point.id));
+  return parentOverviewItems
+    .filter(item => item.type === "single" && !clusterIds.has(item.point.id))
+    .map(item => ({ point: item.point, distance: nearestDistanceToClusterKm(item.point, cluster) }))
+    .filter(item => item.distance <= thresholdKm)
+    .sort((a, b) => a.distance - b.distance)
+    .slice(0, 2)
+    .map(item => item.point);
+}
+
+function makeClusterOverviewItem(cluster) {
+  return {
+    type: "cluster",
+    points: cluster,
+    bounds: boundsFromPoints(cluster, DETAIL_PADDING_RATIO, 0.001),
+    center: centerFromPoints(cluster),
+  };
+}
+
+function addZoomGroupsRecursive(clusters, groups, parentOverviewItems, allowContext = true) {
   clusters.filter((c) => c.length >= 2).forEach((cluster) => {
     const clusterDiagonal = rawDiagonalKm(cluster);
-    const subClusters = findRelativeClusters(cluster, clusterDiagonal * RELATIVE_CLUSTER_THRESHOLD);
+    const subClusters = findRelativeClusters(cluster, clusterDiagonal * getClusterThreshold());
     const hasUsefulSubClusters = subClusters.length > 1 && subClusters.some((sc) => sc.length >= 2);
+    const contextSingles = contextSinglesForCluster(cluster, parentOverviewItems, allowContext);
+    const groupPoints = contextSingles.length > 0 ? [...cluster, ...contextSingles] : cluster;
 
-    const labels = cluster.map((p) => p.name);
+    const labels = groupPoints.map((p) => p.name);
     const title = `${labels.join(" / ")} の拡大図`;
-    const clusterBounds = boundsFromPoints(cluster, DETAIL_PADDING_RATIO, 0.001);
+    const clusterBounds = boundsFromPoints(groupPoints, DETAIL_PADDING_RATIO, 0.001);
 
     // このクラスターに対応するMAP番号（次にpushされるgroup）
     const mapNum = groups.length + 1;
@@ -2186,24 +2271,37 @@ function addZoomGroupsRecursive(clusters, groups, parentOverviewItems) {
       if (parentItem) parentItem.mapNumber = mapNum;
     }
 
+    if (contextSingles.length > 0) {
+      const nestedClusterItem = makeClusterOverviewItem(cluster);
+      nestedClusterItem.mapNumber = groups.length + 2;
+      const overviewItems = [
+        ...contextSingles.map(point => ({ type: "single", point })),
+        nestedClusterItem,
+      ];
+      groups.push({
+        kind: "overview",
+        title,
+        caption: "近い単独スポットも含めた範囲を表示し、次のMAPで密集スポットを個別に確認できます。",
+        overviewItems,
+        bounds: boundsFromOverviewItems(overviewItems, groupPoints, 0.08),
+      });
+      addZoomGroupsRecursive([cluster], groups, overviewItems, false);
+      return;
+    }
+
     if (hasUsefulSubClusters) {
       const overviewItems = subClusters.map((sc) => {
         if (sc.length === 1) return { type: "single", point: sc[0] };
-        return {
-          type: "cluster",
-          points: sc,
-          bounds: boundsFromPoints(sc, DETAIL_PADDING_RATIO, 0.001),
-          center: centerFromPoints(sc),
-        };
+        return makeClusterOverviewItem(sc);
       });
       groups.push({
         kind: "overview",
         title,
         caption: "近いスポットはさらに拡大図で個別に確認できます。",
         overviewItems,
-        bounds: clusterBounds,
+        bounds: boundsFromOverviewItems(overviewItems, groupPoints, 0.08),
       });
-      addZoomGroupsRecursive(subClusters, groups, overviewItems);
+      addZoomGroupsRecursive(subClusters, groups, overviewItems, true);
     } else {
       groups.push({
         kind: "detail",
@@ -2344,6 +2442,29 @@ function boundsFromPoints(points, paddingRatio, minSpanDeg = 0.02) {
   east += lngSpan * paddingRatio;
 
   return [[south, west], [north, east]];
+}
+
+function pointsFromBounds(bounds) {
+  if (!Array.isArray(bounds) || bounds.length < 2) return [];
+  const [[south, west], [north, east]] = bounds;
+  return [
+    { lat: south, lng: west },
+    { lat: south, lng: east },
+    { lat: north, lng: west },
+    { lat: north, lng: east },
+  ];
+}
+
+function boundsFromOverviewItems(items, fallbackPoints = [], paddingRatio = OVERVIEW_PADDING_RATIO) {
+  const points = [...fallbackPoints];
+  items.forEach((item) => {
+    if (item.type === "single") {
+      points.push(item.point);
+    } else {
+      points.push(...pointsFromBounds(item.bounds));
+    }
+  });
+  return boundsFromPoints(points, paddingRatio);
 }
 
 function centerFromPoints(points) {

@@ -690,11 +690,12 @@ textarea:focus {
 
 /* 全体図でクラスター内スポットを示す小ピン */
 .map-pin-cluster-member {
-  width: 16px;
-  height: 16px;
+  width: 12px;
+  height: 12px;
   font-size: 0;
-  border: 2.5px dashed rgba(255, 255, 255, 0.92);
-  opacity: 0.82;
+  border: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  opacity: 0.78;
 }
 
 /* Tooltip labels */
@@ -702,7 +703,7 @@ textarea:focus {
 .cluster-label {
   display: inline-block;
   background: rgba(255, 250, 238, 0.98);
-  border: 2.5px solid rgba(166, 97, 54, 0.58);
+  border: 2.5px solid rgb(var(--accent-rgb, 255,122,69) / 0.38);
   color: var(--text);
   border-radius: 13px;
   box-shadow: 0 10px 20px rgb(var(--shadow-base-rgb) / 0.2);
@@ -717,6 +718,9 @@ textarea:focus {
 .leaflet-tooltip.spot-label {
   width: max-content;
   max-width: none;
+  --connector-length: 18px;
+  --connector-arrow-size: 12px;
+  --connector-color: rgba(var(--accent-rgb, 255, 122, 69), 0.72);
   pointer-events: auto;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
@@ -736,8 +740,8 @@ textarea:focus {
 .cluster-label {
   display: block;
   min-width: 0;
-  width: 150px;
-  max-width: 150px;
+  width: 164px;
+  max-width: 164px;
   box-sizing: border-box;
   text-align: left;
   line-height: 1.32;
@@ -757,7 +761,7 @@ textarea:focus {
   border-radius: 4px;
   padding: 1px 5px;
   margin-bottom: 3px;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
 }
 
 .cluster-part {
@@ -785,114 +789,135 @@ textarea:focus {
   display: block;
   content: "";
   position: absolute;
-  width: 12px;
-  height: 12px;
-  background: rgba(255, 250, 238, 0.98);
-  border: 2.5px solid rgba(166, 97, 54, 0.58);
+  margin: 0 !important;
+  border: 0 !important;
+  background: var(--connector-color);
   box-shadow: none;
   pointer-events: none;
-  transform: rotate(45deg);
-  z-index: -1;
+  z-index: 1;
 }
 
 .leaflet-tooltip.spot-label::after {
-  content: "";
-  position: absolute;
-  pointer-events: none;
-  background: rgba(126, 84, 49, 0.62);
+  display: none;
 }
-
-.leaflet-tooltip-right.spot-label::after,
-.leaflet-tooltip-left.spot-label::after {
-  top: 50%;
-  height: 3px;
-  background: rgba(166, 97, 54, 0.58);
-  border-radius: 999px;
-  transform: translateY(-50%);
-}
-
-.leaflet-tooltip-top.spot-label::after,
-.leaflet-tooltip-bottom.spot-label::after {
-  left: 50%;
-  width: 3px;
-  background: rgba(166, 97, 54, 0.58);
-  border-radius: 999px;
-  transform: translateX(-50%);
-}
-
-.leaflet-tooltip-right.spot-label::after { right: 100%; }
-.leaflet-tooltip-left.spot-label::after { left: 100%; }
-.leaflet-tooltip-top.spot-label::after { top: 100%; }
-.leaflet-tooltip-bottom.spot-label::after { bottom: 100%; }
 
 .spot-label-gap-24.leaflet-tooltip-right::after,
-.spot-label-gap-24.leaflet-tooltip-left::after { width: 18px; }
+.spot-label-gap-24.leaflet-tooltip-left::after { --connector-length: 18px; }
 .spot-label-gap-54.leaflet-tooltip-right::after,
-.spot-label-gap-54.leaflet-tooltip-left::after { width: 48px; }
+.spot-label-gap-54.leaflet-tooltip-left::after { --connector-length: 48px; }
 .spot-label-gap-84.leaflet-tooltip-right::after,
-.spot-label-gap-84.leaflet-tooltip-left::after { width: 78px; }
+.spot-label-gap-84.leaflet-tooltip-left::after { --connector-length: 78px; }
 .spot-label-gap-114.leaflet-tooltip-right::after,
-.spot-label-gap-114.leaflet-tooltip-left::after { width: 108px; }
+.spot-label-gap-114.leaflet-tooltip-left::after { --connector-length: 108px; }
 .spot-label-gap-154.leaflet-tooltip-right::after,
-.spot-label-gap-154.leaflet-tooltip-left::after { width: 148px; }
+.spot-label-gap-154.leaflet-tooltip-left::after { --connector-length: 148px; }
 .spot-label-gap-204.leaflet-tooltip-right::after,
-.spot-label-gap-204.leaflet-tooltip-left::after { width: 198px; }
+.spot-label-gap-204.leaflet-tooltip-left::after { --connector-length: 198px; }
 .spot-label-gap-264.leaflet-tooltip-right::after,
-.spot-label-gap-264.leaflet-tooltip-left::after { width: 258px; }
+.spot-label-gap-264.leaflet-tooltip-left::after { --connector-length: 258px; }
 .spot-label-gap-334.leaflet-tooltip-right::after,
-.spot-label-gap-334.leaflet-tooltip-left::after { width: 328px; }
+.spot-label-gap-334.leaflet-tooltip-left::after { --connector-length: 328px; }
 
 .spot-label-gap-24.leaflet-tooltip-top::after,
-.spot-label-gap-24.leaflet-tooltip-bottom::after { height: 18px; }
+.spot-label-gap-24.leaflet-tooltip-bottom::after { --connector-length: 18px; }
 .spot-label-gap-54.leaflet-tooltip-top::after,
-.spot-label-gap-54.leaflet-tooltip-bottom::after { height: 48px; }
+.spot-label-gap-54.leaflet-tooltip-bottom::after { --connector-length: 48px; }
 .spot-label-gap-84.leaflet-tooltip-top::after,
-.spot-label-gap-84.leaflet-tooltip-bottom::after { height: 78px; }
+.spot-label-gap-84.leaflet-tooltip-bottom::after { --connector-length: 78px; }
 .spot-label-gap-114.leaflet-tooltip-top::after,
-.spot-label-gap-114.leaflet-tooltip-bottom::after { height: 108px; }
+.spot-label-gap-114.leaflet-tooltip-bottom::after { --connector-length: 108px; }
 .spot-label-gap-154.leaflet-tooltip-top::after,
-.spot-label-gap-154.leaflet-tooltip-bottom::after { height: 148px; }
+.spot-label-gap-154.leaflet-tooltip-bottom::after { --connector-length: 148px; }
 .spot-label-gap-204.leaflet-tooltip-top::after,
-.spot-label-gap-204.leaflet-tooltip-bottom::after { height: 198px; }
+.spot-label-gap-204.leaflet-tooltip-bottom::after { --connector-length: 198px; }
 .spot-label-gap-264.leaflet-tooltip-top::after,
-.spot-label-gap-264.leaflet-tooltip-bottom::after { height: 258px; }
+.spot-label-gap-264.leaflet-tooltip-bottom::after { --connector-length: 258px; }
 .spot-label-gap-334.leaflet-tooltip-top::after,
-.spot-label-gap-334.leaflet-tooltip-bottom::after { height: 328px; }
+.spot-label-gap-334.leaflet-tooltip-bottom::after { --connector-length: 328px; }
+
+.leaflet-tooltip.spot-label-gap-24 { --connector-length: 18px; }
+.leaflet-tooltip.spot-label-gap-54 { --connector-length: 48px; }
+.leaflet-tooltip.spot-label-gap-84 { --connector-length: 78px; }
+.leaflet-tooltip.spot-label-gap-114 { --connector-length: 108px; }
+.leaflet-tooltip.spot-label-gap-154 { --connector-length: 148px; }
+.leaflet-tooltip.spot-label-gap-204 { --connector-length: 198px; }
+.leaflet-tooltip.spot-label-gap-264 { --connector-length: 258px; }
+.leaflet-tooltip.spot-label-gap-334 { --connector-length: 328px; }
 
 .leaflet-tooltip-right.spot-label::before {
-  left: -7px;
+  left: auto;
+  right: 100%;
   top: 50%;
-  margin-top: -6px;
-  border-top: 0;
-  border-right: 0;
+  bottom: auto;
+  width: var(--connector-length);
+  height: var(--connector-arrow-size);
+  transform: translateY(-50%);
+  clip-path: polygon(
+    0 50%,
+    var(--connector-arrow-size) 0,
+    var(--connector-arrow-size) calc(50% - 2px),
+    100% calc(50% - 2px),
+    100% calc(50% + 2px),
+    var(--connector-arrow-size) calc(50% + 2px),
+    var(--connector-arrow-size) 100%
+  );
 }
 
 .leaflet-tooltip-left.spot-label::before {
-  right: -7px;
+  left: 100%;
+  right: auto;
   top: 50%;
-  margin-top: -6px;
-  border-bottom: 0;
-  border-left: 0;
+  bottom: auto;
+  width: var(--connector-length);
+  height: var(--connector-arrow-size);
+  transform: translateY(-50%);
+  clip-path: polygon(
+    100% 50%,
+    calc(100% - var(--connector-arrow-size)) 0,
+    calc(100% - var(--connector-arrow-size)) calc(50% - 2px),
+    0 calc(50% - 2px),
+    0 calc(50% + 2px),
+    calc(100% - var(--connector-arrow-size)) calc(50% + 2px),
+    calc(100% - var(--connector-arrow-size)) 100%
+  );
 }
 
 .leaflet-tooltip-top.spot-label::before {
   left: 50%;
-  bottom: -7px;
-  margin-left: -6px;
-  border-top: 0;
-  border-left: 0;
+  right: auto;
+  top: 100%;
+  bottom: auto;
+  width: var(--connector-arrow-size);
+  height: var(--connector-length);
+  transform: translateX(-50%);
+  clip-path: polygon(
+    50% 100%,
+    0 calc(100% - var(--connector-arrow-size)),
+    calc(50% - 2px) calc(100% - var(--connector-arrow-size)),
+    calc(50% - 2px) 0,
+    calc(50% + 2px) 0,
+    calc(50% + 2px) calc(100% - var(--connector-arrow-size)),
+    100% calc(100% - var(--connector-arrow-size))
+  );
 }
 
 .leaflet-tooltip-bottom.spot-label::before {
   left: 50%;
-  top: -7px;
-  margin-left: -6px;
-  border-right: 0;
-  border-bottom: 0;
-}
-
-.leaflet-tooltip.spot-label:hover::before {
-  background: rgba(255, 239, 226, 0.98);
+  right: auto;
+  top: auto;
+  bottom: 100%;
+  width: var(--connector-arrow-size);
+  height: var(--connector-length);
+  transform: translateX(-50%);
+  clip-path: polygon(
+    50% 0,
+    0 var(--connector-arrow-size),
+    calc(50% - 2px) var(--connector-arrow-size),
+    calc(50% - 2px) 100%,
+    calc(50% + 2px) 100%,
+    calc(50% + 2px) var(--connector-arrow-size),
+    100% var(--connector-arrow-size)
+  );
 }
 
 @media (max-width: 520px) {
@@ -904,6 +929,33 @@ textarea:focus {
 
 .cluster-label::before {
   display: none;
+}
+
+.overview-zoom-frame {
+  stroke: var(--accent-deep);
+  stroke-width: 4;
+  stroke-opacity: 0.95;
+  fill: var(--accent);
+  fill-opacity: 0.13;
+}
+
+.overview-zoom-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 54px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--panel-strong);
+  border: 2px solid rgb(var(--accent-rgb, 255,122,69) / 0.48);
+  color: var(--accent-deep);
+  box-shadow: 0 6px 14px rgb(var(--shadow-base-rgb) / 0.16);
+  font-family: "Zen Kaku Gothic New", sans-serif;
+  font-size: 0.75rem;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .leaflet-control-scale {
@@ -1733,6 +1785,103 @@ body.budget-hidden [data-budget-ui] {
   width: 26px;
   text-align: center;
   flex-shrink: 0;
+}
+
+.app-legal-footer {
+  width: min(1100px, calc(100% - 32px));
+  margin: 28px auto 24px;
+  padding: 14px 16px;
+  border: 1px solid rgb(var(--accent-rgb, 255,122,69) / 0.18);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.7;
+}
+
+.app-legal-footer p {
+  margin: 0;
+}
+
+.app-legal-footer p + p {
+  margin-top: 6px;
+}
+
+.app-legal-footer a {
+  color: var(--accent-deep);
+  font-weight: 800;
+}
+
+.legal-shell {
+  width: min(960px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 40px 0 80px;
+  display: grid;
+  gap: 18px;
+}
+
+.legal-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  box-shadow: 0 6px 24px rgb(var(--shadow-base-rgb, 149,90,48) / 0.08);
+}
+
+.legal-card h2 {
+  margin: 0 0 10px;
+  color: var(--accent-deep);
+  font-size: 1.12rem;
+}
+
+.legal-card p,
+.legal-card li {
+  color: var(--text);
+  line-height: 1.8;
+}
+
+.legal-card p {
+  margin: 0;
+}
+
+.legal-card ul {
+  margin: 8px 0 0;
+  padding-left: 1.2em;
+}
+
+.legal-muted {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.print-legal-note {
+  position: absolute;
+  left: 32px;
+  right: 32px;
+  bottom: 28px;
+  z-index: 3;
+  padding: 12px 14px;
+  border: 1px solid rgb(var(--accent-rgb, 255,122,69) / 0.22);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.6;
+  text-align: left;
+}
+
+.print-legal-note strong {
+  display: block;
+  color: var(--accent-deep);
+  margin-bottom: 3px;
+}
+
+.print-legal-note p {
+  margin: 0;
+}
+
+.print-legal-note p + p {
+  margin-top: 4px;
 }
 
 /* ── Settings page ────────────────────────────────────────────────────────── */
@@ -2903,6 +3052,21 @@ body.budget-hidden [data-budget-ui] {
   font-weight: 700;
   font-size: 0.92rem;
   color: var(--text);
+}
+
+/* クラスタ閾値スライダー行 */
+.cluster-threshold-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.cluster-threshold-output {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--accent-deep);
+  min-width: 9em;
+  white-space: nowrap;
 }
 
 /* 設定保存フラッシュ */

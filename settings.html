@@ -88,6 +88,26 @@
     <section class="panel settings-section">
       <div class="panel-head">
         <div>
+          <p class="panel-kicker">Map</p>
+          <h2>拡大図のクラスタ閾値</h2>
+        </div>
+      </div>
+      <p class="settings-desc" style="margin-bottom:14px">
+        全スポットの広がりに対して何%以内のスポット同士をまとめて拡大図を作るかを調整します。<br>
+        小さくすると拡大図が減り（バラけた配置でまとめない）、大きくすると拡大図が増えます（遠いスポットもまとめる）。<br>
+        デフォルトは <strong>12%</strong> です。
+      </p>
+      <div class="cluster-threshold-row">
+        <span class="settings-check-title" style="min-width:5em">まとめる距離</span>
+        <input type="range" id="clusterThresholdRange" min="1" max="50" step="1" style="flex:1; min-width:120px" />
+        <output id="clusterThresholdValue" for="clusterThresholdRange" class="cluster-threshold-output">12%</output>
+        <button id="clusterThresholdReset" class="btn btn-outline" type="button" style="flex-shrink:0">リセット</button>
+      </div>
+    </section>
+
+    <section class="panel settings-section">
+      <div class="panel-head">
+        <div>
           <p class="panel-kicker">Cache</p>
           <h2>ページキャッシュ</h2>
         </div>
