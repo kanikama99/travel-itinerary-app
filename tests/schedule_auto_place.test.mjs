@@ -179,7 +179,7 @@ function runScenario(name, spots, schedule, verify) {
 
 function assertNoOverflow(plan, label) {
   const bad = plan.steps.filter(step => step.overflow || step.airportCheckinWarning);
-  assert.equal(bad.length, 0, `${label}: ${bad.map(step => `${step.type}:${step.name || step.role}`).join(", ")}`);
+  assert.equal(bad.length, 0, `${label}: ${bad.map(step => `${step.type}:${step.name || step.role}@${step.time ?? ""}/${step.airportCheckinDeadlineStr || ""}`).join(", ")}`);
 }
 
 runScenario(

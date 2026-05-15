@@ -414,10 +414,6 @@ function loadAppState() {
   };
 }
 
-function defaultState() {
-  return { spots: [] };
-}
-
 function normalizeState(value) {
   if (Array.isArray(value)) {
     return { spots: value.map(normalizeSpot) };
@@ -765,19 +761,6 @@ async function buildSpotFromLocalSuggestion(suggestion) {
   }
 
   throw new Error("提案エリアと違う場所が見つかったため、追加を止めました。地名に国名や都市名を足して再検索してください。");
-}
-
-function clearAllData() {
-  if (state.spots.length === 0) {
-    setFeedback("消去するデータはありません。", true);
-    return;
-  }
-  if (!window.confirm(`「${getActiveList().name}」のスポットをすべて削除しますか？`)) return;
-  Object.assign(state, defaultState(), { maps: [], editingSpotId: null });
-  persistState();
-  closeSpotMenu();
-  setFeedback("一覧を消去しました。", false);
-  render();
 }
 
 function setFeedback(message, isError) {
@@ -2536,10 +2519,6 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-function escapeAttribute(value) {
-  return escapeHtml(value);
-}
-
 function setupAutocomplete(input, dropdown) {
   let timer = null;
 
@@ -2941,45 +2920,6 @@ function findLocalAreaData(areaName) {
   return bestScore > 0 ? bestEntry : undefined;
 }
 
-function fetchAreaSuggestions(areaName, count) {
-  const found = findLocalAreaData(areaName);
-  if (!found) return [];
-  const [pref, entry] = found;
-
-  // サブエリアはメインエリア名で検索したときだけ表示する
-  // （「パリ」で検索したときに「リヨン」「マルセイユ」が出ないようにする）
-  const needle = normalizeAreaText(areaName);
-  const mainKey = normalizeAreaText(pref);
-  const isSearchingMainArea = needle.includes(mainKey) || mainKey.includes(needle);
-
-  const subAreaNames = isSearchingMainArea
-    ? (entry.subareas || (entry.keys || []).filter(k => normalizeAreaText(k) !== mainKey))
-    : [];
-  const subareas = subAreaNames.map(name => ({
-    name,
-    display: "候補エリア",
-    sourceType: "local-suggestion",
-  }));
-
-  const foods = (entry.foods || []).map(name => ({
-    name,
-    display: "ご当地フード",
-    sourceType: "local-suggestion",
-  }));
-  // メインエリア名で検索したときだけスポットを表示する
-  // （「釜山」で検索して景福宮など離れた都市のスポットが出ないようにする）
-  const spots = isSearchingMainArea
-    ? (entry.spots || []).map(name => ({ name, display: "おすすめスポット", sourceType: "local-suggestion" }))
-    : [];
-  const mixed = [];
-  const max = Math.max(count, 1);
-  for (let i = 0; i < Math.max(foods.length, spots.length); i++) {
-    if (spots[i]) mixed.push(spots[i]);
-    if (foods[i]) mixed.push(foods[i]);
-  }
-  return [...subareas, ...mixed].slice(0, max);
-}
-
 function fetchAreaSuggestionsOrdered(areaName, count) {
   const found = findLocalAreaData(areaName);
   if (!found) return [];
@@ -3003,60 +2943,6 @@ function setAreaSuggestStatus(msg, isError) {
   areaSuggestStatus.textContent = msg;
   areaSuggestStatus.classList.remove("hidden");
   areaSuggestStatus.style.color = isError ? "var(--danger)" : "var(--muted)";
-}
-
-function renderAreaSuggestions(suggestions) {
-  areaSuggestResults.innerHTML = "";
-  suggestions.forEach(item => {
-    const card = document.createElement("div");
-    card.className = "area-suggest-item";
-
-    const fillSpotInput = () => {
-      placeInput.value = item.name;
-      placeInput.dataset.preferredSuggestionName = item.name;
-      placeInput.focus();
-      placeInput.scrollIntoView({ behavior: "smooth", block: "center" });
-    };
-
-    const nameSpan = document.createElement("span");
-    nameSpan.className = "area-suggest-item-name";
-    nameSpan.innerHTML = `${escapeHtml(item.name)}<small>${escapeHtml(item.display || "")}</small>`;
-
-    const googleBtn = document.createElement("button");
-    googleBtn.type = "button";
-    googleBtn.className = "area-suggest-google-btn";
-    googleBtn.textContent = "Google検索";
-    googleBtn.addEventListener("click", () => {
-      window.open(`https://www.google.com/search?q=${encodeURIComponent(item.name)}`, "_blank", "noopener,noreferrer");
-    });
-
-    const useBtn = document.createElement("button");
-    useBtn.type = "button";
-    useBtn.className = "area-suggest-add-btn";
-    useBtn.textContent = "追加欄に入力";
-    useBtn.title = "スポットを追加欄に入力";
-    useBtn.addEventListener("click", fillSpotInput);
-
-    const isFood = item.display === "ご当地フード";
-    if (item.display === "候補エリア") {
-      const subareaBtn = document.createElement("button");
-      subareaBtn.type = "button";
-      subareaBtn.className = "area-suggest-subarea-btn";
-      subareaBtn.textContent = "提案を見る";
-      subareaBtn.addEventListener("click", () => {
-        if (areaSuggestInput) {
-          areaSuggestInput.value = item.name;
-          handleAreaSuggest();
-        }
-      });
-      card.append(nameSpan, googleBtn, subareaBtn, useBtn);
-    } else if (isFood) {
-      card.append(nameSpan, googleBtn);
-    } else {
-      card.append(nameSpan, googleBtn, useBtn);
-    }
-    areaSuggestResults.appendChild(card);
-  });
 }
 
 function isAreaSuggestionAdded(item) {

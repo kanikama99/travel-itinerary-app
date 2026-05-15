@@ -6,7 +6,16 @@
       "Bash(start *)",
       "Bash(grep -v \"^\\\\s*//\")",
       "PowerShell(\\(Get-Content \"D:\\\\Documents\\\\Claude\\\\projects\\\\travel-itinerary-app\\\\spots.html\"\\).Count; \\(Get-Content \"D:\\\\Documents\\\\Claude\\\\projects\\\\travel-itinerary-app\\\\schedule.html\"\\).Count; \\(Get-Content \"D:\\\\Documents\\\\Claude\\\\projects\\\\travel-itinerary-app\\\\print.html\"\\).Count)",
-      "PowerShell(Get-Content *)"
+      "PowerShell(Get-Content *)",
+      "PowerShell(cd \"D:\\\\Documents\\\\Claude\\\\projects\\\\travel-itinerary-app\"; foreach\\($f in @\\(\"print.html\",\"checklist.html\",\"theme.js\",\"travelchecklist.html\",\"schedule.html\"\\)\\){$ok=[System.IO.File]::ReadAllText\\($f,[System.Text.Encoding]::UTF8\\) -notmatch \"\\\\xef\\\\xbf\\\\xbd\";if\\($ok\\){Write-Host \"${f}: OK\"}else{Write-Host \"${f}: MOJIBAKE\"}})",
+      "PowerShell(try{$r=Invoke-WebRequest \"http://127.0.0.1:8000/print.html\" -TimeoutSec 3; Write-Host \"print.html HTTP $\\($r.StatusCode\\)\"}catch{Write-Host \"server not running or error: $_\"})",
+      "PowerShell(cd \"D:\\\\Documents\\\\Claude\\\\projects\\\\travel-itinerary-app\"; try{$r=Invoke-WebRequest -Uri \"http://127.0.0.1:8000/print.html\" -UseBasicParsing -TimeoutSec 3; \"HTTP $\\($r.StatusCode\\)\"}catch{\"no server\"})",
+      "PowerShell(cd \"D:\\\\Documents\\\\Claude\\\\projects\\\\travel-itinerary-app\"; foreach\\($p in @\\(\"checklist\",\"travelchecklist\",\"schedule\",\"print\"\\)\\){try{$r=Invoke-WebRequest \"http://127.0.0.1:8000/$p.html\" -UseBasicParsing -TimeoutSec 3;\"$p`: HTTP $\\($r.StatusCode\\)\"}catch{\"$p`: error\"}})",
+      "Bash(git pull *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(grep -E '\"[^\"]{2,10}\",')"
     ]
   }
 }

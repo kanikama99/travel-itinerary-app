@@ -1952,14 +1952,13 @@
         startTime  = day.startTime || _prevHotel?.checkoutTime || "09:00";
         meetName   = "宿泊先";
       }
-      const hasFlights = Object.keys(schedule.flights||{}).length > 0;
       const meetFlight = (isFirst && meetSpot?.spotCategory === "airport")
         ? getFlightForAnchor("meet", meetSpot, day.date)
         : null;
-      const suggestedMeetArrivalSpot = (isFirst && meetSpot?.spotCategory === "airport" && !meetFlight && hasFlights)
+      const suggestedMeetArrivalSpot = (isFirst && meetSpot?.spotCategory === "airport" && !meetFlight)
         ? airportDataToTimelineSpot(suggestMeetFlightArrivalAirport(day, meetSpot))
         : null;
-      const implicitMeetArrivalSpot = suggestedMeetArrivalSpot || ((isFirst && meetSpot?.spotCategory === "airport" && !meetFlight && hasFlights)
+      const implicitMeetArrivalSpot = suggestedMeetArrivalSpot || ((isFirst && meetSpot?.spotCategory === "airport" && !meetFlight)
         ? getTripSideAirport(day, "meet")
         : null);
       const provisionalMeetFlight = (!meetFlight && implicitMeetArrivalSpot)
@@ -1990,7 +1989,7 @@
           provisionalReason: "帰り便の出発空港を仮補正しています。本登録すると警告は消えます。",
         };
       }
-      const implicitDismissDepartureSpot = (hasFlights && suggestedDismissDepartureSpot) || ((isLast && dismissSpot?.spotCategory === "airport" && !dismissFlightForDay && hasFlights)
+      const implicitDismissDepartureSpot = suggestedDismissDepartureSpot || ((isLast && dismissSpot?.spotCategory === "airport" && !dismissFlightForDay)
         ? getTripSideAirport(day, "dismiss")
         : null);
       const provisionalDismissFlight = (!dismissFlightForDay && implicitDismissDepartureSpot)
@@ -2078,6 +2077,7 @@
         }
       }
       let prevSpot = meetFlightArrivalSpot || meetSpot || null;
+      const placedVisits = [];
 
       for (let i = 0; i < day.entries.length; i++) {
         const entry  = day.entries[i];
@@ -2127,6 +2127,9 @@
 
         // isMeetTravel フラグ：集合場所からの最初の移動ステップかどうか
         const isMeetTravelStep = isFirst && !prevEntry;
+        const visitStepIndex = steps.length;
+        const timeBeforeVisit = t;
+        const prevSpotBeforeVisit = prevSpot;
         steps.push({ type: "travel", duration: travelDuration, travelInfo, fromSpot: prevSpot, toSpot: spot, noCoords: !hasCoords, missingHotel: !isFirst && i === 0 && !meetSpot, isMeetTravel: isMeetTravelStep });
         steps.push({
           type: "spot",
@@ -2142,6 +2145,7 @@
         });
         t = leaveT;
         prevSpot = spot;
+        placedVisits.push({ spot, stepIndex: visitStepIndex, timeBeforeVisit, prevSpot: prevSpotBeforeVisit });
 
         if ((t >= endT || t + travel > endT) && strictCapacity) {
           for (let j = i + 1; j < day.entries.length; j++) {
@@ -2155,22 +2159,40 @@
       }
 
       // 最終移動：解散場所スポットの座標があれば実ルーティングを適用
-      const finalHasCoords = !!(prevSpot?.lat && prevSpot?.lng && dismissTravelTarget?.lat && dismissTravelTarget?.lng);
-      let finalTravelInfo = null;
-      let finalTravelDuration = travel;
-      if (finalHasCoords) {
-        const ckey = transitCacheKey(prevSpot.lat, prevSpot.lng, dismissTravelTarget.lat, dismissTravelTarget.lng);
-        finalTravelInfo = schedule.transitCache?.[ckey] || null;
-        if (finalTravelInfo && !finalTravelInfo.failed && finalTravelInfo.durationMin) {
-          finalTravelDuration = finalTravelInfo.durationMin;
-        } else if (!finalTravelInfo) {
-          finalTravelInfo = estimateRouteFallback(prevSpot.lat, prevSpot.lng, dismissTravelTarget.lat, dismissTravelTarget.lng, getTravelMode(), "経路取得前の概算");
-          finalTravelDuration = finalTravelInfo.durationMin;
+      function resolveFinalTravel(fromSpot) {
+        const finalHasCoords = !!(fromSpot?.lat && fromSpot?.lng && dismissTravelTarget?.lat && dismissTravelTarget?.lng);
+        let finalTravelInfo = null;
+        let finalTravelDuration = travel;
+        if (finalHasCoords) {
+          const ckey = transitCacheKey(fromSpot.lat, fromSpot.lng, dismissTravelTarget.lat, dismissTravelTarget.lng);
+          finalTravelInfo = schedule.transitCache?.[ckey] || null;
+          if (finalTravelInfo && !finalTravelInfo.failed && finalTravelInfo.durationMin) {
+            finalTravelDuration = finalTravelInfo.durationMin;
+          } else if (!finalTravelInfo) {
+            finalTravelInfo = estimateRouteFallback(fromSpot.lat, fromSpot.lng, dismissTravelTarget.lat, dismissTravelTarget.lng, getTravelMode(), "経路取得前の概算");
+            finalTravelDuration = finalTravelInfo.durationMin;
+          }
+        }
+        const finalPrevEntry = day.entries.find(en => en.spotId === fromSpot?.id);
+        if (finalPrevEntry?.travelToNextMinutes) finalTravelDuration = finalPrevEntry.travelToNextMinutes;
+        return { finalHasCoords, finalTravelInfo, finalTravelDuration };
+      }
+      let { finalHasCoords, finalTravelInfo, finalTravelDuration } = resolveFinalTravel(prevSpot);
+      while (strictCapacity && t + finalTravelDuration > endT && placedVisits.length) {
+        const last = placedVisits.pop();
+        if (last?.spot?.name && !skipped.includes(last.spot.name)) skipped.push(last.spot.name);
+        steps.splice(last.stepIndex);
+        t = last.timeBeforeVisit;
+        prevSpot = last.prevSpot;
+        ({ finalHasCoords, finalTravelInfo, finalTravelDuration } = resolveFinalTravel(prevSpot));
+      }
+      if (strictCapacity && isLast && dismissFlightForDay && t + finalTravelDuration > endT && steps[0]?.type === "meet") {
+        const autoStartT = Math.max(0, endT - finalTravelDuration);
+        if (autoStartT < t) {
+          t = autoStartT;
+          steps[0].time = t;
         }
       }
-      // 手動移動時間が設定されていれば上書き（最終移動も対象）
-      const finalPrevEntry = day.entries.find(en => en.spotId === prevSpot?.id);
-      if (finalPrevEntry?.travelToNextMinutes) finalTravelDuration = finalPrevEntry.travelToNextMinutes;
       if (isLast && dismissFlightForDay && !day.startTime && !hasVisitEntries(day, isFirst, isLast)) {
         const autoStartT = Math.max(0, endT - finalTravelDuration);
         if (autoStartT > t) {
@@ -2199,6 +2221,7 @@
           dismissOverflow = true; dismissAirportCheckinWarning = true;
         }
       }
+      if (!isLast && dismissHotelProvisional) dismissOverflow = false;
       steps.push({
         type: "dismiss", name: (dismissTravelTarget?.name || dismissName), time: dismissArrivalT,
         anchorSpot: dismissTravelTarget || null,

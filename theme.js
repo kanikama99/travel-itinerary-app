@@ -75,8 +75,34 @@
     nav.insertBefore(link, nav.firstChild);
   }
 
+  function injectLegalLink() {
+    const nav = document.querySelector(".drawer-nav");
+    if (!nav || nav.querySelector("[data-legal-link]")) return;
+    const link = document.createElement("a");
+    link.href = "./legal.html";
+    link.className = "drawer-nav-item";
+    link.dataset.legalLink = "true";
+    link.innerHTML = '<span class="drawer-nav-icon">§</span><span>利用規約・プライバシー</span>';
+    nav.appendChild(link);
+  }
+
+  function injectLegalFooter() {
+    if (document.querySelector("[data-app-legal-footer]")) return;
+    const footer = document.createElement("footer");
+    footer.className = "app-legal-footer";
+    footer.dataset.appLegalFooter = "true";
+    footer.innerHTML = [
+      '<p>Trip Pop Map は旅行計画を補助するツールです。経路、時刻、価格、営業時間、空室、予約可否は保証しません。予約・出発前に各公式サイトで確認してください。</p>',
+      '<p>外部予約サイトへのリンクには、今後広告・アフィリエイトが含まれる場合があります。PDFや画像を共有する前に、予約番号、同行者名、宿泊先、顔写真などの個人情報が含まれていないか確認してください。</p>',
+      '<p><a href="./legal.html">利用規約・プライバシー・免責・データ帰属</a></p>'
+    ].join("");
+    document.body.appendChild(footer);
+  }
+
   applyTheme();
   saveLastTripPage();
   injectCurrentTripLink();
-  window.TripTheme = { applyTheme, injectCurrentTripLink };
+  injectLegalLink();
+  injectLegalFooter();
+  window.TripTheme = { applyTheme, injectCurrentTripLink, injectLegalLink, injectLegalFooter };
 })();
