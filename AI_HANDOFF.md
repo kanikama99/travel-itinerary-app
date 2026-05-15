@@ -24,6 +24,31 @@ Shared notes for Claude / Codex agents working on this repo.
 
 ## Recent Work Log
 
+### 2026-05-16 Codex map connector / MAP jump follow-up
+
+- Updated map clustering default from 12% to 20% in `app.js`, `settings.js`, `settings.html`, and `print.html`.
+- Updated `app.js` map overview placement so zoom frames are treated as occupied rectangles and zoom-frame connector lines are treated as occupied connector segments when placing single spot labels.
+- Added connector arrows between each overview zoom frame and its `拡大図: MAPn` cluster label.
+- Changed `拡大図: MAPn` in cluster labels into a button that scrolls to the corresponding map card (`map-card-n`) on the page.
+- Mirrored the zoom-frame connector and frame-avoidance logic in `print.html` for PDF maps.
+- Added `tests/map_preview_connectors_e2e.mjs` with a Taiwan/Taroko-style Chrome headless check:
+  - seeds Taipei/Taroko/Central Taiwan spots,
+  - verifies MAP jump scrolling,
+  - verifies zoom connector arrowheads exist,
+  - checks visible spot labels / cluster labels / primary pins for overlap,
+  - saves `debug_logs/map-preview-connectors-taiwan.png`.
+- Updated `AGENTS.md` with recurrence notes for zoom-frame occupied rects, zoom-frame connector arrows, diagonal connectors, and MAP jump behavior.
+- Verification completed:
+  - `node --check app.js`
+  - `node --check settings.js`
+  - `node --check tests/map_preview_connectors_e2e.mjs`
+  - inline script parsing for `print.html`, `settings.html`, and `spots.html`
+  - `node tests/schedule_auto_place.test.mjs`
+  - `node tests/travel_plan_pdf_e2e.mjs`
+  - `node tests/map_preview_connectors_e2e.mjs`
+  - `git diff --check -- app.js print.html styles.css settings.js settings.html AGENTS.md tests/map_preview_connectors_e2e.mjs`
+  - added-line mojibake scan returned no matches
+
 ### 2026-05-16 Codex refactor / Markdown cleanup
 
 - Removed unused `app.js` functions that had no callers:

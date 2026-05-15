@@ -1,6 +1,6 @@
 const STORAGE_KEY = "spot-map-organizer.v9";
 const LISTS_KEY = "spot-map-lists.v1";
-const RELATIVE_CLUSTER_THRESHOLD_DEFAULT = 0.12;
+const RELATIVE_CLUSTER_THRESHOLD_DEFAULT = 0.20;
 function getClusterThreshold() {
   try {
     const v = JSON.parse(localStorage.getItem("spot-map-settings.v1") || "{}").clusterThreshold;
@@ -1714,6 +1714,7 @@ function renderMaps() {
   groups.forEach((group, index) => {
     const card = document.createElement("article");
     card.className = "map-card";
+    card.id = `map-card-${index + 1}`;
 
     const head = document.createElement("div");
     head.className = "map-head";
@@ -1810,6 +1811,40 @@ function labelViewRect(map) {
   };
 }
 
+function latLngBoundsToRect(map, bounds) {
+  const a = map.latLngToLayerPoint(bounds[0]);
+  const b = map.latLngToLayerPoint(bounds[1]);
+  return {
+    x1: Math.min(a.x, b.x),
+    x2: Math.max(a.x, b.x),
+    y1: Math.min(a.y, b.y),
+    y2: Math.max(a.y, b.y),
+  };
+}
+
+function rectCenter(rect) {
+  return { x: (rect.x1 + rect.x2) / 2, y: (rect.y1 + rect.y2) / 2 };
+}
+
+function rectEdgePointToward(rect, target) {
+  const c = rectCenter(rect);
+  const dx = target.x - c.x;
+  const dy = target.y - c.y;
+  if (Math.abs(dx) < 0.001 && Math.abs(dy) < 0.001) return c;
+  const sx = dx === 0 ? Infinity : ((dx > 0 ? rect.x2 : rect.x1) - c.x) / dx;
+  const sy = dy === 0 ? Infinity : ((dy > 0 ? rect.y2 : rect.y1) - c.y) / dy;
+  const s = Math.min(Math.abs(sx), Math.abs(sy));
+  return { x: c.x + dx * s, y: c.y + dy * s };
+}
+
+function connectorBetweenRects(fromRect, toRect) {
+  const fromCenter = rectCenter(fromRect);
+  const toCenter = rectCenter(toRect);
+  const from = rectEdgePointToward(fromRect, toCenter);
+  const to = rectEdgePointToward(toRect, fromCenter);
+  return { x1: from.x, y1: from.y, x2: to.x, y2: to.y };
+}
+
 function rectsOverlap(a, b) {
   return a.x1 < b.x2 && a.x2 > b.x1 && a.y1 < b.y2 && a.y2 > b.y1;
 }
@@ -1837,15 +1872,52 @@ function pointInsideRect(point, rect) {
   return point.x >= rect.x1 && point.x <= rect.x2 && point.y >= rect.y1 && point.y <= rect.y2;
 }
 
+function segmentOrientation(a, b, c) {
+  const value = (b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y);
+  if (Math.abs(value) < 0.001) return 0;
+  return value > 0 ? 1 : 2;
+}
+
+function pointOnSegment(a, b, c) {
+  return b.x <= Math.max(a.x, c.x) + 0.001
+    && b.x + 0.001 >= Math.min(a.x, c.x)
+    && b.y <= Math.max(a.y, c.y) + 0.001
+    && b.y + 0.001 >= Math.min(a.y, c.y);
+}
+
+function segmentsShareEndpoint(a, b) {
+  const ap = [{ x: a.x1, y: a.y1 }, { x: a.x2, y: a.y2 }];
+  const bp = [{ x: b.x1, y: b.y1 }, { x: b.x2, y: b.y2 }];
+  return ap.some(pa => bp.some(pb => Math.hypot(pa.x - pb.x, pa.y - pb.y) < 1));
+}
+
+function segmentsIntersect(a, b) {
+  if (segmentsShareEndpoint(a, b)) return false;
+  const p1 = { x: a.x1, y: a.y1 };
+  const q1 = { x: a.x2, y: a.y2 };
+  const p2 = { x: b.x1, y: b.y1 };
+  const q2 = { x: b.x2, y: b.y2 };
+  const o1 = segmentOrientation(p1, q1, p2);
+  const o2 = segmentOrientation(p1, q1, q2);
+  const o3 = segmentOrientation(p2, q2, p1);
+  const o4 = segmentOrientation(p2, q2, q1);
+  if (o1 !== o2 && o3 !== o4) return true;
+  if (o1 === 0 && pointOnSegment(p1, p2, q1)) return true;
+  if (o2 === 0 && pointOnSegment(p1, q2, q1)) return true;
+  if (o3 === 0 && pointOnSegment(p2, p1, q2)) return true;
+  if (o4 === 0 && pointOnSegment(p2, q1, q2)) return true;
+  return false;
+}
+
 function connectorIntersectsRect(segment, rect) {
-  const horizontal = Math.abs(segment.y1 - segment.y2) < 0.001;
-  const minX = Math.min(segment.x1, segment.x2);
-  const maxX = Math.max(segment.x1, segment.x2);
-  const minY = Math.min(segment.y1, segment.y2);
-  const maxY = Math.max(segment.y1, segment.y2);
   if (pointInsideRect({ x: segment.x1, y: segment.y1 }, rect) || pointInsideRect({ x: segment.x2, y: segment.y2 }, rect)) return true;
-  if (horizontal) return segment.y1 >= rect.y1 && segment.y1 <= rect.y2 && maxX >= rect.x1 && minX <= rect.x2;
-  return segment.x1 >= rect.x1 && segment.x1 <= rect.x2 && maxY >= rect.y1 && minY <= rect.y2;
+  const edges = [
+    { x1: rect.x1, y1: rect.y1, x2: rect.x2, y2: rect.y1 },
+    { x1: rect.x2, y1: rect.y1, x2: rect.x2, y2: rect.y2 },
+    { x1: rect.x2, y1: rect.y2, x2: rect.x1, y2: rect.y2 },
+    { x1: rect.x1, y1: rect.y2, x2: rect.x1, y2: rect.y1 },
+  ];
+  return edges.some(edge => segmentsIntersect(segment, edge));
 }
 
 function expandRect(r, pad = 0) {
@@ -1863,6 +1935,7 @@ function chooseLabelPlacements(map, points, options = {}) {
     ...(options.initialRects || [])
   ];
   const connectorRects = (options.initialConnectorRects || []).map(rect => ({ id: null, rect }));
+  const connectorSegments = [...(options.initialConnectors || [])];
   const sizeFor = options.sizeFor || estimateLabelSize;
   const dirOrder = options.preferredDirs || LABEL_DIRS;
   const distances = options.distances || LABEL_DISTANCES;
@@ -1880,12 +1953,16 @@ function chooseLabelPlacements(map, points, options = {}) {
         const connector = connectorSegment(px, dir, r);
         const overlapPenalty = placed.reduce((sum, b) => sum + overlapArea(r, b), 0);
         const edgeOverflow = outOfBoundsArea(r, viewRect);
-        const connectorPenalty = connectorRects.some(b => b.id !== point.id && connectorIntersectsRect(connector, expandRect(b.rect, connectorPad))) ? 1 : 0;
+        const connectorPenalty = (
+          connectorRects.some(b => b.id !== point.id && connectorIntersectsRect(connector, expandRect(b.rect, connectorPad)))
+          || connectorSegments.some(segment => segmentsIntersect(connector, segment))
+        ) ? 1 : 0;
         const distancePenalty = distance * 0.15;
         const penalty = overlapPenalty + edgeOverflow * 12 + connectorPenalty * 100000 + distancePenalty;
         if (overlapPenalty === 0 && edgeOverflow === 0 && connectorPenalty === 0) {
           placed.push(r);
           connectorRects.push({ id: null, rect: r });
+          connectorSegments.push(connector);
           result.set(point.id, { direction: dir, distance, rect: r, connector });
           return;
         }
@@ -1897,10 +1974,14 @@ function chooseLabelPlacements(map, points, options = {}) {
     }
     if (options.allowEdgeOverflow && fallback) {
       const overlapPenalty = placed.reduce((sum, b) => sum + overlapArea(fallback.rect, b), 0);
-      const connectorPenalty = connectorRects.some(b => b.id !== point.id && connectorIntersectsRect(fallback.connector, expandRect(b.rect, connectorPad))) ? 1 : 0;
+      const connectorPenalty = (
+        connectorRects.some(b => b.id !== point.id && connectorIntersectsRect(fallback.connector, expandRect(b.rect, connectorPad)))
+        || connectorSegments.some(segment => segmentsIntersect(fallback.connector, segment))
+      ) ? 1 : 0;
       if (overlapPenalty === 0 && connectorPenalty === 0) {
         placed.push(fallback.rect);
         connectorRects.push({ id: null, rect: fallback.rect });
+        connectorSegments.push(fallback.connector);
         result.set(point.id, fallback);
       }
     }
@@ -1940,6 +2021,39 @@ function addMarkerToMap(map, point, placement = null) {
     }
   }, 0);
   return marker;
+}
+
+function drawMapConnector(map, segment, className = "") {
+  if (!segment) return;
+  const from = map.layerPointToLatLng([segment.x1, segment.y1]);
+  const to = map.layerPointToLatLng([segment.x2, segment.y2]);
+  L.polyline([from, to], {
+    color: "#ce5428",
+    weight: 3,
+    opacity: 0.82,
+    interactive: false,
+    className: `map-connector-line ${className}`.trim(),
+  }).addTo(map);
+
+  const angle = Math.atan2(segment.y2 - segment.y1, segment.x2 - segment.x1) * 180 / Math.PI;
+  L.marker(to, {
+    interactive: false,
+    keyboard: false,
+    icon: L.divIcon({
+      className: "",
+      html: `<span class="map-connector-arrowhead" style="transform:rotate(${angle}deg)"></span>`,
+      iconSize: [14, 14],
+      iconAnchor: [7, 7],
+    }),
+  }).addTo(map);
+}
+
+function scrollToMapCard(mapNumber) {
+  const target = document.getElementById(`map-card-${mapNumber}`);
+  if (!target) return;
+  target.scrollIntoView({ behavior: "smooth", block: "start" });
+  target.classList.add("map-card--jump-highlight");
+  setTimeout(() => target.classList.remove("map-card--jump-highlight"), 1400);
 }
 
 function attachLabelDrag(el, spotId, map) {
@@ -2054,6 +2168,8 @@ function renderOverviewLayer(map, items, bounds) {
       : item.points.map(point => pinRect(pointToLayerPx(map, point)))
   );
   const clusters = items.filter((i) => i.type !== "single");
+  const frameRects = new Map(clusters.map(item => [item, latLngBoundsToRect(map, item.bounds)]));
+  const frameRectList = [...frameRects.values()];
   const clusterPoints = clusters.map((item, index) => ({
     id: `cluster-${index}`,
     lat: item.center.lat,
@@ -2062,7 +2178,7 @@ function renderOverviewLayer(map, items, bounds) {
   }));
   const clusterPlacements = clusterPoints.length > 0
       ? chooseLabelPlacements(map, clusterPoints, {
-        initialRects: allPointRects,
+        initialRects: [...allPointRects, ...frameRectList],
         initialConnectorRects: [],
         sizeFor: point => estimateClusterLabelSize(point._clusterItem),
         preferredDirs: ["right", "bottom", "top", "left"],
@@ -2070,10 +2186,16 @@ function renderOverviewLayer(map, items, bounds) {
       })
     : new Map();
   const clusterRects = [...clusterPlacements.values()].map(p => p.rect).filter(Boolean);
+  const clusterConnectors = clusters.map((item, index) => {
+    const placement = clusterPlacements.get(`cluster-${index}`);
+    const frameRect = frameRects.get(item);
+    return placement && frameRect ? connectorBetweenRects(frameRect, placement.rect) : null;
+  }).filter(Boolean);
   const placements = singles.length > 0
       ? chooseLabelPlacements(map, singles, {
-        initialRects: [...allPointRects, ...clusterRects],
-        initialConnectorRects: clusterRects,
+        initialRects: [...allPointRects, ...clusterRects, ...frameRectList],
+        initialConnectorRects: [...clusterRects, ...frameRectList],
+        initialConnectors: clusterConnectors,
         preferredDirs: clusters.length > 0 ? ["left", "bottom", "top", "right"] : LABEL_DIRS,
         distances: [34, 64, 94, 124, 154, 204, 264]
       })
@@ -2093,7 +2215,7 @@ function renderOverviewLayer(map, items, bounds) {
     }).addTo(map);
 
     const mapLabel = item.mapNumber
-      ? `<span class="cluster-map-label">拡大図: MAP${item.mapNumber}</span>`
+      ? `<button class="cluster-map-label cluster-map-jump" type="button" onclick="event.stopPropagation();scrollToMapCard(${item.mapNumber})">拡大図: MAP${item.mapNumber}</button>`
       : "";
     const labelHtml = mapLabel + item.points.map((point) =>
       `<span class="cluster-part cluster-spot-link" onclick="event.stopPropagation();openSpotMenu('${point.id}')">${escapeHtml(point.name)}</span>`
@@ -2121,6 +2243,7 @@ function renderOverviewLayer(map, items, bounds) {
     const clusterIndex = clusters.indexOf(item);
     const placement = clusterPlacements.get(`cluster-${clusterIndex}`);
     if (!placement) return;
+    drawMapConnector(map, connectorBetweenRects(frameRects.get(item), placement.rect), "map-connector-line--zoom");
     const size = estimateClusterLabelSize(item);
     const anchor = clusterIconAnchor(placement.direction, placement.distance, size);
     const clusterKey = item.points.map(p => p.id).sort().join(":");

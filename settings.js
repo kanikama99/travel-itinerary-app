@@ -49,7 +49,7 @@ function defaultSettings() {
     calendarStyle: "standard",
     googlePlaceHoursEnabled: true,
     showBudget: true,
-    clusterThreshold: 0.12,
+    clusterThreshold: 0.20,
   };
 }
 
@@ -166,7 +166,7 @@ if (googlePlaceHoursEnabled) googlePlaceHoursEnabled.checked = draftSettings.goo
 if (showBudgetEnabled) showBudgetEnabled.checked = draftSettings.showBudget !== false;
 if (labelDragEnabled) labelDragEnabled.checked = draftSettings.labelDragEnabled === true;
 
-const CLUSTER_THRESHOLD_DEFAULT = 0.12;
+const CLUSTER_THRESHOLD_DEFAULT = 0.20;
 function updateClusterThresholdDisplay(val) {
   const pct = Math.round(val * 100);
   if (clusterThresholdValue) clusterThresholdValue.textContent = pct + "%" + (Math.abs(val - CLUSTER_THRESHOLD_DEFAULT) < 0.001 ? "（デフォルト）" : "");
