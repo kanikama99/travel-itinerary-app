@@ -954,7 +954,8 @@ textarea:focus {
   stroke: var(--accent-deep);
   stroke-width: 4;
   stroke-opacity: 0.95;
-  fill: var(--accent);
+  stroke-dasharray: 8 7;
+  fill: var(--accent-light);
   fill-opacity: 0.13;
 }
 
@@ -966,6 +967,7 @@ textarea:focus {
 }
 
 .map-connector-line--zoom {
+  stroke: var(--accent);
   stroke-dasharray: none;
 }
 

@@ -214,6 +214,7 @@ calStyleGroup?.querySelectorAll("input[name=calStyle]").forEach((radio) => {
 
 settingsSaveBtn?.addEventListener("click", () => {
   saveSettings(draftSettings);
+  sessionStorage.setItem("spot-map-settings-updated", String(Date.now()));
   isDirty = false;
   if (settingsStatus) {
     settingsStatus.textContent = "✓ 設定を保存しました！";
@@ -290,7 +291,7 @@ if (settingsBackRow && referrer && new URL(referrer).origin === window.location.
   backBtn.textContent = "← 前のページへ戻る";
   backBtn.addEventListener("click", () => {
     if (isDirty && !window.confirm("未保存の変更があります。設定を保存せずにページを移動しますか？")) return;
-    history.back();
+    window.location.href = referrer;
   });
   settingsBackRow.prepend(backBtn);
 }

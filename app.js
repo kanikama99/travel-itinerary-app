@@ -405,6 +405,13 @@ requestAnimationFrame(() => {
   if (editSpotId) setTimeout(() => openSpotMenu(editSpotId), 80);
 });
 
+window.addEventListener("pageshow", (event) => {
+  if (!event.persisted && !sessionStorage.getItem("spot-map-settings-updated")) return;
+  sessionStorage.removeItem("spot-map-settings-updated");
+  applyBgTheme(loadAppSettings().bgTheme);
+  renderMaps();
+});
+
 function loadAppState() {
   const d = ensureListsData();
   const active = getActiveList(d);
@@ -2023,12 +2030,16 @@ function addMarkerToMap(map, point, placement = null) {
   return marker;
 }
 
+function readCssColor(varName, fallback) {
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || fallback;
+}
+
 function drawMapConnector(map, segment, className = "") {
   if (!segment) return;
   const from = map.layerPointToLatLng([segment.x1, segment.y1]);
   const to = map.layerPointToLatLng([segment.x2, segment.y2]);
   L.polyline([from, to], {
-    color: "#ce5428",
+    color: readCssColor("--accent", "#ff7a45"),
     weight: 3,
     opacity: 0.82,
     interactive: false,
@@ -2189,7 +2200,7 @@ function renderOverviewLayer(map, items, bounds) {
   const clusterConnectors = clusters.map((item, index) => {
     const placement = clusterPlacements.get(`cluster-${index}`);
     const frameRect = frameRects.get(item);
-    return placement && frameRect ? connectorBetweenRects(frameRect, placement.rect) : null;
+    return placement && frameRect ? connectorBetweenRects(placement.rect, frameRect) : null;
   }).filter(Boolean);
   const placements = singles.length > 0
       ? chooseLabelPlacements(map, singles, {
@@ -2208,8 +2219,10 @@ function renderOverviewLayer(map, items, bounds) {
     }
 
     L.rectangle(item.bounds, {
-      color: "#ff7a45",
+      color: readCssColor("--accent-deep", "#ce5428"),
       weight: 3,
+      dashArray: "8 7",
+      fillColor: readCssColor("--accent-light", "#ff9a52"),
       fillOpacity: 0.06,
       className: "overview-zoom-frame",
     }).addTo(map);
@@ -2243,7 +2256,7 @@ function renderOverviewLayer(map, items, bounds) {
     const clusterIndex = clusters.indexOf(item);
     const placement = clusterPlacements.get(`cluster-${clusterIndex}`);
     if (!placement) return;
-    drawMapConnector(map, connectorBetweenRects(frameRects.get(item), placement.rect), "map-connector-line--zoom");
+    drawMapConnector(map, connectorBetweenRects(placement.rect, frameRects.get(item)), "map-connector-line--zoom");
     const size = estimateClusterLabelSize(item);
     const anchor = clusterIconAnchor(placement.direction, placement.distance, size);
     const clusterKey = item.points.map(p => p.id).sort().join(":");

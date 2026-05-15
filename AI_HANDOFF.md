@@ -49,6 +49,30 @@ Shared notes for Claude / Codex agents working on this repo.
   - `git diff --check -- app.js print.html styles.css settings.js settings.html AGENTS.md tests/map_preview_connectors_e2e.mjs`
   - added-line mojibake scan returned no matches
 
+### 2026-05-16 Codex zoom frame style / settings return follow-up
+
+- Changed overview zoom frames to dashed outlines.
+- Reversed zoom-frame connector arrows so the arrowhead lands on the zoom frame instead of the cluster label.
+- Made zoom-frame lines use theme colors:
+  - frame stroke uses `--accent-deep`;
+  - connector line uses `--accent`;
+  - frame fill uses `--accent-light` at low opacity.
+- Fixed settings return behavior after changing cluster threshold:
+  - saving settings now writes a session update marker;
+  - the custom previous-page button navigates to `document.referrer` instead of using `history.back()`;
+  - `app.js` listens for `pageshow` / update marker and re-renders maps when returning from settings.
+- Mirrored the frame style, connector color, and arrow direction changes in `print.html`.
+- Verification completed:
+  - `node --check app.js`
+  - `node --check settings.js`
+  - `node --check tests/map_preview_connectors_e2e.mjs`
+  - inline script parsing for `print.html`, `settings.html`, and `spots.html`
+  - `node tests/schedule_auto_place.test.mjs`
+  - `node tests/map_preview_connectors_e2e.mjs`
+  - `node tests/travel_plan_pdf_e2e.mjs`
+  - `git diff --check -- app.js print.html styles.css settings.js settings.html tests/map_preview_connectors_e2e.mjs`
+  - added-line mojibake scan returned no matches
+
 ### 2026-05-16 Codex refactor / Markdown cleanup
 
 - Removed unused `app.js` functions that had no callers:
